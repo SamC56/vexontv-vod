@@ -1,0 +1,23 @@
+#EXTM3U
+#EXTINF:-1 tvg-logo="" group-title="Pruebas",Mux test stream
+https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8
+#EXTINF:-1 tvg-logo="" group-title="Pruebas",Apple bipbop
+https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_ts/master.m3u8
+#EXTINF:-1 tvg-logo="" group-title="Pruebas",The Voice TV
+https://bss1.neterra.tv/thevoice/thevoice.m3u8
+#EXTINF:-1 tvg-logo="" group-title="España",La 1 HD
+https://panel.example/live/user/pass/1.ts
+#EXTINF:-1 tvg-logo="" group-title="España",La 2 HD
+https://panel.example/live/user/pass/2.ts
+#EXTINF:-1 tvg-logo="" group-title="España",Antena 3
+https://panel.example/live/user/pass/3.ts
+#EXTINF:-1 tvg-logo="" group-title="Deportes",DAZN 1
+https://panel.example/live/user/pass/4.ts
+#EXTINF:-1 tvg-logo="" group-title="Deportes",Movistar Deportes
+https://panel.example/live/user/pass/5.ts
+#EXTINF:-1 tvg-logo="" group-title="Noticias",24h
+https://panel.example/live/user/pass/6.ts
+#EXTINF:-1 tvg-logo="" group-title="VOD | Acción",Esto deberia filtrarse (2024)
+https://panel.example/movie/user/pass/900.mp4
+#EXTINF:-1 tvg-logo="" group-title="Series",Esto tambien deberia filtrarse S01
+https://panel.example/series/user/pass/901.mp4

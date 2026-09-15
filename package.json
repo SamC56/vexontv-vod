@@ -1,0 +1,14 @@
+{
+  "name": "vexontv",
+  "version": "1.0.0",
+  "private": true,
+  "description": "App de TV para Samsung Tizen: listas M3U y portales Xtream",
+  "scripts": {
+    "test": "node test/check.js && node test/dom.js",
+    "build": "python3 tools/build-wgt.py",
+    "icon": "python3 tools/make-icon.py"
+  },
+  "devDependencies": {
+    "jsdom": "^29.1.1"
+  }
+}
