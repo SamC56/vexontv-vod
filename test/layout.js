@@ -88,6 +88,7 @@ window.addEventListener('load', function () {
                         document.body.classList.add('previewing');
                         var backdrop = window.getComputedStyle(document.getElementById('backdrop'));
                         var edge = window.getComputedStyle(document.body, '::before');
+                        var card = window.getComputedStyle(document.querySelector('.browse-preview'));
                         var frame = document.getElementById('tvChannels');
                         var app = document.querySelector('.app');
                         var focused = document.querySelector('.focused');
@@ -105,6 +106,9 @@ window.addEventListener('load', function () {
                             stage: [Math.round(stageBox.width), Math.round(stageBox.height)],
                             stageRatio: stageBox.height ? stageBox.width / stageBox.height : 0,
                             backdropZ: backdrop.zIndex,
+                            cardBackground: card.backgroundColor,
+                            cardMask: card.maskComposite || '',
+                            cardMaskImage: (card.maskImage || '').indexOf('gradient') !== -1,
                             backdropPosition: backdrop.position,
                             edgeOpacity: edge.opacity,
                             edgeGradient: edge.backgroundImage.indexOf('gradient') !== -1
@@ -159,6 +163,11 @@ function main() {
         check('el escenario del preview es 16:9 (el video no se ve encajado)',
             Math.abs(data.stageRatio - 16 / 9) < 0.02,
             data.stage.join('x') + ' = ' + data.stageRatio.toFixed(3));
+        check('el preview es una sala negra, no la grilla de la app',
+            data.cardBackground === 'rgb(0, 0, 0)', data.cardBackground);
+        check('y con el canal en marcha se recorta el rectángulo del vídeo (si no, lo taparía)',
+            data.cardMaskImage && data.cardMask.indexOf('exclude') !== -1,
+            data.cardMask + ' / gradiente ' + data.cardMaskImage);
         check('el agujero del preview va detrás del rail, o se comería la marca',
             parseFloat(data.backdropZ) < 0, 'z-index ' + data.backdropZ);
         check('y el filo de marca de arriba sobrevive al preview',

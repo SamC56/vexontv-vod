@@ -367,8 +367,27 @@
   min-height: 0;
   border-radius: var(--r-xl);
   box-shadow: inset 0 0 0 1px var(--line);
-  background: rgba(0, 0, 0, 0.35);
+  /* Negro de sala: el preview no compite con la grilla del resto de la app. */
+  background: #000;
   overflow: hidden;
+}
+
+/* Con el canal en marcha, la tarjeta se recorta a si misma el rectangulo del
+   escenario: queda el video dentro y negro alrededor, que es lo que se pidio. Se
+   hace con mascara y no con fondos porque cualquier capa opaca encima del escenario
+   taparia el plano de video de AVPlay. Si el firmware no sabe restar mascaras no se
+   activa nada (sin body.previewing) y se ve la ficha de siempre. */
+body.previewing .browse-preview {
+  -webkit-mask-image: linear-gradient(#000 0 0), linear-gradient(#000 0 0);
+  -webkit-mask-repeat: no-repeat, no-repeat;
+  -webkit-mask-size: 100% 100%, var(--hole-w, 100%) var(--hole-h, 100%);
+  -webkit-mask-position: 0 0, var(--stage-x, 0) var(--stage-y, 0);
+  -webkit-mask-composite: xor;
+  mask-image: linear-gradient(#000 0 0), linear-gradient(#000 0 0);
+  mask-repeat: no-repeat, no-repeat;
+  mask-size: 100% 100%, var(--hole-w, 100%) var(--hole-h, 100%);
+  mask-position: 0 0, var(--stage-x, 0) var(--stage-y, 0);
+  mask-composite: exclude;
 }
 
 /* Con el video dentro (agujero activo) se apaga lo que hay en el escenario: se
@@ -376,7 +395,6 @@
    nada: el escenario es el que mide el agujero. La ficha de debajo se queda, y la
    tarjeta se queda sin fondo: cualquier capa opaca ahi taparia el video. */
 body.previewing .preview-stage > * { opacity: 0; }
-body.previewing .browse-preview { background: transparent; }
 
 .preview-empty {
   display: grid;
@@ -387,15 +405,18 @@ body.previewing .browse-preview { background: transparent; }
 }
 
 .preview-icon { color: var(--text-3); opacity: 0.6; }
-.preview-hint { font-size: 22px; color: var(--text-3); }
+.preview-hint { font-size: 19px; color: var(--text-3); }
 
 .preview-card {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  /* El bloque entero (escenario + ficha) centrado en la columna, con el texto
+     debajo y en voz mas baja que el resto de la app: aqui manda el video. */
+  justify-content: center;
+  gap: 18px;
   width: 100%;
   height: 100%;
-  padding: 16px;
+  padding: 16px 20px;
 }
 
 /* Escenario 16:9: es el rectangulo del agujero, o sea el que mide el video. */
@@ -435,16 +456,16 @@ body.previewing .browse-preview { background: transparent; }
   background-origin: content-box;
 }
 
-.preview-letter { font-size: 64px; font-weight: 650; color: var(--text-3); }
-.preview-name { font-size: 34px; font-weight: 650; letter-spacing: -0.02em; max-width: 24ch; }
-.preview-group { font-size: 21px; color: var(--text-3); }
+.preview-letter { font-size: 54px; font-weight: 650; color: var(--text-3); }
+.preview-name { font-size: 26px; font-weight: 650; letter-spacing: -0.02em; max-width: 24ch; }
+.preview-group { font-size: 17px; color: var(--text-3); }
 .preview-guide { width: min(46ch, 100%); margin-top: 10px; text-align: left; }
-.preview-program { font-size: 22px; color: var(--text); }
-.preview-next { font-size: 19px; color: var(--text-2); max-width: 46ch; }
+.preview-program { font-size: 18px; color: var(--text); }
+.preview-next { font-size: 16px; color: var(--text-2); max-width: 46ch; }
 
 .preview-open {
   margin-top: 18px;
-  font-size: 18px;
+  font-size: 15px;
   letter-spacing: 0.04em;
   color: var(--text-3);
 }
