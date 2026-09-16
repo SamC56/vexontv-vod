@@ -1,17 +1,17 @@
-var App = App || {}
+var App = App || {} // eslint-disable-line no-var -- shared namespace, no modules
 
 App.uiKit = (function () {
-    var preact = window.preact
-    var hooks = window.preactHooks
-    var html = window.htm.bind(preact.h)
-    var useState = hooks.useState
-    var useEffect = hooks.useEffect
-    var useRef = hooks.useRef
-    var store = App.store
+    const preact = window.preact
+    const hooks = window.preactHooks
+    const html = window.htm.bind(preact.h)
+    const useState = hooks.useState
+    const useEffect = hooks.useEffect
+    const useRef = hooks.useRef
+    const store = App.store
 
-    var SEARCH_DEBOUNCE_MS = 150
+    const SEARCH_DEBOUNCE_MS = 150
 
-    var ADD_TYPES = [
+    const ADD_TYPES = [
         { id: "url", title: "M3U from URL", hint: "An .m3u or .m3u8 address", icon: "link" },
         { id: "file", title: "M3U from a file", hint: "An .m3u on a USB drive", icon: "file" },
         { id: "xtream", title: "Xtream", hint: "Server, username and password", icon: "key" },
@@ -25,7 +25,7 @@ App.uiKit = (function () {
         },
     ]
 
-    var FIELD_SETS = {
+    const FIELD_SETS = {
         url: [{ id: "url", label: "Playlist address", placeholder: "http://host:8080/list.m3u" }],
         file: [],
         xtream: [
@@ -53,7 +53,7 @@ App.uiKit = (function () {
         </svg>`
     }
 
-    var iconList = svg(
+    const iconList = svg(
         html`<path
             d="M3 6h18M3 12h18M3 18h12"
             stroke="currentColor"
@@ -63,7 +63,7 @@ App.uiKit = (function () {
         />`,
         24,
     )
-    var iconTv = svg(
+    const iconTv = svg(
         html`<rect
                 x="2.5"
                 y="5"
@@ -81,7 +81,7 @@ App.uiKit = (function () {
             />`,
         24,
     )
-    var iconClock = svg(
+    const iconClock = svg(
         html`<circle
                 cx="12"
                 cy="12"
@@ -98,7 +98,7 @@ App.uiKit = (function () {
             />`,
         24,
     )
-    var iconStar = svg(
+    const iconStar = svg(
         html`<path
             d="M12 4.5l2.3 4.8 5.2.7-3.8 3.6.9 5.2-4.6-2.5-4.6 2.5.9-5.2-3.8-3.6 5.2-.7z"
             fill="none"
@@ -108,7 +108,7 @@ App.uiKit = (function () {
         />`,
         24,
     )
-    var iconSearch = svg(
+    const iconSearch = svg(
         html`<circle
                 cx="11"
                 cy="11"
@@ -123,7 +123,7 @@ App.uiKit = (function () {
                 stroke-linecap="round"
             />`,
     )
-    var iconLink = svg(
+    const iconLink = svg(
         html`<path
                 d="M10 13a4 4 0 006 .5l2-2a4 4 0 00-5.6-5.7L11 7"
                 fill="none"
@@ -138,7 +138,7 @@ App.uiKit = (function () {
                 stroke-linecap="round"
             />`,
     )
-    var iconFile = svg(
+    const iconFile = svg(
         html`<path
                 d="M6 3h8l4 4v14H6z"
                 fill="none"
@@ -147,7 +147,7 @@ App.uiKit = (function () {
                 stroke-linejoin="round"
             /><path d="M14 3v4h4" fill="none" stroke="currentColor" stroke-width="1.7" />`,
     )
-    var iconKey = svg(
+    const iconKey = svg(
         html`<circle
                 cx="8"
                 cy="12"
@@ -163,7 +163,7 @@ App.uiKit = (function () {
                 stroke-linecap="round"
             />`,
     )
-    var iconBox = svg(
+    const iconBox = svg(
         html`<rect
                 x="3"
                 y="6"
@@ -180,7 +180,7 @@ App.uiKit = (function () {
                 stroke-linecap="round"
             />`,
     )
-    var iconText = svg(
+    const iconText = svg(
         html`<path
             d="M5 7h14M5 12h14M5 17h8"
             stroke="currentColor"
@@ -188,7 +188,7 @@ App.uiKit = (function () {
             stroke-linecap="round"
         />`,
     )
-    var iconWand = svg(
+    const iconWand = svg(
         html`<path
             d="M6 18L18 6M15 4l1 3 3 1-3 1-1 3-1-3-3-1 3-1z"
             fill="none"
@@ -198,7 +198,7 @@ App.uiKit = (function () {
             stroke-linejoin="round"
         />`,
     )
-    var iconPencil = svg(
+    const iconPencil = svg(
         html`<path
                 d="M5 19h3L19 8l-3-3L5 16z"
                 fill="none"
@@ -208,7 +208,7 @@ App.uiKit = (function () {
             /><path d="M15 6l3 3" fill="none" stroke="currentColor" stroke-width="1.7" />`,
         20,
     )
-    var iconCheck = svg(
+    const iconCheck = svg(
         html`<path
             d="M5 13l4 4L19 7"
             fill="none"
@@ -219,7 +219,7 @@ App.uiKit = (function () {
         />`,
     )
 
-    var TYPE_ICONS = {
+    const TYPE_ICONS = {
         link: iconLink,
         file: iconFile,
         key: iconKey,
@@ -229,40 +229,38 @@ App.uiKit = (function () {
     }
 
     function initial(name) {
-        var match = (name || "").match(/[a-z0-9]/i)
+        const match = (name || "").match(/[a-z0-9]/i)
         return match ? match[0].toUpperCase() : "?"
     }
 
     function logoStyle(url) {
-        return url ? { backgroundImage: "url(" + JSON.stringify(url) + ")" } : null
+        return url ? { backgroundImage: `url(${JSON.stringify(url)})` } : null
     }
 
     function clock(value) {
-        var match = (value || "").match(/(\d{1,2}:\d{2})/)
+        const match = (value || "").match(/(\d{1,2}:\d{2})/)
         return match ? match[1] : ""
     }
 
     function programText(program) {
         if (!program || !program.title) return ""
-        var span =
-            program.start && program.end
-                ? " " + clock(program.start) + "–" + clock(program.end)
-                : ""
+        const span =
+            program.start && program.end ? ` ${clock(program.start)}–${clock(program.end)}` : ""
         return program.title + span
     }
 
     // Reloj del rail: la hora del sistema, refrescada al minuto (un reloj que
     // parpadea cada segundo distrae en una tele).
     function timeText() {
-        var now = new Date()
-        return ("0" + now.getHours()).slice(-2) + ":" + ("0" + now.getMinutes()).slice(-2)
+        const now = new Date()
+        return `${`0${now.getHours()}`.slice(-2)}:${`0${now.getMinutes()}`.slice(-2)}`
     }
 
     function useClock() {
-        var state = useState(timeText())
-        var setTime = state[1]
-        useEffect(function () {
-            var tick = setInterval(function () {
+        const state = useState(timeText())
+        const setTime = state[1]
+        useEffect(() => {
+            const tick = setInterval(() => {
                 setTime(timeText())
             }, 20000)
             return function () {
@@ -275,7 +273,7 @@ App.uiKit = (function () {
     // Barra lateral: marca, las cuatro secciones, atajo a cada fuente y, abajo, la
     // hora y el recuento. Anclada a la rejilla: secciones de 64 y fuentes de 56.
     function Rail(props) {
-        var items = [
+        const items = [
             {
                 id: "navHome",
                 label: "Sources",
@@ -313,35 +311,32 @@ App.uiKit = (function () {
                 },
             },
         ]
-        var nav = useRef(null)
-        var clock = useClock()
-        var stats = store.stats()
-        var sources = store.state.lists.slice(0, 3)
+        const nav = useRef(null)
+        const clock = useClock()
+        const stats = store.stats()
+        const sources = store.state.lists.slice(0, 3)
 
-        useEffect(
-            function () {
-                var rail = nav.current
-                if (!rail) return
-                var element = rail.querySelector(".rail-btn.active")
-                var height = element ? Math.round(element.offsetHeight * 0.62) : 0
-                rail.style.setProperty("--rail-mark-h", height + "px")
-                rail.style.setProperty(
-                    "--rail-mark-y",
-                    element
-                        ? element.offsetTop + Math.round((element.offsetHeight - height) / 2) + "px"
-                        : "0px",
-                )
-                // Mientras viaja la marca se estira: se ve el trayecto, no un salto.
-                rail.classList.add("moving")
-                var timer = setTimeout(function () {
-                    rail.classList.remove("moving")
-                }, 300)
-                return function () {
-                    clearTimeout(timer)
-                }
-            },
-            [props.screen],
-        )
+        useEffect(() => {
+            const rail = nav.current
+            if (!rail) return
+            const element = rail.querySelector(".rail-btn.active")
+            const height = element ? Math.round(element.offsetHeight * 0.62) : 0
+            rail.style.setProperty("--rail-mark-h", `${height}px`)
+            rail.style.setProperty(
+                "--rail-mark-y",
+                element
+                    ? `${element.offsetTop + Math.round((element.offsetHeight - height) / 2)}px`
+                    : "0px",
+            )
+            // Mientras viaja la marca se estira: se ve el trayecto, no un salto.
+            rail.classList.add("moving")
+            const timer = setTimeout(() => {
+                rail.classList.remove("moving")
+            }, 300)
+            return function () {
+                clearTimeout(timer)
+            }
+        }, [props.screen])
 
         return html`<nav class="rail" ref=${nav}>
             <span class="rail-glow" aria-hidden="true"></span>
@@ -353,11 +348,11 @@ App.uiKit = (function () {
                 </span>
             </div>
             <div class="rail-nav">
-                ${items.map(function (item) {
-                    var active = item.screens.indexOf(props.screen) !== -1
+                ${items.map((item) => {
+                    const active = item.screens.indexOf(props.screen) !== -1
                     return html`<button
                         id=${item.id}
-                        class=${"rail-btn" + (active ? " active" : "")}
+                        class=${`rail-btn${active ? " active" : ""}`}
                         tabindex="-1"
                         onClick=${item.action}
                     >
@@ -369,14 +364,13 @@ App.uiKit = (function () {
                 sources.length
                     ? html`<div class="rail-block">
                           <p class="rail-title">Sources</p>
-                          ${sources.map(function (list) {
+                          ${sources.map((list) => {
                               return html`<button
-                                  class=${
-                                      "rail-src" +
-                                      (props.screen === "tv" && store.state.tvSource === list.id
+                                  class=${`rail-src${
+                                      props.screen === "tv" && store.state.tvSource === list.id
                                           ? " selected"
-                                          : "")
-                                  }
+                                          : ""
+                                  }`}
                                   tabindex="-1"
                                   data-list=${list.id}
                                   onClick=${function () {
@@ -398,9 +392,9 @@ App.uiKit = (function () {
     }
 
     function ChannelRow(props) {
-        var channel = props.channel
-        var listId = props.listId || channel.listId
-        var now = programText(store.programOf(channel))
+        const channel = props.channel
+        const listId = props.listId || channel.listId
+        const now = programText(store.programOf(channel))
         function open() {
             if (props.detail) store.selectPreview(channel)
             else store.play(channel, listId, props.source)
@@ -432,13 +426,13 @@ App.uiKit = (function () {
     }
 
     function ChannelList(props) {
-        var view = props.view
+        const view = props.view
         function listOf(channel) {
             return props.listId || channel.listId
         }
         return html`<div class="rows" id=${props.id}>
             ${view.total ? null : html`<p class="empty">${view.empty || "No channels."}</p>`}
-            ${view.items.map(function (channel, index) {
+            ${view.items.map((channel, index) => {
                 return html`<${ChannelRow}
                     key=${channel.url || channel.cmd || index}
                     channel=${channel}
@@ -454,7 +448,7 @@ App.uiKit = (function () {
     }
 
     function SourceRow(props) {
-        var channels = props.channels
+        const channels = props.channels
         return html`<div
             class="row source"
             data-list=${props.list.id}
@@ -501,21 +495,18 @@ App.uiKit = (function () {
     }
 
     function Search(props) {
-        var inputRef = useRef(null)
-        var timer = useRef(null)
-        useEffect(
-            function () {
-                if (inputRef.current)
-                    inputRef.current.value =
-                        props.value !== undefined ? props.value : store.searchOf(props.scope)
-            },
-            [props.scope, props.resetKey, props.value],
-        )
+        const inputRef = useRef(null)
+        const timer = useRef(null)
+        useEffect(() => {
+            if (inputRef.current)
+                inputRef.current.value =
+                    props.value !== undefined ? props.value : store.searchOf(props.scope)
+        }, [props.scope, props.resetKey, props.value])
 
         function onInput(event) {
-            var value = event.target.value
+            const value = event.target.value
             if (timer.current) clearTimeout(timer.current)
-            timer.current = setTimeout(function () {
+            timer.current = setTimeout(() => {
                 props.onInput(value)
             }, SEARCH_DEBOUNCE_MS)
         }
@@ -548,26 +539,26 @@ App.uiKit = (function () {
     }
 
     return {
-        html: html,
-        store: store,
-        useState: useState,
-        useEffect: useEffect,
-        useRef: useRef,
-        TYPE_ICONS: TYPE_ICONS,
-        ADD_TYPES: ADD_TYPES,
-        FIELD_SETS: FIELD_SETS,
-        clock: clock,
-        svg: svg,
-        initial: initial,
-        logoStyle: logoStyle,
-        programText: programText,
-        iconCheck: iconCheck,
-        Rail: Rail,
-        Bar: Bar,
-        Search: Search,
-        ChannelRow: ChannelRow,
-        ChannelList: ChannelList,
-        SourceRow: SourceRow,
-        AddRow: AddRow,
+        html,
+        store,
+        useState,
+        useEffect,
+        useRef,
+        TYPE_ICONS,
+        ADD_TYPES,
+        FIELD_SETS,
+        clock,
+        svg,
+        initial,
+        logoStyle,
+        programText,
+        iconCheck,
+        Rail,
+        Bar,
+        Search,
+        ChannelRow,
+        ChannelList,
+        SourceRow,
+        AddRow,
     }
 })()

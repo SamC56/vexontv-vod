@@ -1,23 +1,23 @@
-var App = App || {}
+var App = App || {} // eslint-disable-line no-var -- shared namespace, no modules
 
 App.uiScreens = App.uiScreens || {}
 ;(function () {
-    var kit = App.uiKit
-    var store = App.store
-    var html = kit.html
-    var clock = kit.clock
+    const kit = App.uiKit
+    const store = App.store
+    const html = kit.html
+    const clock = kit.clock
 
     function ZapPanel() {
-        var state = store.state
-        var categories = store.zapCategories()
-        var channels = store.zapChannels().slice(0, 200)
-        var playing = state.playing && state.playing.channel ? state.playing.channel.url : ""
+        const state = store.state
+        const categories = store.zapCategories()
+        const channels = store.zapChannels().slice(0, 200)
+        const playing = state.playing && state.playing.channel ? state.playing.channel.url : ""
 
         return html`<div class="zap" id="zapPanel">
             <div class="zap-cats" id="zapCats">
-                ${categories.map(function (category) {
+                ${categories.map((category) => {
                     return html`<button
-                        class=${"row zapcat" + (category.selected ? " selected" : "")}
+                        class=${`row zapcat${category.selected ? " selected" : ""}`}
                         tabindex="-1"
                         data-group=${category.name}
                         onClick=${function () {
@@ -35,12 +35,12 @@ App.uiScreens = App.uiScreens || {}
                     <span>${state.zapCategory}</span>
                     <span class="zap-hint">OK watch · BACK close</span>
                 </p>
-                ${channels.map(function (channel) {
-                    var program = store.programOf(channel)
-                    var progress = store.programProgress(program)
-                    var saved = store.isFavorite(channel.listId, channel.url)
+                ${channels.map((channel) => {
+                    const program = store.programOf(channel)
+                    const progress = store.programProgress(program)
+                    const saved = store.isFavorite(channel.listId, channel.url)
                     return html`<button
-                        class=${"row zapch" + (channel.url === playing ? " playing" : "")}
+                        class=${`row zapch${channel.url === playing ? " playing" : ""}`}
                         tabindex="-1"
                         data-url=${channel.url}
                         data-list=${channel.listId}
@@ -65,7 +65,7 @@ App.uiScreens = App.uiScreens || {}
                                                   ? html`<span class="zap-bar">
                                                         <span
                                                             class="zap-bar-fill"
-                                                            style=${"width:" + progress + "%"}
+                                                            style=${`width:${progress}%`}
                                                         ></span>
                                                     </span>`
                                                   : html`<span class="zap-bar"></span>`

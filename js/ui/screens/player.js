@@ -1,27 +1,27 @@
-var App = App || {}
+var App = App || {} // eslint-disable-line no-var -- shared namespace, no modules
 
 App.uiScreens = App.uiScreens || {}
 
 ;(function () {
-    var kit = App.uiKit
-    var store = App.store
-    var player = App.player
-    var html = kit.html
-    var useState = kit.useState
-    var useEffect = kit.useEffect
-    var useRef = kit.useRef
-    var clock = kit.clock
-    var OVERLAY_MS = 5000
+    const kit = App.uiKit
+    const store = App.store
+    const player = App.player
+    const html = kit.html
+    const useState = kit.useState
+    const useEffect = kit.useEffect
+    const useRef = kit.useRef
+    const clock = kit.clock
+    const OVERLAY_MS = 5000
 
     App.uiScreens.player = function Player() {
-        var state = store.state
-        var videoRef = useRef(null)
-        var overlayState = useState(true)
-        var overlay = overlayState[0]
-        var setOverlay = overlayState[1]
-        var timer = useRef(null)
+        const state = store.state
+        const videoRef = useRef(null)
+        const overlayState = useState(true)
+        const overlay = overlayState[0]
+        const setOverlay = overlayState[1]
+        const timer = useRef(null)
 
-        useEffect(function () {
+        useEffect(() => {
             player.init(videoRef.current, {
                 onStart: function () {
                     store.playStarted()
@@ -35,22 +35,19 @@ App.uiScreens = App.uiScreens || {}
             }
         }, [])
 
-        useEffect(
-            function () {
-                if (state.playing) player.play(state.playing.channel.url)
-            },
-            [state.playing],
-        )
+        useEffect(() => {
+            if (state.playing) player.play(state.playing.channel.url)
+        }, [state.playing])
 
-        useEffect(function () {
+        useEffect(() => {
             document.body.classList.add("playing")
             return function () {
                 document.body.classList.remove("playing")
             }
         }, [])
 
-        useEffect(function () {
-            var tick = setInterval(function () {
+        useEffect(() => {
+            const tick = setInterval(() => {
                 store.refreshProgram()
             }, 30000)
             return function () {
@@ -58,7 +55,7 @@ App.uiScreens = App.uiScreens || {}
             }
         }, [])
 
-        useEffect(function () {
+        useEffect(() => {
             function pulse() {
                 show()
             }
@@ -71,20 +68,20 @@ App.uiScreens = App.uiScreens || {}
         function show() {
             setOverlay(true)
             if (timer.current) clearTimeout(timer.current)
-            timer.current = setTimeout(function () {
+            timer.current = setTimeout(() => {
                 setOverlay(false)
             }, OVERLAY_MS)
         }
 
-        var channel = state.playing ? state.playing.channel : null
+        const channel = state.playing ? state.playing.channel : null
         if (!channel) return null
-        var saved = store.isFavorite(state.playing.listId, channel.url)
-        var program = state.nowProgram
-        var next = state.nextProgram
-        var progress = store.programProgress(program)
+        const saved = store.isFavorite(state.playing.listId, channel.url)
+        const program = state.nowProgram
+        const next = state.nextProgram
+        const progress = store.programProgress(program)
 
         return html`<section
-            class=${"screen player" + (player.hardware() ? " hw" : "")}
+            class=${`screen player${player.hardware() ? " hw" : ""}`}
             id="screen-player"
         >
             <video id="videoPlayer" ref=${videoRef} playsinline></video>
@@ -140,12 +137,11 @@ App.uiScreens = App.uiScreens || {}
             }
             ${state.zapOpen ? html`<${App.uiScreens.zap} />` : null}
             <div
-                class=${
-                    "overlay" +
-                    ((overlay || state.menuFocus) && !state.playError && !state.zapOpen
+                class=${`overlay${
+                    (overlay || state.menuFocus) && !state.playError && !state.zapOpen
                         ? " visible"
-                        : "")
-                }
+                        : ""
+                }`}
                 id="playerOverlay"
             >
                 <div class="ov-info">
@@ -175,7 +171,7 @@ App.uiScreens = App.uiScreens || {}
                                                 <span
                                                     class="ov-progress-fill"
                                                     id="ovProgress"
-                                                    style=${"width:" + progress + "%"}
+                                                    style=${`width:${progress}%`}
                                                 ></span>
                                             </div>`
                                           : null
@@ -209,7 +205,7 @@ App.uiScreens = App.uiScreens || {}
                 </div>
                 <div class="ov-actions" id="ovActions">
                     <button
-                        class=${"btn" + (saved ? " saved" : "")}
+                        class=${`btn${saved ? " saved" : ""}`}
                         id="ovFav"
                         tabindex="-1"
                         onClick=${function () {

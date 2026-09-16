@@ -1,7 +1,7 @@
-var App = App || {}
+var App = App || {} // eslint-disable-line no-var -- shared namespace, no modules
 
 App.tv = (function () {
-    var KEY = {
+    const KEY = {
         LEFT: 37,
         UP: 38,
         RIGHT: 39,
@@ -14,18 +14,18 @@ App.tv = (function () {
         PLAY_PAUSE: 10252,
     }
 
-    var zones = {}
-    var current = null
-    var row = 0
-    var col = 0
-    var onKey = function () {}
-    var onFocus = null
+    const zones = {}
+    let current = null
+    let row = 0
+    let col = 0
+    let onKey = function () {}
+    let onFocus = null
 
     function rows(elements) {
-        var out = []
-        var top = null
-        for (var i = 0; i < elements.length; i++) {
-            var elementTop = elements[i].offsetTop
+        const out = []
+        let top = null
+        for (let i = 0; i < elements.length; i++) {
+            const elementTop = elements[i].offsetTop
             if (top === null || Math.abs(elementTop - top) > 8) {
                 out.push([])
                 top = elementTop
@@ -36,31 +36,31 @@ App.tv = (function () {
     }
 
     function define(name, items, options) {
-        zones[name] = { items: items, onEdge: options && options.onEdge }
+        zones[name] = { items, onEdge: options && options.onEdge }
     }
 
     // Rows are grouped by offsetTop: what a TV layout needs, and what jsdom lacks.
     function matrix() {
-        var zone = zones[current]
+        const zone = zones[current]
         if (!zone) return []
-        var items = typeof zone.items === "function" ? zone.items() : zone.items
+        const items = typeof zone.items === "function" ? zone.items() : zone.items
         return items || []
     }
 
     function apply() {
-        var previous = document.querySelector(".focused")
+        const previous = document.querySelector(".focused")
         if (previous) previous.classList.remove("focused")
 
-        var grid = matrix()
+        const grid = matrix()
         if (!grid.length) return
         if (row >= grid.length) row = grid.length - 1
         if (row < 0) row = 0
-        var line = grid[row] || []
+        const line = grid[row] || []
         if (!line.length) return
         if (col >= line.length) col = line.length - 1
         if (col < 0) col = 0
 
-        var element = line[col]
+        const element = line[col]
         element.classList.add("focused")
         reveal(element)
         if (onFocus) onFocus(element)
@@ -68,21 +68,21 @@ App.tv = (function () {
 
     // Scroll only the container that overflows: scrollIntoView dragged the whole document.
     function reveal(element) {
-        var box = scrollBox(element)
+        const box = scrollBox(element)
         if (!box || !element.getBoundingClientRect) return
-        var item = element.getBoundingClientRect()
-        var frame = box.getBoundingClientRect()
+        const item = element.getBoundingClientRect()
+        const frame = box.getBoundingClientRect()
         if (item.top < frame.top) box.scrollTop -= frame.top - item.top
         else if (item.bottom > frame.bottom) box.scrollTop += item.bottom - frame.bottom
     }
 
     function scrollBox(element) {
         for (
-            var node = element.parentNode;
+            let node = element.parentNode;
             node && node !== document.body;
             node = node.parentNode
         ) {
-            var overflow = window.getComputedStyle(node).overflowY
+            const overflow = window.getComputedStyle(node).overflowY
             if (
                 (overflow === "auto" || overflow === "scroll") &&
                 node.scrollHeight > node.clientHeight
@@ -100,15 +100,15 @@ App.tv = (function () {
     }
 
     function edge(direction) {
-        var zone = zones[current]
+        const zone = zones[current]
         if (zone && zone.onEdge) zone.onEdge(direction)
     }
 
     function move(direction) {
         if (!zones[current]) return
-        var grid = matrix()
+        const grid = matrix()
         if (!grid.length) return
-        var line = grid[row] || []
+        const line = grid[row] || []
 
         if (direction === "up") {
             if (row > 0) row--
@@ -132,7 +132,7 @@ App.tv = (function () {
 
     // Focusing a field from inside the key handler is what summons the TV's IME.
     function select() {
-        var element = focusedElement()
+        const element = focusedElement()
         if (!element) return
         if (element.tagName === "INPUT" && element.type === "file") element.click()
         else if (field(element)) element.focus()
@@ -154,7 +154,7 @@ App.tv = (function () {
 
     function handle(event) {
         if (typing()) {
-            var field = document.activeElement
+            const field = document.activeElement
             if (event.keyCode === KEY.UP || event.keyCode === KEY.DOWN) {
                 field.blur()
             } else {
@@ -202,14 +202,14 @@ App.tv = (function () {
     }
 
     return {
-        KEY: KEY,
-        define: define,
-        set: set,
+        KEY,
+        define,
+        set,
         refresh: apply,
-        move: move,
-        select: select,
-        rows: rows,
-        listen: listen,
-        focusedElement: focusedElement,
+        move,
+        select,
+        rows,
+        listen,
+        focusedElement,
     }
 })()

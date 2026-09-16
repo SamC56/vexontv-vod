@@ -1,15 +1,15 @@
-var App = App || {}
+var App = App || {} // eslint-disable-line no-var -- shared namespace, no modules
 
 ;(function () {
-    var store = App.store
-    var tv = App.tv
-    var player = App.player
-    var ui = App.ui
+    const store = App.store
+    const tv = App.tv
+    const player = App.player
+    const ui = App.ui
 
     function zone(name, selector, options) {
         tv.define(
             name,
-            function () {
+            () => {
                 return tv.rows(ui.qsa(selector))
             },
             options,
@@ -20,7 +20,7 @@ var App = App || {}
         zone("rail", ".rail .rail-btn, .rail .rail-src", {
             onEdge: function (dir) {
                 if (dir !== "right") return
-                var screen = store.state.screen
+                const screen = store.state.screen
                 if (screen === "home") tv.set("types", 0, 0)
                 else if (screen === "tv") tv.set("tvActions", 0, 0)
                 else if (screen === "recents") tv.set("recentsSearch", 0, 0)
@@ -57,11 +57,11 @@ var App = App || {}
             },
         })
 
-        var editRow = 0
+        let editRow = 0
 
         function enterEditFromRow() {
-            var rows = ui.qsa("#sourceList .row.source")
-            var fromRow = rows.indexOf(document.querySelector(".focused"))
+            const rows = ui.qsa("#sourceList .row.source")
+            const fromRow = rows.indexOf(document.querySelector(".focused"))
             if (fromRow !== -1) showEdit(fromRow)
         }
 
@@ -71,13 +71,13 @@ var App = App || {}
         }
         tv.define(
             "sourceEdit",
-            function () {
-                var buttons = ui.qsa("#sourceList .edit")
+            () => {
+                const buttons = ui.qsa("#sourceList .edit")
                 return buttons[editRow] ? [[buttons[editRow]]] : []
             },
             {
                 onEdge: function (dir) {
-                    var buttons = ui.qsa("#sourceList .edit")
+                    const buttons = ui.qsa("#sourceList .edit")
                     if (dir === "left") tv.set("sources", editRow, 0)
                     else if (dir === "up") showEdit(Math.max(0, editRow - 1))
                     else if (dir === "down") showEdit(Math.min(buttons.length - 1, editRow + 1))
@@ -194,7 +194,7 @@ var App = App || {}
             },
         })
 
-        tv.define("playerIdle", function () {
+        tv.define("playerIdle", () => {
             return []
         })
 
@@ -252,11 +252,11 @@ var App = App || {}
     }
 
     function red() {
-        var element = tv.focusedElement()
-        var state = store.state
+        const element = tv.focusedElement()
+        const state = store.state
 
         if (state.screen === "player" && state.playing) {
-            var added = store.toggleFavorite(state.playing.channel, state.playing.listId)
+            const added = store.toggleFavorite(state.playing.channel, state.playing.listId)
             store.notify(added ? "Added to favorites" : "Removed from favorites")
             return
         }
@@ -264,9 +264,9 @@ var App = App || {}
         if (!element) return
 
         if (state.screen === "home") {
-            var list = element.dataset.list ? store.listById(element.dataset.list) : null
+            const list = element.dataset.list ? store.listById(element.dataset.list) : null
             if (!list) return
-            store.askConfirm("Delete “" + list.name + "”? Favorites are kept.", function () {
+            store.askConfirm(`Delete “${list.name}”? Favorites are kept.`, () => {
                 store.removeList(list.id)
                 store.notify("Source deleted")
                 store.goHome()
@@ -274,12 +274,12 @@ var App = App || {}
             return
         }
 
-        var url = element.dataset.url
-        var listId = element.dataset.list
+        const url = element.dataset.url
+        const listId = element.dataset.list
         if (!url) return
-        var channel = store.channelByUrl(url, listId)
+        const channel = store.channelByUrl(url, listId)
         if (!channel) return
-        var saved = store.toggleFavorite(channel, listId)
+        const saved = store.toggleFavorite(channel, listId)
         store.notify(saved ? "Added to favorites" : "Removed from favorites")
     }
 
@@ -318,8 +318,8 @@ var App = App || {}
 
         if (store.state.playError) {
             if (code === tv.KEY.UP || code === tv.KEY.DOWN) {
-                var buttons = ui.qsa("#playError .btn")
-                var index = buttons.indexOf(document.querySelector(".focused"))
+                const buttons = ui.qsa("#playError .btn")
+                const index = buttons.indexOf(document.querySelector(".focused"))
                 tv.set("playError", index === 0 ? 1 : 0, 0)
                 return true
             }

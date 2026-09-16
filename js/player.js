@@ -1,4 +1,4 @@
-var App = App || {}
+var App = App || {} // eslint-disable-line no-var -- shared namespace, no modules
 
 App.player = (function () {
     // Reading webapis.avplay can throw when the privilege was not granted: probe defensively.
@@ -9,16 +9,16 @@ App.player = (function () {
             return null
         }
     }
-    var video = null
-    var surface = null
-    var handlers = {}
-    var startTimer = null
+    let video = null
+    let surface = null
+    let handlers = {}
+    let startTimer = null
 
     // A stream that never answers sends no error event; give up after this.
-    var START_TIMEOUT_MS = 12000
+    const START_TIMEOUT_MS = 12000
 
     // AVPlay reports PLAYER_ERROR_* codes; the viewer needs words.
-    var REASONS = {
+    const REASONS = {
         PLAYER_ERROR_CONNECTION_FAILED: "No connection to the channel",
         PLAYER_ERROR_TIMEOUT: "The channel took too long to answer",
         PLAYER_ERROR_NOT_SUPPORTED_FORMAT: "This TV cannot play that format",
@@ -35,7 +35,7 @@ App.player = (function () {
         return "Could not open the channel"
     }
 
-    var resizeBound = false
+    let resizeBound = false
 
     function init(videoEl, callbacks) {
         video = videoEl
@@ -54,7 +54,7 @@ App.player = (function () {
         if (avplay()) setRect()
     }
 
-    var lastRect = null
+    let lastRect = null
 
     function clearRect() {
         lastRect = null
@@ -64,7 +64,7 @@ App.player = (function () {
     function setRect(rect) {
         if (rect) lastRect = rect
         if (!surface) surface = document.getElementById("avPlayer")
-        var area =
+        const area =
             lastRect && lastRect.w > 2 && lastRect.h > 2
                 ? lastRect
                 : { x: 0, y: 0, w: 1920, h: 1080 }
@@ -77,7 +77,7 @@ App.player = (function () {
     }
 
     function state() {
-        var AV = avplay()
+        const AV = avplay()
         if (AV) {
             try {
                 return AV.getState()
@@ -120,7 +120,7 @@ App.player = (function () {
 
     function waitForStart() {
         clearStart()
-        startTimer = setTimeout(function () {
+        startTimer = setTimeout(() => {
             startTimer = null
             fail({ message: "The channel is not responding" })
         }, START_TIMEOUT_MS)
@@ -136,7 +136,7 @@ App.player = (function () {
 
     function stop() {
         clearStart()
-        var AV = avplay()
+        const AV = avplay()
         if (AV) {
             try {
                 if (state() === "PLAYING" || state() === "PAUSED") AV.stop()
@@ -157,7 +157,7 @@ App.player = (function () {
         video.src = url
         video.addEventListener(
             "error",
-            function () {
+            () => {
                 fail(new Error("Could not play the channel"))
             },
             { once: true },
@@ -174,7 +174,7 @@ App.player = (function () {
 
         setTimeout(started, 4000)
 
-        var AV = avplay()
+        const AV = avplay()
         if (AV) {
             checkSurface()
             try {
@@ -197,11 +197,11 @@ App.player = (function () {
                 })
                 waitForStart()
                 AV.prepareAsync(
-                    function () {
+                    () => {
                         AV.play()
                         started()
                     },
-                    function (error) {
+                    (error) => {
                         fail(error)
                     },
                 )
@@ -215,9 +215,9 @@ App.player = (function () {
     }
 
     function toggle() {
-        var AV = avplay()
+        const AV = avplay()
         if (AV) {
-            var current = state()
+            const current = state()
             if (current === "PLAYING") {
                 AV.pause()
                 return "PAUSED"
@@ -238,14 +238,14 @@ App.player = (function () {
     }
 
     return {
-        init: init,
-        play: play,
-        stop: stop,
-        toggle: toggle,
-        state: state,
-        clearRect: clearRect,
-        resize: resize,
-        describe: describe,
-        hardware: hardware,
+        init,
+        play,
+        stop,
+        toggle,
+        state,
+        clearRect,
+        resize,
+        describe,
+        hardware,
     }
 })()

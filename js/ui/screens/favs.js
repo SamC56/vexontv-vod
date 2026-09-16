@@ -1,17 +1,17 @@
-var App = App || {}
+var App = App || {} // eslint-disable-line no-var -- shared namespace, no modules
 
 App.uiScreens = App.uiScreens || {}
 
 ;(function () {
-    var kit = App.uiKit
-    var store = App.store
-    var html = kit.html
-    var Bar = kit.Bar
-    var Search = kit.Search
-    var ChannelList = kit.ChannelList
+    const kit = App.uiKit
+    const store = App.store
+    const html = kit.html
+    const Bar = kit.Bar
+    const Search = kit.Search
+    const ChannelList = kit.ChannelList
 
     App.uiScreens.favs = function Favs() {
-        var view = store.visibleFavorites()
+        const view = store.visibleFavorites()
         return html`<section class="screen" id="screen-favs">
             <${Bar}
                 title="Favorites"

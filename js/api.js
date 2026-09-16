@@ -1,9 +1,9 @@
-var App = App || {}
+var App = App || {} // eslint-disable-line no-var -- shared namespace, no modules
 
 App.api = (function () {
-    var MOVIE_OR_SERIES = /\/(?:movie|series)\//i
-    var TIMEOUT_MS = 60000
-    var STALKER_UA =
+    const MOVIE_OR_SERIES = /\/(?:movie|series)\//i
+    const TIMEOUT_MS = 60000
+    const STALKER_UA =
         "Mozilla/5.0 (QtEmbedded; U; Linux; C) AppleWebKit/533.3 (KHTML, like Gecko) MAG200 stbapp ver: 2 rev: 250 Safari/533.3"
 
     function enc(value) {
@@ -11,27 +11,27 @@ App.api = (function () {
     }
 
     function originOf(url) {
-        var match = (url || "").match(/^https?:\/\/[^\/?#]+/i)
+        const match = (url || "").match(/^https?:\/\/[^\/?#]+/i)
         return match ? match[0] : null
     }
 
     function hostOf(url) {
-        var match = (url || "").match(/^https?:\/\/([^\/?#]+)/i)
+        const match = (url || "").match(/^https?:\/\/([^\/?#]+)/i)
         return match ? match[1] : "Lista"
     }
 
     function lineFeeder(emit) {
-        var pending = null
-        var attrRe = /([a-zA-Z0-9-]+)="([^"]*)"/g
+        let pending = null
+        const attrRe = /([a-zA-Z0-9-]+)="([^"]*)"/g
         return function (line) {
             line = line.trim()
             if (!line) return
             if (line.indexOf("#EXTINF") === 0) {
-                var map = {},
-                    match
+                const map = {}
+                let match
                 attrRe.lastIndex = 0
                 while ((match = attrRe.exec(line)) !== null) map[match[1].toLowerCase()] = match[2]
-                var name = line.match(/,(.*)$/)
+                const name = line.match(/,(.*)$/)
                 pending = {
                     name: name ? name[1].trim() : "Canal",
                     group: map["group-title"] || "Otros",
@@ -51,31 +51,31 @@ App.api = (function () {
     }
 
     function parseM3u(text) {
-        var channels = []
-        var feed = lineFeeder(function (channel) {
+        const channels = []
+        const feed = lineFeeder((channel) => {
             channels.push(channel)
         })
-        var lines = text.split("\n")
-        for (var i = 0; i < lines.length; i++) feed(lines[i])
+        const lines = text.split("\n")
+        for (let i = 0; i < lines.length; i++) feed(lines[i])
         return channels
     }
 
     function withTimeout(promise, message) {
-        return new Promise(function (resolve, reject) {
-            var settled = false
-            var timer = setTimeout(function () {
+        return new Promise((resolve, reject) => {
+            let settled = false
+            const timer = setTimeout(() => {
                 if (settled) return
                 settled = true
                 reject(new Error(message))
             }, TIMEOUT_MS)
             promise.then(
-                function (value) {
+                (value) => {
                     if (settled) return
                     settled = true
                     clearTimeout(timer)
                     resolve(value)
                 },
-                function (error) {
+                (error) => {
                     if (settled) return
                     settled = true
                     clearTimeout(timer)
@@ -86,31 +86,31 @@ App.api = (function () {
     }
 
     function fetchJson(url, headers) {
-        return fetch(url, headers ? { headers: headers } : undefined).then(function (res) {
-            if (!res.ok) throw new Error("HTTP " + res.status)
+        return fetch(url, headers ? { headers } : undefined).then((res) => {
+            if (!res.ok) throw new Error(`HTTP ${res.status}`)
             return res.json()
         })
     }
 
     function readStream(res, onProgress) {
-        var reader = res.body.getReader()
-        var decoder = new TextDecoder()
-        var channels = []
-        var tail = ""
-        var feed = lineFeeder(function (channel) {
+        const reader = res.body.getReader()
+        const decoder = new TextDecoder()
+        const channels = []
+        let tail = ""
+        const feed = lineFeeder((channel) => {
             channels.push(channel)
         })
 
         function step() {
-            return reader.read().then(function (result) {
+            return reader.read().then((result) => {
                 if (result.done) {
                     if (tail) feed(tail)
                     return channels
                 }
-                var chunk = tail + decoder.decode(result.value, { stream: true })
-                var lines = chunk.split("\n")
+                const chunk = tail + decoder.decode(result.value, { stream: true })
+                const lines = chunk.split("\n")
                 tail = lines.pop()
-                for (var i = 0; i < lines.length; i++) feed(lines[i])
+                for (let i = 0; i < lines.length; i++) feed(lines[i])
                 if (onProgress) onProgress({ label: "Downloading", count: channels.length })
                 return step()
             })
@@ -120,10 +120,10 @@ App.api = (function () {
 
     function loadM3uUrl(url, onProgress) {
         if (onProgress) onProgress({ label: "Connecting" })
-        return withTimeout(fetch(url), "The playlist is not responding").then(function (res) {
-            if (!res.ok) throw new Error("HTTP " + res.status)
+        return withTimeout(fetch(url), "The playlist is not responding").then((res) => {
+            if (!res.ok) throw new Error(`HTTP ${res.status}`)
 
-            var canStream = res.body && res.body.getReader && typeof TextDecoder !== "undefined"
+            const canStream = res.body && res.body.getReader && typeof TextDecoder !== "undefined"
             if (canStream) return readStream(res, onProgress)
 
             return res.text().then(parseM3u)
@@ -132,7 +132,7 @@ App.api = (function () {
 
     function loadM3uText(text, onProgress) {
         if (onProgress) onProgress({ label: "Reading" })
-        var channels = parseM3u(text)
+        const channels = parseM3u(text)
         if (!channels.length) throw new Error("That text has no channels (missing #EXTM3U?)")
         return Promise.resolve(channels)
     }
@@ -140,78 +140,69 @@ App.api = (function () {
     function parseXtreamUrl(url) {
         if (!url || !/^https?:\/\/[^\/?#]+\/(?:get|player_api|panel_api)\.php/i.test(url))
             return null
-        var origin = originOf(url)
-        var user = url.match(/[?&]username=([^&]*)/i)
-        var pass = url.match(/[?&]password=([^&]*)/i)
+        const origin = originOf(url)
+        const user = url.match(/[?&]username=([^&]*)/i)
+        const pass = url.match(/[?&]password=([^&]*)/i)
         if (!origin || !user || !pass || !user[1] || !pass[1]) return null
         return {
-            origin: origin,
+            origin,
             user: decodeURIComponent(user[1]),
             pass: decodeURIComponent(pass[1]),
         }
     }
 
     function parsePortal(url, user, pass) {
-        var parsed = parseXtreamUrl(url)
+        const parsed = parseXtreamUrl(url)
         if (parsed) return parsed
-        var origin = originOf(url)
+        const origin = originOf(url)
         if (!origin || !user || !pass) return null
-        return { origin: origin, user: user, pass: pass }
+        return { origin, user, pass }
     }
 
     function loadXtream(portal, onProgress) {
-        var base =
-            portal.origin +
-            "/player_api.php?username=" +
-            enc(portal.user) +
-            "&password=" +
-            enc(portal.pass)
-        var groups = {}
-        var streams = null
+        const base = `${portal.origin}/player_api.php?username=${enc(portal.user)}&password=${enc(
+            portal.pass,
+        )}`
+        const groups = {}
+        let streams = null
 
         if (onProgress) onProgress({ label: "Fetching categories" })
         return withTimeout(
-            fetchJson(base + "&action=get_live_categories").catch(function () {
+            fetchJson(`${base}&action=get_live_categories`).catch(() => {
                 return []
             }),
             "The panel is not responding",
         )
-            .then(function (categories) {
-                ;(categories || []).forEach(function (category) {
+            .then((categories) => {
+                ;(categories || []).forEach((category) => {
                     groups[category.category_id] = category.category_name
                 })
                 if (onProgress) onProgress({ label: "Downloading" })
                 return withTimeout(
-                    fetchJson(base + "&action=get_live_streams"),
+                    fetchJson(`${base}&action=get_live_streams`),
                     "The panel is not responding",
                 )
             })
-            .then(function (list) {
+            .then((list) => {
                 if (!list || !list.length) throw new Error("The playlist has no live channels")
                 streams = list
                 if (onProgress) onProgress({ label: "Preparing", count: streams.length })
-                return streams.map(function (stream) {
+                return streams.map((stream) => {
                     return {
                         name: stream.name || "Canal",
                         group: groups[stream.category_id] || "Otros",
                         logo: stream.stream_icon || "",
                         streamId: String(stream.stream_id),
-                        url:
-                            portal.origin +
-                            "/live/" +
-                            enc(portal.user) +
-                            "/" +
-                            enc(portal.pass) +
-                            "/" +
-                            stream.stream_id +
-                            ".ts",
+                        url: `${portal.origin}/live/${enc(portal.user)}/${enc(portal.pass)}/${
+                            stream.stream_id
+                        }.ts`,
                     }
                 })
             })
     }
 
     function parseLiveUrl(url) {
-        var match = (url || "").match(
+        const match = (url || "").match(
             /^(https?:\/\/[^\/?#]+)\/live\/([^\/]+)\/([^\/]+)\/([^\/.]+)\.(?:ts|m3u8)/i,
         )
         if (!match) return null
@@ -224,25 +215,19 @@ App.api = (function () {
     }
 
     function loadNowPlaying(url) {
-        var live = parseLiveUrl(url)
+        const live = parseLiveUrl(url)
         if (!live) return Promise.resolve(null)
-        var api =
-            live.origin +
-            "/player_api.php?username=" +
-            enc(live.user) +
-            "&password=" +
-            enc(live.pass) +
-            "&action=get_short_epg&stream_id=" +
-            enc(live.id) +
-            "&limit=3"
+        const api = `${live.origin}/player_api.php?username=${enc(live.user)}&password=${enc(
+            live.pass,
+        )}&action=get_short_epg&stream_id=${enc(live.id)}&limit=3`
         return Promise.resolve()
-            .then(function () {
+            .then(() => {
                 return fetchJson(api)
             })
-            .then(function (data) {
-                var list = data && data.epg_listings
+            .then((data) => {
+                const list = data && data.epg_listings
                 if (!list || !list.length) return []
-                return list.map(function (item) {
+                return list.map((item) => {
                     return {
                         title: decodeBase64(item.title) || item.title || "",
                         description: decodeBase64(item.description) || "",
@@ -251,7 +236,7 @@ App.api = (function () {
                     }
                 })
             })
-            .catch(function () {
+            .catch(() => {
                 return []
             })
     }
@@ -266,51 +251,51 @@ App.api = (function () {
     }
 
     function stalkerCall(endpoint, mac, params, token) {
-        var query = "type=stb&mac=" + enc(mac) + "&token=" + enc(token || "") + "&" + params
-        var headers = {
+        const query = `type=stb&mac=${enc(mac)}&token=${enc(token || "")}&${params}`
+        const headers = {
             "User-Agent": STALKER_UA,
-            Cookie: "mac=" + mac + "; stb_lang=es; timezone=Europe/Madrid",
-            Referer: originOf(endpoint) + "/c/",
+            Cookie: `mac=${mac}; stb_lang=es; timezone=Europe/Madrid`,
+            Referer: `${originOf(endpoint)}/c/`,
         }
-        if (token) headers.Authorization = "Bearer " + token
+        if (token) headers.Authorization = `Bearer ${token}`
         return withTimeout(
-            fetchJson(endpoint + "?" + query, headers),
+            fetchJson(`${endpoint}?${query}`, headers),
             "The Stalker portal is not responding",
         )
     }
 
-    var STALKER_PATHS = ["/portal.php", "/stalker_portal/server/load.php", "/server/load.php"]
+    const STALKER_PATHS = ["/portal.php", "/stalker_portal/server/load.php", "/server/load.php"]
 
     function stalkerEndpoints(portal) {
         if (/\.php$/i.test(portal)) return [portal]
-        return STALKER_PATHS.map(function (path) {
+        return STALKER_PATHS.map((path) => {
             return portal + path
         })
     }
 
     function firstEndpoint(endpoints, run) {
-        var index = 0
+        let index = 0
         function step() {
             if (index >= endpoints.length)
                 return Promise.reject(new Error("The Stalker portal is not responding"))
-            var endpoint = endpoints[index++]
-            return run(endpoint).then(function (value) {
-                return { endpoint: endpoint, value: value }
+            const endpoint = endpoints[index++]
+            return run(endpoint).then((value) => {
+                return { endpoint, value }
             }, step)
         }
         return step()
     }
 
     function loadStalker(list, onProgress) {
-        var portal = (list.origin || "").replace(/\/+$/, "")
-        var mac = list.mac
+        const portal = (list.origin || "").replace(/\/+$/, "")
+        const mac = list.mac
         if (!portal || !mac) return Promise.reject(new Error("Portal or MAC missing"))
 
         if (onProgress) onProgress({ label: "Fetching categories" })
-        return firstEndpoint(stalkerEndpoints(portal), function (endpoint) {
+        return firstEndpoint(stalkerEndpoints(portal), (endpoint) => {
             return stalkerCall(endpoint, mac, "action=handshake&prehash=0")
-        }).then(function (hello) {
-            var token = (hello.value && hello.value.js && hello.value.js.token) || ""
+        }).then((hello) => {
+            const token = (hello.value && hello.value.js && hello.value.js.token) || ""
             if (!token) throw new Error("The portal gave no token (MAC not authorised?)")
             // What a real set-top box does, and strict portals refuse the content calls
             // until the session is opened here. Both the token and the endpoint that
@@ -319,28 +304,26 @@ App.api = (function () {
             list.endpoint = hello.endpoint
             if (onProgress) onProgress({ label: "Downloading" })
             return stalkerCall(hello.endpoint, mac, "action=get_profile", token)
-                .catch(function () {})
-                .then(function () {
+                .catch(() => {})
+                .then(() => {
                     return stalkerCall(hello.endpoint, mac, "action=get_all_channels", token)
                 })
-                .then(function (data) {
-                    var genres = {}
+                .then((data) => {
+                    const genres = {}
                     return stalkerCall(hello.endpoint, mac, "action=get_genres", token)
-                        .then(function (genresData) {
-                            ;(genresData && genresData.js ? genresData.js : []).forEach(
-                                function (genre) {
-                                    genres[String(genre.id)] = genre.title
-                                },
-                            )
+                        .then((genresData) => {
+                            ;(genresData && genresData.js ? genresData.js : []).forEach((genre) => {
+                                genres[String(genre.id)] = genre.title
+                            })
                         })
-                        .catch(function () {})
-                        .then(function () {
-                            var rows =
+                        .catch(() => {})
+                        .then(() => {
+                            const rows =
                                 data && data.js && data.js.data
                                     ? data.js.data
                                     : (data && data.js) || []
                             if (!rows.length) throw new Error("The portal returned no channels")
-                            return rows.map(function (row) {
+                            return rows.map((row) => {
                                 return {
                                     name: row.name || "Canal",
                                     group: genres[String(row.tv_genre_id)] || "Otros",
@@ -356,21 +339,21 @@ App.api = (function () {
     }
 
     function resolveStalkerUrl(list, channel) {
-        var endpoint = list.endpoint || (list.origin || "").replace(/\/+$/, "") + "/portal.php"
+        const endpoint = list.endpoint || `${(list.origin || "").replace(/\/+$/, "")}/portal.php`
         return stalkerCall(
             endpoint,
             list.mac,
-            "action=create_link&cmd=" + enc(channel.cmd),
+            `action=create_link&cmd=${enc(channel.cmd)}`,
             list.token,
-        ).then(function (data) {
-            var cmd = data && data.js && data.js.cmd
+        ).then((data) => {
+            const cmd = data && data.js && data.js.cmd
             if (!cmd) throw new Error("The portal returned no stream address")
             return cmd.replace(/^ffmpeg\s+/i, "").replace(/^auto\s+/i, "")
         })
     }
 
     function parseAuto(text, name) {
-        var value = (text || "").trim()
+        const value = (text || "").trim()
         if (!value) return { error: "Paste the address, the credentials or the playlist text" }
 
         if (/^#EXTM3U/i.test(value) || /#EXTINF/i.test(value)) {
@@ -379,10 +362,12 @@ App.api = (function () {
             }
         }
 
-        var macMatch = value.match(/\b(?:[0-9A-F]{2}:){5}[0-9A-F]{2}\b/i)
-        var urlMatch = value.match(/https?:\/\/[^\s"'<>]+/i)
-        var userMatch = value.match(/(?:user(?:name)?|usuario)\s*[:=]\s*([^\s,;]+)/i)
-        var passMatch = value.match(/(?:pass(?:word)?|contrase(?:n|ñ)a|clave)\s*[:=]\s*([^\s,;]+)/i)
+        const macMatch = value.match(/\b(?:[0-9A-F]{2}:){5}[0-9A-F]{2}\b/i)
+        const urlMatch = value.match(/https?:\/\/[^\s"'<>]+/i)
+        const userMatch = value.match(/(?:user(?:name)?|usuario)\s*[:=]\s*([^\s,;]+)/i)
+        const passMatch = value.match(
+            /(?:pass(?:word)?|contrase(?:n|ñ)a|clave)\s*[:=]\s*([^\s,;]+)/i,
+        )
 
         if (macMatch && urlMatch) {
             return {
@@ -397,14 +382,14 @@ App.api = (function () {
         }
 
         if (urlMatch) {
-            var url = urlMatch[0]
-            var inline = parseXtreamUrl(url)
+            const url = urlMatch[0]
+            const inline = parseXtreamUrl(url)
             if (inline) {
                 return {
                     list: {
                         kind: "xtream",
                         source: "url",
-                        url: url,
+                        url,
                         name: name || hostOf(url),
                         user: inline.user,
                         pass: inline.pass,
@@ -413,19 +398,19 @@ App.api = (function () {
                 }
             }
             if (userMatch && passMatch) {
-                var origin = originOf(url) || url
+                const origin = originOf(url) || url
                 return {
                     list: {
                         kind: "xtream",
                         source: "creds",
-                        origin: origin,
+                        origin,
                         user: userMatch[1],
                         pass: passMatch[1],
                         name: name || hostOf(origin),
                     },
                 }
             }
-            return { list: { kind: "m3u", source: "url", url: url, name: name || hostOf(url) } }
+            return { list: { kind: "m3u", source: "url", url, name: name || hostOf(url) } }
         }
 
         return { error: "No playlist, portal or MAC found in that text" }
@@ -435,13 +420,13 @@ App.api = (function () {
         if (!list) return Promise.reject(new Error("Unknown source"))
 
         if (list.kind === "stalker") {
-            return loadStalker(list, onProgress).then(function (channels) {
+            return loadStalker(list, onProgress).then((channels) => {
                 return channels
             })
         }
 
         if (list.kind === "xtream" || list.user) {
-            var portal = list.origin
+            const portal = list.origin
                 ? { origin: list.origin, user: list.user, pass: list.pass }
                 : parsePortal(list.url, list.user, list.pass)
             if (!portal) return Promise.reject(new Error("Server, username or password missing"))
@@ -454,11 +439,11 @@ App.api = (function () {
     }
 
     function match(channels, query) {
-        var needle = (query || "").trim().toLowerCase()
+        const needle = (query || "").trim().toLowerCase()
         if (!needle) return channels
-        var found = []
-        for (var i = 0; i < channels.length; i++) {
-            var channel = channels[i]
+        const found = []
+        for (let i = 0; i < channels.length; i++) {
+            const channel = channels[i]
             if (channel.searchKey === undefined) channel.searchKey = channel.name.toLowerCase()
             if (channel.searchKey.indexOf(needle) !== -1) found.push(channel)
         }
@@ -466,16 +451,16 @@ App.api = (function () {
     }
 
     return {
-        load: load,
-        match: match,
-        parseM3u: parseM3u,
-        parseXtreamUrl: parseXtreamUrl,
-        parsePortal: parsePortal,
-        parseLiveUrl: parseLiveUrl,
-        parseAuto: parseAuto,
-        loadNowPlaying: loadNowPlaying,
-        resolveStalkerUrl: resolveStalkerUrl,
-        hostOf: hostOf,
-        originOf: originOf,
+        load,
+        match,
+        parseM3u,
+        parseXtreamUrl,
+        parsePortal,
+        parseLiveUrl,
+        parseAuto,
+        loadNowPlaying,
+        resolveStalkerUrl,
+        hostOf,
+        originOf,
     }
 })()

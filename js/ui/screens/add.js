@@ -1,59 +1,56 @@
-var App = App || {}
+var App = App || {} // eslint-disable-line no-var -- shared namespace, no modules
 
 App.uiScreens = App.uiScreens || {}
 
 ;(function () {
-    var kit = App.uiKit
-    var store = App.store
-    var html = kit.html
-    var Bar = kit.Bar
-    var useState = kit.useState
-    var useEffect = kit.useEffect
-    var useRef = kit.useRef
-    var ADD_TYPES = kit.ADD_TYPES
-    var FIELD_SETS = kit.FIELD_SETS
-    var TYPE_ICONS = kit.TYPE_ICONS
+    const kit = App.uiKit
+    const store = App.store
+    const html = kit.html
+    const Bar = kit.Bar
+    const useState = kit.useState
+    const useEffect = kit.useEffect
+    const useRef = kit.useRef
+    const ADD_TYPES = kit.ADD_TYPES
+    const FIELD_SETS = kit.FIELD_SETS
+    const TYPE_ICONS = kit.TYPE_ICONS
 
     App.uiScreens.sourceForm = function SourceForm(props) {
-        var state = store.state
-        var editing = props.mode === "edit"
-        var list = editing ? store.listById(state.editId) : null
-        var type = editing ? fieldTypeOf(list) : state.addType
-        var fields = FIELD_SETS[type] || []
-        var refs = useRef({})
-        var errorState = useState("")
-        var error = errorState[0]
-        var setError = errorState[1]
-        var fileState = useState(null)
-        var file = fileState[0]
-        var setFile = fileState[1]
+        const state = store.state
+        const editing = props.mode === "edit"
+        const list = editing ? store.listById(state.editId) : null
+        const type = editing ? fieldTypeOf(list) : state.addType
+        const fields = FIELD_SETS[type] || []
+        const refs = useRef({})
+        const errorState = useState("")
+        const error = errorState[0]
+        const setError = errorState[1]
+        const fileState = useState(null)
+        const file = fileState[0]
+        const setFile = fileState[1]
 
-        useEffect(
-            function () {
-                var values = {}
-                if (list) {
-                    values.url = list.url
-                    values.origin =
-                        list.origin ||
-                        (list.source === "creds" || list.kind === "xtream" ? list.url : "")
-                    values.user = list.user || ""
-                    values.pass = list.pass || ""
-                    values.mac = list.mac || ""
-                    values.text = list.text || ""
-                    values.name = list.name || ""
-                }
-                Object.keys(refs.current).forEach(function (key) {
-                    var element = refs.current[key]
-                    if (element) element.value = values[key] || ""
-                })
-            },
-            [props.mode, state.editId, state.addType],
-        )
+        useEffect(() => {
+            const values = {}
+            if (list) {
+                values.url = list.url
+                values.origin =
+                    list.origin ||
+                    (list.source === "creds" || list.kind === "xtream" ? list.url : "")
+                values.user = list.user || ""
+                values.pass = list.pass || ""
+                values.mac = list.mac || ""
+                values.text = list.text || ""
+                values.name = list.name || ""
+            }
+            Object.keys(refs.current).forEach((key) => {
+                const element = refs.current[key]
+                if (element) element.value = values[key] || ""
+            })
+        }, [props.mode, state.editId, state.addType])
 
         function readFields() {
-            var values = { name: "", user: "", pass: "", mac: "", text: "", url: "", origin: "" }
-            Object.keys(refs.current).forEach(function (key) {
-                var element = refs.current[key]
+            const values = { name: "", user: "", pass: "", mac: "", text: "", url: "", origin: "" }
+            Object.keys(refs.current).forEach((key) => {
+                const element = refs.current[key]
                 if (element && element.value !== undefined) values[key] = element.value.trim()
             })
             if (file) {
@@ -64,11 +61,11 @@ App.uiScreens = App.uiScreens || {}
         }
 
         function save() {
-            var values = readFields()
+            const values = readFields()
             if (editing) {
                 store
                     .updateList(list.id, {
-                        type: type,
+                        type,
                         url: values.url,
                         origin: values.origin,
                         user: values.user,
@@ -77,24 +74,24 @@ App.uiScreens = App.uiScreens || {}
                         text: values.text,
                         name: values.name,
                     })
-                    .catch(function (failure) {
+                    .catch((failure) => {
                         setError(failure.message)
                     })
                 return
             }
-            var built = store.buildSource(type, values)
+            const built = store.buildSource(type, values)
             if (built.error) {
                 setError(built.error)
                 return
             }
             setError("")
-            store.addList(built.list).catch(function (failure) {
+            store.addList(built.list).catch((failure) => {
                 setError(failure.message)
             })
         }
 
         function remove() {
-            store.askConfirm("Delete “" + list.name + "”? Favorites are kept.", function () {
+            store.askConfirm(`Delete “${list.name}”? Favorites are kept.`, () => {
                 store.removeList(list.id)
                 store.notify("Source deleted")
                 store.goHome()
@@ -102,9 +99,9 @@ App.uiScreens = App.uiScreens || {}
         }
 
         function readFile(event) {
-            var chosen = event.target.files && event.target.files[0]
+            const chosen = event.target.files && event.target.files[0]
             if (!chosen) return
-            var reader = new FileReader()
+            const reader = new FileReader()
             reader.onload = function () {
                 setFile({ name: chosen.name, text: String(reader.result || "") })
                 setError("")
@@ -138,11 +135,11 @@ App.uiScreens = App.uiScreens || {}
                 }
             />
             <div class="panel" id="sourceForm">
-                ${fields.map(function (field) {
-                    return html`<label for=${"field-" + field.id}>${field.label}</label> ${
+                ${fields.map((field) => {
+                    return html`<label for=${`field-${field.id}`}>${field.label}</label> ${
                             field.multiline
                                 ? html`<textarea
-                                      id=${"field-" + field.id}
+                                      id=${`field-${field.id}`}
                                       rows="4"
                                       ref=${function (element) {
                                           refs.current[field.id] = element
@@ -152,7 +149,7 @@ App.uiScreens = App.uiScreens || {}
                                       tabindex="-1"
                                   ></textarea>`
                                 : html`<input
-                                      id=${"field-" + field.id}
+                                      id=${`field-${field.id}`}
                                       ref=${function (element) {
                                           refs.current[field.id] = element
                                       }}
@@ -190,7 +187,7 @@ App.uiScreens = App.uiScreens || {}
                                   onChange=${readFile}
                               />
                               <p class="hint ${file ? "ok" : ""}" id="fileHint">
-                                  ${file ? file.name + " · " + store.formatCount((file.text.match(/#EXTINF/g) || []).length) + " entries" : "Press OK to choose the file on the USB drive"}
+                                  ${file ? `${file.name} · ${store.formatCount((file.text.match(/#EXTINF/g) || []).length)} entries` : "Press OK to choose the file on the USB drive"}
                               </p>`
                         : null
                 }
@@ -228,7 +225,7 @@ App.uiScreens = App.uiScreens || {}
 
     function fieldTypeOf(list) {
         if (!list) return "url"
-        var kind = store.listKind(list)
+        const kind = store.listKind(list)
         if (kind !== "m3u") return kind
         return list.source === "text" ? "raw" : "url"
     }
@@ -238,7 +235,7 @@ App.uiScreens = App.uiScreens || {}
     }
 
     function typeTitle(type) {
-        for (var i = 0; i < ADD_TYPES.length; i++) {
+        for (let i = 0; i < ADD_TYPES.length; i++) {
             if (ADD_TYPES[i].id === type) return ADD_TYPES[i].hint
         }
         return ""
@@ -253,7 +250,7 @@ App.uiScreens = App.uiScreens || {}
                 metaId="addMeta"
             />
             <div class="types" id="addTypes">
-                ${ADD_TYPES.map(function (type) {
+                ${ADD_TYPES.map((type) => {
                     return html`<button
                         class="typecard"
                         data-type=${type.id}

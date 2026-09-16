@@ -1,18 +1,18 @@
-var App = App || {}
+var App = App || {} // eslint-disable-line no-var -- shared namespace, no modules
 
 App.uiScreens = App.uiScreens || {}
 
 ;(function () {
-    var kit = App.uiKit
-    var store = App.store
-    var html = kit.html
-    var Bar = kit.Bar
-    var SourceRow = kit.SourceRow
-    var AddRow = kit.AddRow
+    const kit = App.uiKit
+    const store = App.store
+    const html = kit.html
+    const Bar = kit.Bar
+    const SourceRow = kit.SourceRow
+    const AddRow = kit.AddRow
 
     App.uiScreens.home = function Home() {
-        var state = store.state
-        var sources = store.sources()
+        const state = store.state
+        const sources = store.sources()
         return html`<section class="screen" id="screen-home">
             <${Bar}
                 title="Sources"
@@ -34,9 +34,9 @@ App.uiScreens = App.uiScreens || {}
             />
             <div class="columns">
                 <div class="col-groups" id="typeList">
-                    ${sources.types.map(function (type) {
+                    ${sources.types.map((type) => {
                         return html`<button
-                            class=${"row group type" + (type.selected ? " selected" : "")}
+                            class=${`row group type${type.selected ? " selected" : ""}`}
                             tabindex="-1"
                             onClick=${function () {
                                 store.setFilter(type.id)
@@ -55,7 +55,7 @@ App.uiScreens = App.uiScreens || {}
                                   ${state.lists.length ? "No sources of that type." : "Add your first source: an M3U link, an Xtream portal, Stalker, or the playlist text."}
                               </p>`
                     }
-                    ${sources.items.map(function (list) {
+                    ${sources.items.map((list) => {
                         return html`<${SourceRow}
                             key=${list.id}
                             list=${list}

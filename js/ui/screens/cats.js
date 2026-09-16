@@ -1,23 +1,23 @@
-var App = App || {}
+var App = App || {} // eslint-disable-line no-var -- shared namespace, no modules
 
 App.uiScreens = App.uiScreens || {}
 
 ;(function () {
-    var kit = App.uiKit
-    var store = App.store
-    var html = kit.html
-    var Bar = kit.Bar
-    var Search = kit.Search
-    var iconCheck = kit.iconCheck
+    const kit = App.uiKit
+    const store = App.store
+    const html = kit.html
+    const Bar = kit.Bar
+    const Search = kit.Search
+    const iconCheck = kit.iconCheck
 
     App.uiScreens.cats = function Categories() {
-        var state = store.state
-        var view = store.categoriesView()
+        const state = store.state
+        const view = store.categoriesView()
         return html`<section class="screen" id="screen-cats">
             <${Bar}
                 title="Categories"
                 titleId="catsTitle"
-                meta=${view.selected + " of " + view.total + " on"}
+                meta=${`${view.selected} of ${view.total} on`}
                 metaId="catsMeta"
                 actions=${html`<div class="bar-actions" id="catActions">
                     <button
@@ -64,14 +64,14 @@ App.uiScreens = App.uiScreens || {}
                 />`}
             />
             <div class="rows" id="catList">
-                ${view.sections.map(function (section) {
+                ${view.sections.map((section) => {
                     return html`<div class="cat-source" key=${section.list.id}>
                             <span class="cat-source-name">${section.list.name}</span>
                             <span class="row-count">${store.listLabel(section.list)}</span>
                         </div>
-                        ${section.groups.map(function (group) {
+                        ${section.groups.map((group) => {
                             return html`<button
-                                class=${"row cat" + (group.enabled ? " on" : "")}
+                                class=${`row cat${group.enabled ? " on" : ""}`}
                                 tabindex="-1"
                                 data-group=${group.name}
                                 data-list=${group.listId}

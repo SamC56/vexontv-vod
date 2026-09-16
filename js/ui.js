@@ -1,38 +1,38 @@
-var App = App || {}
+var App = App || {} // eslint-disable-line no-var -- shared namespace, no modules
 
 App.ui = (function () {
-    var preact = window.preact
-    var html = window.htm.bind(preact.h)
-    var store = App.store
-    var tv = App.tv
-    var kit = App.uiKit
-    var screens = App.uiScreens
+    const preact = window.preact
+    const html = window.htm.bind(preact.h)
+    const store = App.store
+    const tv = App.tv
+    const kit = App.uiKit
+    const screens = App.uiScreens
 
-    var useEffect = kit.useEffect
-    var Rail = kit.Rail
-    var Home = screens.home
-    var TvScreen = screens.tv
-    var Recents = screens.recents
-    var Favs = screens.favs
-    var Categories = screens.cats
-    var SourceForm = screens.sourceForm
-    var AddTypePicker = screens.addTypePicker
-    var Player = screens.player
-    var Loader = screens.loader
-    var Toast = screens.toast
-    var NumBuffer = screens.numBuffer
-    var Confirm = screens.confirm
+    const useEffect = kit.useEffect
+    const Rail = kit.Rail
+    const Home = screens.home
+    const TvScreen = screens.tv
+    const Recents = screens.recents
+    const Favs = screens.favs
+    const Categories = screens.cats
+    const SourceForm = screens.sourceForm
+    const AddTypePicker = screens.addTypePicker
+    const Player = screens.player
+    const Loader = screens.loader
+    const Toast = screens.toast
+    const NumBuffer = screens.numBuffer
+    const Confirm = screens.confirm
 
     function Root() {
-        useEffect(function () {
-            var request = store.takeFocus()
+        useEffect(() => {
+            const request = store.takeFocus()
             if (request) tv.set(request.zone, request.row, request.col)
             else tv.refresh()
         })
 
-        var state = store.state
-        var playing = state.screen === "player"
-        return html`<div class=${"app" + (playing ? " playing" : "")}>
+        const state = store.state
+        const playing = state.screen === "player"
+        return html`<div class=${`app${playing ? " playing" : ""}`}>
             <div class="backdrop" id="backdrop" aria-hidden="true"></div>
             <${Rail} screen=${state.screen} />
             <main class="main">
@@ -65,10 +65,10 @@ App.ui = (function () {
     function render() {
         preact.render(html`<${Root} />`, document.getElementById("app"))
 
-        var splash = document.getElementById("splash")
+        const splash = document.getElementById("splash")
         if (splash) {
             splash.classList.add("off")
-            setTimeout(function () {
+            setTimeout(() => {
                 if (splash.parentNode) splash.parentNode.removeChild(splash)
             }, 300)
         }
@@ -76,5 +76,5 @@ App.ui = (function () {
 
     store.subscribe(render)
 
-    return { render: render, qsa: qsa }
+    return { render, qsa }
 })()

@@ -1,16 +1,16 @@
-var App = App || {}
+var App = App || {} // eslint-disable-line no-var -- shared namespace, no modules
 
 App.uiScreens = App.uiScreens || {}
 
 ;(function () {
-    var kit = App.uiKit
-    var store = App.store
-    var html = kit.html
-    var useState = kit.useState
+    const kit = App.uiKit
+    const store = App.store
+    const html = kit.html
+    const useState = kit.useState
 
     App.uiScreens.loader = function Loader() {
-        var state = store.state
-        var rows = store.loadingRows()
+        const state = store.state
+        const rows = store.loadingRows()
         return html`<div class="loading" id="loading">
             <div class="spinner"></div>
             <div class="loading-head">
@@ -18,13 +18,13 @@ App.uiScreens = App.uiScreens || {}
                 <h1 class="loading-title" id="loadingTitle">${state.loading.title}</h1>
             </div>
             <div class="loading-list" id="loadingList">
-                ${rows.map(function (row) {
+                ${rows.map((row) => {
                     return html`<div class="loading-row" key=${row.key}>
                         ${rows.length > 1 ? html`<span class="loading-name">${row.name}</span>` : null}
                         <span class="loading-phase"
                             >${row.label}${
                                 row.count !== undefined
-                                    ? " · " + store.formatCount(row.count) + " channels"
+                                    ? ` · ${store.formatCount(row.count)} channels`
                                     : ""
                             }</span
                         >
@@ -49,7 +49,7 @@ App.uiScreens = App.uiScreens || {}
     }
 
     App.uiScreens.confirm = function Confirm() {
-        var confirm = store.state.confirm
+        const confirm = store.state.confirm
         return html`<div class="modal" id="confirm">
             <div class="modal-card">
                 <p id="confirmText">${confirm.message}</p>
@@ -69,7 +69,7 @@ App.uiScreens = App.uiScreens || {}
                         id="confirmOk"
                         tabindex="-1"
                         onClick=${function () {
-                            var action = confirm.onAccept
+                            const action = confirm.onAccept
                             store.closeConfirm()
                             if (action) action()
                         }}
