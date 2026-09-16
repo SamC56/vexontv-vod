@@ -1,17 +1,16 @@
-var App = App || {};
+var App = App || {}
 
-App.uiScreens = App.uiScreens || {};
+App.uiScreens = App.uiScreens || {}
 
-(function () {
-    var kit = App.uiKit;
-    var store = App.store;
-    var html = kit.html;
-    var useState = kit.useState;
+;(function () {
+    var kit = App.uiKit
+    var store = App.store
+    var html = kit.html
+    var useState = kit.useState
 
-    App.uiScreens.loader =
-    function Loader() {
-        var state = store.state;
-        var rows = store.loadingRows();
+    App.uiScreens.loader = function Loader() {
+        var state = store.state
+        var rows = store.loadingRows()
         return html`<div class="loading" id="loading">
             <div class="spinner"></div>
             <div class="loading-head">
@@ -22,42 +21,63 @@ App.uiScreens = App.uiScreens || {};
                 ${rows.map(function (row) {
                     return html`<div class="loading-row" key=${row.key}>
                         ${rows.length > 1 ? html`<span class="loading-name">${row.name}</span>` : null}
-                        <span class="loading-phase">${row.label}${row.count !== undefined
-                            ? ' · ' + store.formatCount(row.count) + ' channels' : ''}</span>
-                    </div>`;
+                        <span class="loading-phase"
+                            >${row.label}${
+                                row.count !== undefined
+                                    ? " · " + store.formatCount(row.count) + " channels"
+                                    : ""
+                            }</span
+                        >
+                    </div>`
                 })}
             </div>
             <p class="loading-meta" id="loadingMeta">
-                <span class="loading-time" id="loadingTime">${store.elapsedOf(state.loading)} s</span>
+                <span class="loading-time" id="loadingTime"
+                    >${store.elapsedOf(state.loading)} s</span
+                >
                 <span class="loading-hint" id="loadingHint">Very large playlists take a while</span>
             </p>
-        </div>`;
-    };
+        </div>`
+    }
 
     App.uiScreens.toast = function Toast(props) {
-        return html`<div class="toast" id="toast">${props.message}</div>`;
-    };
+        return html`<div class="toast" id="toast">${props.message}</div>`
+    }
 
     App.uiScreens.numBuffer = function NumBuffer(props) {
-        return html`<div class="numbuffer" id="numBuffer">${props.value}</div>`;
-    };
+        return html`<div class="numbuffer" id="numBuffer">${props.value}</div>`
+    }
 
     App.uiScreens.confirm = function Confirm() {
-        var confirm = store.state.confirm;
+        var confirm = store.state.confirm
         return html`<div class="modal" id="confirm">
             <div class="modal-card">
                 <p id="confirmText">${confirm.message}</p>
                 <div class="actions">
-                    <button class="btn" id="confirmCancel" tabindex="-1"
-                        onClick=${function () { store.closeConfirm(); }}>Cancel</button>
-                    <button class="btn danger" id="confirmOk" tabindex="-1" onClick=${function () {
-                        var action = confirm.onAccept;
-                        store.closeConfirm();
-                        if (action) action();
-                    }}>Delete</button>
+                    <button
+                        class="btn"
+                        id="confirmCancel"
+                        tabindex="-1"
+                        onClick=${function () {
+                            store.closeConfirm()
+                        }}
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        class="btn danger"
+                        id="confirmOk"
+                        tabindex="-1"
+                        onClick=${function () {
+                            var action = confirm.onAccept
+                            store.closeConfirm()
+                            if (action) action()
+                        }}
+                    >
+                        Delete
+                    </button>
                 </div>
             </div>
-        </div>`;
-    };
-
-})();
+        </div>`
+    }
+})()

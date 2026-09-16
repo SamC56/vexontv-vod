@@ -1,108 +1,201 @@
-var App = App || {};
+var App = App || {}
 
-App.uiScreens = App.uiScreens || {};
+App.uiScreens = App.uiScreens || {}
 
-(function () {
-    var kit = App.uiKit;
-    var store = App.store;
-    var player = App.player;
-    var html = kit.html;
-    var useState = kit.useState;
-    var useEffect = kit.useEffect;
-    var useRef = kit.useRef;
-    var clock = kit.clock;
-    var OVERLAY_MS = 5000;
+;(function () {
+    var kit = App.uiKit
+    var store = App.store
+    var player = App.player
+    var html = kit.html
+    var useState = kit.useState
+    var useEffect = kit.useEffect
+    var useRef = kit.useRef
+    var clock = kit.clock
+    var OVERLAY_MS = 5000
 
     App.uiScreens.player = function Player() {
-        var state = store.state;
-        var videoRef = useRef(null);
-        var overlayState = useState(true);
-        var overlay = overlayState[0];
-        var setOverlay = overlayState[1];
-        var timer = useRef(null);
+        var state = store.state
+        var videoRef = useRef(null)
+        var overlayState = useState(true)
+        var overlay = overlayState[0]
+        var setOverlay = overlayState[1]
+        var timer = useRef(null)
 
         useEffect(function () {
             player.init(videoRef.current, {
-                onStart: function () { store.playStarted(); },
-                onError: function (message) { store.playFailed(message); }
-            });
-            return function () { player.stop(); };
-        }, []);
+                onStart: function () {
+                    store.playStarted()
+                },
+                onError: function (message) {
+                    store.playFailed(message)
+                },
+            })
+            return function () {
+                player.stop()
+            }
+        }, [])
+
+        useEffect(
+            function () {
+                if (state.playing) player.play(state.playing.channel.url)
+            },
+            [state.playing],
+        )
 
         useEffect(function () {
-            if (state.playing) player.play(state.playing.channel.url);
-        }, [state.playing]);
+            document.body.classList.add("playing")
+            return function () {
+                document.body.classList.remove("playing")
+            }
+        }, [])
 
         useEffect(function () {
-            document.body.classList.add('playing');
-            return function () { document.body.classList.remove('playing'); };
-        }, []);
+            var tick = setInterval(function () {
+                store.refreshProgram()
+            }, 30000)
+            return function () {
+                clearInterval(tick)
+            }
+        }, [])
 
         useEffect(function () {
-            var tick = setInterval(function () { store.refreshProgram(); }, 30000);
-            return function () { clearInterval(tick); };
-        }, []);
-
-        useEffect(function () {
-            function pulse() { show(); }
-            document.addEventListener('keydown', pulse);
-            return function () { document.removeEventListener('keydown', pulse); };
-        }, []);
+            function pulse() {
+                show()
+            }
+            document.addEventListener("keydown", pulse)
+            return function () {
+                document.removeEventListener("keydown", pulse)
+            }
+        }, [])
 
         function show() {
-            setOverlay(true);
-            if (timer.current) clearTimeout(timer.current);
-            timer.current = setTimeout(function () { setOverlay(false); }, OVERLAY_MS);
+            setOverlay(true)
+            if (timer.current) clearTimeout(timer.current)
+            timer.current = setTimeout(function () {
+                setOverlay(false)
+            }, OVERLAY_MS)
         }
 
-        var channel = state.playing ? state.playing.channel : null;
-        if (!channel) return null;
-        var saved = store.isFavorite(state.playing.listId, channel.url);
-        var program = state.nowProgram;
-        var next = state.nextProgram;
-        var progress = store.programProgress(program);
+        var channel = state.playing ? state.playing.channel : null
+        if (!channel) return null
+        var saved = store.isFavorite(state.playing.listId, channel.url)
+        var program = state.nowProgram
+        var next = state.nextProgram
+        var progress = store.programProgress(program)
 
-        return html`<section class=${"screen player" + (player.hardware() ? " hw" : "")} id="screen-player">
+        return html`<section
+            class=${"screen player" + (player.hardware() ? " hw" : "")}
+            id="screen-player"
+        >
             <video id="videoPlayer" ref=${videoRef} playsinline></video>
             <!-- AVPlay no dibuja en el <video>: pinta en un object de este tipo, y sin el
                  se oye el canal pero no se ve. Va despues del video y encima. -->
-            <object class="av-surface" id="avPlayer" type="application/avplayer" width="1920" height="1080"></object>
-            ${state.playStatus === 'opening' ? html`<div class="player-status" id="playerStatus">
-                <div class="spinner"></div>
-                <p class="player-status-text">Opening “${channel.name}”…</p>
-            </div>` : null}
-            ${state.playError ? html`<div class="player-error" id="playError">
-                <div class="play-card">
-                    <p class="play-why" id="playErrorWhy">${state.playError.message}</p>
-                    <h1 class="play-name" id="playErrorName">${channel.name}</h1>
-                    <p class="play-hint">You can try again or pick another channel.</p>
-                    <div class="play-actions" id="playActions">
-                        <button class="btn primary" id="playRetry" tabindex="-1"
-                            onClick=${function () { store.retryPlay(); }}>Retry</button>
-                        <button class="btn" id="playClose" tabindex="-1"
-                            onClick=${function () { store.exitPlayer(); }}>Back</button>
-                    </div>
-                </div>
-            </div>` : null}
+            <object
+                class="av-surface"
+                id="avPlayer"
+                type="application/avplayer"
+                width="1920"
+                height="1080"
+            ></object>
+            ${
+                state.playStatus === "opening"
+                    ? html`<div class="player-status" id="playerStatus">
+                          <div class="spinner"></div>
+                          <p class="player-status-text">Opening “${channel.name}”…</p>
+                      </div>`
+                    : null
+            }
+            ${
+                state.playError
+                    ? html`<div class="player-error" id="playError">
+                          <div class="play-card">
+                              <p class="play-why" id="playErrorWhy">${state.playError.message}</p>
+                              <h1 class="play-name" id="playErrorName">${channel.name}</h1>
+                              <p class="play-hint">You can try again or pick another channel.</p>
+                              <div class="play-actions" id="playActions">
+                                  <button
+                                      class="btn primary"
+                                      id="playRetry"
+                                      tabindex="-1"
+                                      onClick=${function () {
+                                          store.retryPlay()
+                                      }}
+                                  >
+                                      Retry
+                                  </button>
+                                  <button
+                                      class="btn"
+                                      id="playClose"
+                                      tabindex="-1"
+                                      onClick=${function () {
+                                          store.exitPlayer()
+                                      }}
+                                  >
+                                      Back
+                                  </button>
+                              </div>
+                          </div>
+                      </div>`
+                    : null
+            }
             ${state.zapOpen ? html`<${App.uiScreens.zap} />` : null}
-            <div class=${'overlay' + ((overlay || state.menuFocus) && !state.playError && !state.zapOpen
-                ? ' visible' : '')} id="playerOverlay">
+            <div
+                class=${
+                    "overlay" +
+                    ((overlay || state.menuFocus) && !state.playError && !state.zapOpen
+                        ? " visible"
+                        : "")
+                }
+                id="playerOverlay"
+            >
                 <div class="ov-info">
-                    <p class="ov-live" id="ovLive"><span class="dot"></span>Live<span
-                        class="ov-engine" id="ovEngine">${player.hardware() ? 'AVPlay' : 'HTML5'}</span></p>
+                    <p class="ov-live" id="ovLive">
+                        <span class="dot"></span>Live<span class="ov-engine" id="ovEngine"
+                            >${player.hardware() ? "AVPlay" : "HTML5"}</span
+                        >
+                    </p>
                     <h1 id="ovName">${channel.name}</h1>
-                    <p class="ov-group" id="ovGroup">${channel.group || ''}</p>
-                    ${program ? html`<div class="ov-guide" id="ovProgram">
-                        <p class="ov-program">${program.title}${program.start
-                            ? html`<span class="ov-time">${clock(program.start)} – ${clock(program.end)}</span>` : null}</p>
-                        ${progress !== null ? html`<div class="ov-progress">
-                            <span class="ov-progress-fill" id="ovProgress" style=${'width:' + progress + '%'}></span>
-                        </div>` : null}
-                    </div>` : null}
-                    ${next ? html`<p class="ov-next" id="ovNext">
-                        <span class="ov-next-tag">Next</span>${next.title}${next.start
-                            ? html`<span class="ov-time">${clock(next.start)} – ${clock(next.end)}</span>` : null}
-                    </p>` : null}
+                    <p class="ov-group" id="ovGroup">${channel.group || ""}</p>
+                    ${
+                        program
+                            ? html`<div class="ov-guide" id="ovProgram">
+                                  <p class="ov-program">
+                                      ${program.title}${
+                                          program.start
+                                              ? html`<span class="ov-time"
+                                                    >${clock(program.start)} –
+                                                    ${clock(program.end)}</span
+                                                >`
+                                              : null
+                                      }
+                                  </p>
+                                  ${
+                                      progress !== null
+                                          ? html`<div class="ov-progress">
+                                                <span
+                                                    class="ov-progress-fill"
+                                                    id="ovProgress"
+                                                    style=${"width:" + progress + "%"}
+                                                ></span>
+                                            </div>`
+                                          : null
+                                  }
+                              </div>`
+                            : null
+                    }
+                    ${
+                        next
+                            ? html`<p class="ov-next" id="ovNext">
+                                  <span class="ov-next-tag">Next</span>${next.title}${
+                                      next.start
+                                          ? html`<span class="ov-time"
+                                                >${clock(next.start)} – ${clock(next.end)}</span
+                                            >`
+                                          : null
+                                  }
+                              </p>`
+                            : null
+                    }
                     <!-- La leyenda va la ultima: el nombre, la guia y lo que viene son
                          una sola cosa y no se parten por el medio. -->
                     <p class="ov-keys" id="ovKeys">
@@ -115,13 +208,19 @@ App.uiScreens = App.uiScreens || {};
                     </p>
                 </div>
                 <div class="ov-actions" id="ovActions">
-                    <button class=${'btn' + (saved ? ' saved' : '')} id="ovFav" tabindex="-1" onClick=${function () {
-                        store.toggleFavorite(channel, state.playing.listId);
-                        show();
-                    }}>${saved ? 'Remove from favorites' : 'Add to favorites'}</button>
+                    <button
+                        class=${"btn" + (saved ? " saved" : "")}
+                        id="ovFav"
+                        tabindex="-1"
+                        onClick=${function () {
+                            store.toggleFavorite(channel, state.playing.listId)
+                            show()
+                        }}
+                    >
+                        ${saved ? "Remove from favorites" : "Add to favorites"}
+                    </button>
                 </div>
             </div>
-        </section>`;
-    };
-
-})();
+        </section>`
+    }
+})()

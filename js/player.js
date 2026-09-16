@@ -1,188 +1,240 @@
-var App = App || {};
+var App = App || {}
 
 App.player = (function () {
     // Reading webapis.avplay can throw when the privilege was not granted: probe defensively.
     function avplay() {
         try {
-            return (typeof webapis !== 'undefined' && webapis.avplay) ? webapis.avplay : null;
+            return typeof webapis !== "undefined" && webapis.avplay ? webapis.avplay : null
         } catch (error) {
-            return null;
+            return null
         }
     }
-    var video = null;
-    var surface = null;
-    var handlers = {};
-    var startTimer = null;
+    var video = null
+    var surface = null
+    var handlers = {}
+    var startTimer = null
 
     // A stream that never answers sends no error event; give up after this.
-    var START_TIMEOUT_MS = 12000;
+    var START_TIMEOUT_MS = 12000
 
     // AVPlay reports PLAYER_ERROR_* codes; the viewer needs words.
     var REASONS = {
-        PLAYER_ERROR_CONNECTION_FAILED: 'No connection to the channel',
-        PLAYER_ERROR_TIMEOUT: 'The channel took too long to answer',
-        PLAYER_ERROR_NOT_SUPPORTED_FORMAT: 'This TV cannot play that format',
-        PLAYER_ERROR_INVALID_URI: 'The channel address is not valid',
-        PLAYER_ERROR_NOT_AVAILABLE: 'The channel is not available right now',
-        PLAYER_ERROR_STREAMING_FAILED: 'The channel stopped the stream'
-    };
-
-    function describe(error) {
-        if (!error) return 'Could not open the channel';
-        if (error.name && REASONS[error.name]) return REASONS[error.name];
-        if (error.message) return error.message;
-        if (typeof error === 'string') return error;
-        return 'Could not open the channel';
+        PLAYER_ERROR_CONNECTION_FAILED: "No connection to the channel",
+        PLAYER_ERROR_TIMEOUT: "The channel took too long to answer",
+        PLAYER_ERROR_NOT_SUPPORTED_FORMAT: "This TV cannot play that format",
+        PLAYER_ERROR_INVALID_URI: "The channel address is not valid",
+        PLAYER_ERROR_NOT_AVAILABLE: "The channel is not available right now",
+        PLAYER_ERROR_STREAMING_FAILED: "The channel stopped the stream",
     }
 
-    var resizeBound = false;
+    function describe(error) {
+        if (!error) return "Could not open the channel"
+        if (error.name && REASONS[error.name]) return REASONS[error.name]
+        if (error.message) return error.message
+        if (typeof error === "string") return error
+        return "Could not open the channel"
+    }
+
+    var resizeBound = false
 
     function init(videoEl, callbacks) {
-        video = videoEl;
-        handlers = callbacks || {};
+        video = videoEl
+        handlers = callbacks || {}
         if (!resizeBound) {
-            window.addEventListener('resize', resize);
-            resizeBound = true;
+            window.addEventListener("resize", resize)
+            resizeBound = true
         }
     }
 
-    function hardware() { return !!avplay(); }
-
-    function resize() {
-        if (avplay()) setRect();
+    function hardware() {
+        return !!avplay()
     }
 
-    var lastRect = null;
+    function resize() {
+        if (avplay()) setRect()
+    }
 
-    function clearRect() { lastRect = null; }
+    var lastRect = null
+
+    function clearRect() {
+        lastRect = null
+    }
 
     // AVPlay measures the display rect in the TV's 1920x1080 grid, whatever the viewport.
     function setRect(rect) {
-        if (rect) lastRect = rect;
-        if (!surface) surface = document.getElementById('avPlayer');
-        var area = lastRect && lastRect.w > 2 && lastRect.h > 2
-            ? lastRect
-            : { x: 0, y: 0, w: 1920, h: 1080 };
-        avplay().setDisplayRect(Math.round(area.x), Math.round(area.y), Math.round(area.w), Math.round(area.h));
+        if (rect) lastRect = rect
+        if (!surface) surface = document.getElementById("avPlayer")
+        var area =
+            lastRect && lastRect.w > 2 && lastRect.h > 2
+                ? lastRect
+                : { x: 0, y: 0, w: 1920, h: 1080 }
+        avplay().setDisplayRect(
+            Math.round(area.x),
+            Math.round(area.y),
+            Math.round(area.w),
+            Math.round(area.h),
+        )
     }
 
     function state() {
-        var AV = avplay();
+        var AV = avplay()
         if (AV) {
-            try { return AV.getState(); } catch (error) { return 'IDLE'; }
+            try {
+                return AV.getState()
+            } catch (error) {
+                return "IDLE"
+            }
         }
-        if (!video || !video.src) return 'IDLE';
-        return video.paused ? 'PAUSED' : 'PLAYING';
+        if (!video || !video.src) return "IDLE"
+        return video.paused ? "PAUSED" : "PLAYING"
     }
 
     function clearStart() {
         if (startTimer) {
-            clearTimeout(startTimer);
-            startTimer = null;
+            clearTimeout(startTimer)
+            startTimer = null
         }
     }
 
     // Without the <object type="application/avplayer"> surface it plays audio and paints nothing.
     function checkSurface() {
-        if (!avplay()) return true;
-        if (!surface) surface = document.getElementById('avPlayer');
-        if (!surface) console.error('AVPlay sin <object type="application/avplayer">: se oira pero no se vera');
-        return !!surface;
+        if (!avplay()) return true
+        if (!surface) surface = document.getElementById("avPlayer")
+        if (!surface)
+            console.error(
+                'AVPlay sin <object type="application/avplayer">: se oira pero no se vera',
+            )
+        return !!surface
     }
 
     function fail(error) {
-        clearStart();
-        console.error('playback error:', error);
-        if (handlers.onError) handlers.onError(describe(error));
+        clearStart()
+        console.error("playback error:", error)
+        if (handlers.onError) handlers.onError(describe(error))
     }
 
     function started() {
-        clearStart();
-        if (handlers.onStart) handlers.onStart();
+        clearStart()
+        if (handlers.onStart) handlers.onStart()
     }
 
     function waitForStart() {
-        clearStart();
+        clearStart()
         startTimer = setTimeout(function () {
-            startTimer = null;
-            fail({ message: 'The channel is not responding' });
-        }, START_TIMEOUT_MS);
+            startTimer = null
+            fail({ message: "The channel is not responding" })
+        }, START_TIMEOUT_MS)
     }
 
     function clearVideo() {
-        if (!video) return;
-        video.removeAttribute('src');
-        try { video.load(); } catch (error) {  }
+        if (!video) return
+        video.removeAttribute("src")
+        try {
+            video.load()
+        } catch (error) {}
     }
 
     function stop() {
-        clearStart();
-        var AV = avplay();
+        clearStart()
+        var AV = avplay()
         if (AV) {
             try {
-                if (state() === 'PLAYING' || state() === 'PAUSED') AV.stop();
-            } catch (error) {  }
-            try { AV.close(); } catch (error) {  }
+                if (state() === "PLAYING" || state() === "PAUSED") AV.stop()
+            } catch (error) {}
+            try {
+                AV.close()
+            } catch (error) {}
         }
-        clearVideo();
+        clearVideo()
     }
 
     // Fallback for environments without AVPlay: emulator, browser, Public install.
     function playWithVideo(url) {
-        if (!video) { fail(new Error('No player available')); return; }
-        video.src = url;
-        video.addEventListener('error', function () { fail(new Error('Could not play the channel')); }, { once: true });
-        waitForStart();
-        video.play().then(started).catch(fail);
+        if (!video) {
+            fail(new Error("No player available"))
+            return
+        }
+        video.src = url
+        video.addEventListener(
+            "error",
+            function () {
+                fail(new Error("Could not play the channel"))
+            },
+            { once: true },
+        )
+        waitForStart()
+        video.play().then(started).catch(fail)
     }
 
     function play(url, rect) {
-        stop();
-        if (!url) return;
-        lastRect = rect || null;
-        if (!rect) clearRect();
+        stop()
+        if (!url) return
+        lastRect = rect || null
+        if (!rect) clearRect()
 
-        setTimeout(started, 4000);
+        setTimeout(started, 4000)
 
-        var AV = avplay();
+        var AV = avplay()
         if (AV) {
-            checkSurface();
+            checkSurface()
             try {
-                AV.open(url);
-                setRect();
-                AV.setDisplayMethod('PLAYER_DISPLAY_MODE_LETTER_BOX');
+                AV.open(url)
+                setRect()
+                AV.setDisplayMethod("PLAYER_DISPLAY_MODE_LETTER_BOX")
                 AV.setListener({
-                    onerror: function (error) { fail(error); },
-                    onbufferingcomplete: function () { started(); },
-                    oncurrentplaytime: function () { started(); },
-                    onstreamcompleted: function () { if (handlers.onEnd) handlers.onEnd(); }
-                });
-                waitForStart();
-                AV.prepareAsync(function () {
-                    AV.play();
-                    started();
-                }, function (error) { fail(error); });
-                return;
+                    onerror: function (error) {
+                        fail(error)
+                    },
+                    onbufferingcomplete: function () {
+                        started()
+                    },
+                    oncurrentplaytime: function () {
+                        started()
+                    },
+                    onstreamcompleted: function () {
+                        if (handlers.onEnd) handlers.onEnd()
+                    },
+                })
+                waitForStart()
+                AV.prepareAsync(
+                    function () {
+                        AV.play()
+                        started()
+                    },
+                    function (error) {
+                        fail(error)
+                    },
+                )
+                return
             } catch (error) {
-                console.error('AVPlay no disponible, se usa <video>:', error);
+                console.error("AVPlay no disponible, se usa <video>:", error)
             }
         }
 
-        playWithVideo(url);
+        playWithVideo(url)
     }
 
     function toggle() {
-        var AV = avplay();
+        var AV = avplay()
         if (AV) {
-            var current = state();
-            if (current === 'PLAYING') { AV.pause(); return 'PAUSED'; }
-            if (current === 'PAUSED') { AV.play(); return 'PLAYING'; }
-            return current;
+            var current = state()
+            if (current === "PLAYING") {
+                AV.pause()
+                return "PAUSED"
+            }
+            if (current === "PAUSED") {
+                AV.play()
+                return "PLAYING"
+            }
+            return current
         }
-        if (!video || !video.src) return 'IDLE';
-        if (video.paused) { video.play().catch(fail); return 'PLAYING'; }
-        video.pause();
-        return 'PAUSED';
+        if (!video || !video.src) return "IDLE"
+        if (video.paused) {
+            video.play().catch(fail)
+            return "PLAYING"
+        }
+        video.pause()
+        return "PAUSED"
     }
 
     return {
@@ -194,6 +246,6 @@ App.player = (function () {
         clearRect: clearRect,
         resize: resize,
         describe: describe,
-        hardware: hardware
-    };
-})();
+        hardware: hardware,
+    }
+})()
