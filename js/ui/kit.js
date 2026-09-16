@@ -76,6 +76,25 @@ App.uiKit = (function () {
         return program.title + span;
     }
 
+    // Reloj del rail: la hora del sistema, refrescada al minuto (un reloj que
+    // parpadea cada segundo distrae en una tele).
+    function timeText() {
+        var now = new Date();
+        return ('0' + now.getHours()).slice(-2) + ':' + ('0' + now.getMinutes()).slice(-2);
+    }
+
+    function useClock() {
+        var state = useState(timeText());
+        var setTime = state[1];
+        useEffect(function () {
+            var tick = setInterval(function () { setTime(timeText()); }, 20000);
+            return function () { clearInterval(tick); };
+        }, []);
+        return state[0];
+    }
+
+    // Barra lateral: marca, las cuatro secciones, atajo a cada fuente y, abajo, la
+    // hora y el recuento. Anclada a la rejilla: secciones de 64 y fuentes de 56.
     function Rail(props) {
         var items = [
             { id: 'navHome', label: 'Sources', icon: iconList, screens: ['home'], action: function () { store.goHome(); } },
@@ -84,6 +103,10 @@ App.uiKit = (function () {
             { id: 'navFavs', label: 'Favorites', icon: iconStar, screens: ['favs'], action: function () { store.openFavorites(); } }
         ];
         var nav = useRef(null);
+        var clock = useClock();
+        var stats = store.stats();
+        var sources = store.state.lists.slice(0, 3);
+        var recent = store.state.recent.slice(0, 3);
 
         useEffect(function () {
             var rail = nav.current;
@@ -94,9 +117,14 @@ App.uiKit = (function () {
             rail.style.setProperty('--rail-mark-y', element
                 ? (element.offsetTop + Math.round((element.offsetHeight - height) / 2)) + 'px'
                 : '0px');
+            // Mientras viaja la marca se estira: se ve el trayecto, no un salto.
+            rail.classList.add('moving');
+            var timer = setTimeout(function () { rail.classList.remove('moving'); }, 300);
+            return function () { clearTimeout(timer); };
         }, [props.screen]);
 
         return html`<nav class="rail" ref=${nav}>
+            <span class="rail-glow" aria-hidden="true"></span>
             <div class="brand" aria-hidden="true">
                 <img class="brand-img" src="brand.png" alt="" />
                 <span class="wordmark">
@@ -104,11 +132,38 @@ App.uiKit = (function () {
                     <span class="wordmark-tag">IPTV Player</span>
                 </span>
             </div>
-            ${items.map(function (item) {
-                var active = item.screens.indexOf(props.screen) !== -1;
-                return html`<button id=${item.id} class=${'rail-btn' + (active ? ' active' : '')} tabindex="-1"
-                    onClick=${item.action}>${item.icon}<span>${item.label}</span></button>`;
-            })}
+            <div class="rail-nav">
+                ${items.map(function (item) {
+                    var active = item.screens.indexOf(props.screen) !== -1;
+                    return html`<button id=${item.id} class=${'rail-btn' + (active ? ' active' : '')} tabindex="-1"
+                        onClick=${item.action}>${item.icon}<span>${item.label}</span></button>`;
+                })}
+            </div>
+            ${sources.length ? html`<div class="rail-block">
+                <p class="rail-title">Sources</p>
+                ${sources.map(function (list) {
+                    return html`<button class=${'rail-src' + (props.screen === 'tv'
+                        && store.state.tvSource === list.id ? ' selected' : '')} tabindex="-1"
+                        data-list=${list.id} onClick=${function () { store.openSource(list.id); }}>
+                        <span class="rail-src-name">${list.name}</span>
+                        <span class="rail-src-kind">${store.listLabel(list)}</span>
+                    </button>`;
+                })}
+            </div>` : null}
+            ${recent.length ? html`<div class="rail-block">
+                <p class="rail-title">Recent</p>
+                ${recent.map(function (channel) {
+                    return html`<button class="rail-src" tabindex="-1" data-recent="1"
+                        onClick=${function () { store.play(channel, channel.listId, store.state.recent); }}>
+                        <span class="rail-src-name">${channel.name}</span>
+                        <span class="rail-src-kind">${channel.group || ''}</span>
+                    </button>`;
+                })}
+            </div>` : null}
+            <div class="rail-foot">
+                <p class="rail-clock" id="railClock">${clock}</p>
+                <p class="rail-counts" id="railCounts">${stats.counts}</p>
+            </div>
         </nav>`;
     }
 

@@ -128,6 +128,12 @@ async function run() {
     check('pantalla de inicio montada', !!document.getElementById('screen-home'));
     check('y es la única pantalla montada', onlyScreen('screen-home'), screens().join(', '));
     check('el rail tiene sus cuatro secciones', document.querySelectorAll('.rail .rail-btn').length === 4);
+    check('el rail lleva reloj y recuento abajo', (function () {
+        var clock = document.getElementById('railClock');
+        var counts = document.getElementById('railCounts');
+        return !!clock && /^\d\d:\d\d$/.test(clock.textContent)
+            && !!counts && counts.textContent.indexOf('source') !== -1;
+    })(), (document.getElementById('railClock') || {}).textContent);
     check('al arrancar está la fuente pública de fábrica',
         document.querySelectorAll('#sourceList .row.source').length === 1
         && document.querySelector('#sourceList .row-name').textContent === 'Free channels of the world'
@@ -186,6 +192,21 @@ async function run() {
     document.getElementById('formSave').click();
     await wait(80);
     check('la fuente se añade y vuelve al inicio', !!document.getElementById('screen-home'));
+    check('el rail tiene atajo a esa fuente', (function () {
+        var row = document.querySelector('.rail-src[data-list]');
+        var list = window.App.store.state.lists[0];
+        return !!row && !!list && row.textContent.indexOf(list.name) !== -1;
+    })(), (document.querySelector('.rail-src[data-list]') || {}).textContent);
+    check('y abre su TV al pulsarlo', (function () {
+        var row = document.querySelector('.rail-src[data-list]');
+        if (!row) return false;
+        row.click();
+        return window.App.store.state.screen === 'tv' && !!window.App.store.state.tvSource;
+    })(), window.App.store.state.screen + ' / tvSource=' + window.App.store.state.tvSource);
+    // el resto del flujo sigue en Sources
+    window.App.store.goHome();
+    await wait(80);
+
     check('la fila de la fuente aparece', document.querySelectorAll('#sourceList .row.source').length === 1);
     check('la fila dice de qué tipo es', document.querySelector('#sourceList .kind').textContent === 'M3U',
         document.querySelector('#sourceList .kind').textContent);
@@ -823,6 +844,13 @@ async function run() {
     document.getElementById('navTv').click();
     await wait(80);
     var markTv = rail.style.getPropertyValue('--rail-mark-y');
+    check('el rail tiene atajo a lo último visto',
+        !!document.querySelector('.rail-src[data-recent]'));
+    document.querySelector('.rail-src[data-recent]').click();
+    await wait(150);
+    check('y el atajo de recientes reproduce',
+        window.App.store.state.screen === 'player' && !!window.App.store.state.playing);
+
     check('la marca del rail sigue a la sección activa',
         markHome !== '' && markTv !== '' && markHome !== markTv, markHome + ' -> ' + markTv);
 
