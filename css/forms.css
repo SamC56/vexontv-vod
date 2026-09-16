@@ -145,6 +145,10 @@
   color: var(--text-3);
 }
 
+/* El foco cae en el input (es lo que hace que la TV levante el teclado), asi que
+   el anillo del envoltorio se pinta por :focus-within y por :has del input. */
+.search:focus-within,
+.search:has(input.focused),
 .search.focused {
   background: var(--surface-2);
   box-shadow:

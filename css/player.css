@@ -7,6 +7,20 @@
   background: var(--black);
 }
 
+/* Superficie de AVPlay: la TV pinta el video AQUI (no en el <video>), asi que tiene
+   que cubrir la pantalla y coincidir con el rect de setDisplayRect. */
+.av-surface {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+/* Con AVPlay disponible el <video> sobra, y si se queda tapa la superficie: es el
+   fallo de "se oye pero no se ve". */
+.screen.player.hw #videoPlayer { display: none; }
+
 #videoPlayer {
   width: 100%;
   height: 100%;

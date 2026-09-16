@@ -52,8 +52,11 @@ App.uiScreens = App.uiScreens || {};
         var saved = store.isFavorite(state.playing.listId, channel.url);
         var program = state.nowProgram;
 
-        return html`<section class="screen player" id="screen-player">
+        return html`<section class=${"screen player" + (player.hardware() ? " hw" : "")} id="screen-player">
             <video id="videoPlayer" ref=${videoRef} playsinline></video>
+            <!-- AVPlay no dibuja en el <video>: pinta en un object de este tipo, y sin el
+                 se oye el canal pero no se ve. Va despues del video y encima. -->
+            <object class="av-surface" id="avPlayer" type="application/avplayer"></object>
             ${state.playStatus === 'opening' ? html`<div class="player-status" id="playerStatus">
                 <div class="spinner"></div>
                 <p class="player-status-text">Opening “${channel.name}”…</p>

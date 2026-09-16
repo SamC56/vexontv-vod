@@ -266,6 +266,10 @@ async function run() {
     focused().click();
     await wait(90);
     check('el canal abre el reproductor', !!document.getElementById('screen-player'));
+    check('el reproductor tiene la superficie donde AVPlay pinta el vídeo', (function () {
+        var surface = document.getElementById('avPlayer');
+        return !!surface && surface.getAttribute('type') === 'application/avplayer';
+    })());
     check('sale el programa de ahora', !!document.getElementById('ovProgram')
         && document.getElementById('ovProgram').textContent.indexOf('Programa de prueba') !== -1);
     press(403);
@@ -322,6 +326,16 @@ async function run() {
     typeInto('#tvSearch', '');
     await wait(400);
 
+    // OK en el buscador tiene que enfocar el CAMPO: es lo que levanta el teclado
+    // en la TV. Antes la zona apuntaba al div de fuera y el OK no hacía nada.
+    window.App.tv.set('tvSearch', 0, 0);
+    press(13);
+    await wait(60);
+    check('OK en el buscador enfoca el campo (y la TV levanta el teclado)',
+        !!document.activeElement && document.activeElement.id === 'tvSearch',
+        document.activeElement ? document.activeElement.tagName + '#' + document.activeElement.id : '(nada)');
+    document.getElementById('tvSearch').blur();
+
     document.querySelector('#tvCats .tvcat[data-group="España"]').click();
     await wait(120);
     check('dentro de la categoría está su pantalla', !!document.getElementById('screen-tvcat'));
@@ -353,6 +367,23 @@ async function run() {
     checkClasses('las categorías usan las clases que estiliza el CSS', [
         ['#catList .cat .check', 'casilla'], ['#catActions .btn', 'acciones'], ['#screen-cats .search', 'buscador']
     ]);
+
+    typeInto('#catSearch', 'depor');
+    await wait(400);
+    check('buscar en categorías filtra la lista',
+        document.querySelectorAll('#catList .cat').length === 1,
+        document.querySelectorAll('#catList .cat').length + ' filas');
+    typeInto('#catSearch', '');
+    await wait(400);
+    check('y al vaciar vuelven todas', document.querySelectorAll('#catList .cat').length === 4);
+
+    window.App.tv.set('catSearch', 0, 0);
+    press(13);
+    await wait(60);
+    check('OK en el buscador de categorías enfoca el campo',
+        !!document.activeElement && document.activeElement.id === 'catSearch',
+        document.activeElement ? document.activeElement.tagName + '#' + document.activeElement.id : '(nada)');
+    document.getElementById('catSearch').blur();
 
     press(40);                                      // del buscador a la lista
     await wait(40);

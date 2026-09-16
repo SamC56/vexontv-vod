@@ -55,10 +55,31 @@ App.tv = (function () {
 
         var element = line[col];
         element.classList.add('focused');
-        element.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+        reveal(element);
         // La app puede aprovechar el cambio de foco (por ejemplo para pedir el
         // "ahora" de esa fila).
         if (onFocus) onFocus(element);
+    }
+
+    // Llevar el foco a la vista sin tocar el documento. scrollIntoView puede
+    // arrastrar la pagina entera y con ella el rail y el margen del header, que es
+    // lo que se veia en la TV al bajar por una lista. Aqui solo se mueve el
+    // contenedor que scrollea, si hay alguno.
+    function reveal(element) {
+        var box = scrollBox(element);
+        if (!box || !element.getBoundingClientRect) return;
+        var item = element.getBoundingClientRect();
+        var frame = box.getBoundingClientRect();
+        if (item.top < frame.top) box.scrollTop -= frame.top - item.top;
+        else if (item.bottom > frame.bottom) box.scrollTop += item.bottom - frame.bottom;
+    }
+
+    function scrollBox(element) {
+        for (var node = element.parentNode; node && node !== document.body; node = node.parentNode) {
+            var overflow = window.getComputedStyle(node).overflowY;
+            if ((overflow === 'auto' || overflow === 'scroll') && node.scrollHeight > node.clientHeight) return node;
+        }
+        return null;
     }
 
     function set(name, r, c) {

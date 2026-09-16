@@ -62,7 +62,7 @@ var App = App || {};
             }
         });
 
-        zone('tvSearch', '#screen-tv .search', {
+        zone('tvSearch', '#tvSearch', {
             onEdge: function (dir) {
                 if (dir === 'up') tv.set('tvActions', 0, 0);
                 else if (dir === 'left') tv.set('tvActions', 0, 0);
@@ -77,7 +77,7 @@ var App = App || {};
             }
         });
 
-        zone('tvcatSearch', '#screen-tvcat .search', {
+        zone('tvcatSearch', '#tvcatSearch', {
             onEdge: function (dir) {
                 if (dir === 'up') tv.set('rail', 0, 0);
                 else if (dir === 'left') tv.set('rail', 0, 0);
@@ -92,7 +92,7 @@ var App = App || {};
             }
         });
 
-        zone('recentsSearch', '#screen-recents .search', {
+        zone('recentsSearch', '#recentsSearch', {
             onEdge: function (dir) {
                 if (dir === 'up') tv.set('rail', 0, 0);
                 else if (dir === 'down') tv.set('recentsList', 0, 0);
@@ -106,7 +106,7 @@ var App = App || {};
             }
         });
 
-        zone('favsSearch', '#screen-favs .search', {
+        zone('favsSearch', '#favsSearch', {
             onEdge: function (dir) {
                 if (dir === 'up') tv.set('rail', 0, 0);
                 else if (dir === 'down') tv.set('favsList', 0, 0);
@@ -128,7 +128,7 @@ var App = App || {};
             }
         });
 
-        zone('catSearch', '#screen-cats .search', {
+        zone('catSearch', '#catSearch', {
             onEdge: function (dir) {
                 if (dir === 'up') tv.set('rail', 0, 0);
                 else if (dir === 'left') tv.set('catActions', 0, 0);

@@ -14,6 +14,7 @@ App.player = (function () {
         AVPLAY = null;
     }
     var video = null;
+    var surface = null;
     var handlers = {};
     var startTimer = null;
 
@@ -57,8 +58,13 @@ App.player = (function () {
         if (AVPLAY) setRect();
     }
 
+    // La doc de AVPlay es explicita: el rect se mide SIEMPRE en la rejilla de
+    // 1920x1080 de la TV, sea cual sea la resolucion o el viewport de la app.
+    // Y el style del object tiene que coincidir con este rect (va a pantalla
+    // completa por CSS).
     function setRect() {
-        AVPLAY.setDisplayRect(0, 0, window.innerWidth, window.innerHeight);
+        if (!surface) surface = document.getElementById('avPlayer');
+        AVPLAY.setDisplayRect(0, 0, 1920, 1080);
     }
 
     function state() {
@@ -74,6 +80,13 @@ App.player = (function () {
             clearTimeout(startTimer);
             startTimer = null;
         }
+    }
+
+    function checkSurface() {
+        if (!AVPLAY) return true;
+        if (!surface) surface = document.getElementById('avPlayer');
+        if (!surface) console.error('AVPlay sin <object type="application/avplayer">: se oira pero no se vera');
+        return !!surface;
     }
 
     function fail(error) {
@@ -114,11 +127,23 @@ App.player = (function () {
         clearVideo();
     }
 
+    // Reserva: el <video> del navegador. Se usa cuando no hay AVPlay o cuando
+    // AVPlay esta pero sus llamadas fallan (el privilegio no concedido instala la
+    // app como Public, pero webapis.avplay puede seguir ahi y no hacer nada).
+    function playWithVideo(url) {
+        if (!video) { fail(new Error('No player available')); return; }
+        video.src = url;
+        video.addEventListener('error', function () { fail(new Error('Could not play the channel')); }, { once: true });
+        waitForStart();
+        video.play().then(started).catch(fail);
+    }
+
     function play(url) {
         stop();
         if (!url) return;
 
         if (AVPLAY) {
+            checkSurface();
             try {
                 AVPLAY.open(url);
                 setRect();
@@ -135,15 +160,13 @@ App.player = (function () {
                 }, function (error) { fail(error); });
                 return;
             } catch (error) {
-                fail(error);
-                return;
+                // AVPlay sin privilegio: se sigue con el <video> en vez de dejar
+                // la pantalla en negro.
+                console.error('AVPlay no disponible, se usa <video>:', error);
             }
         }
 
-        video.src = url;
-        video.addEventListener('error', function () { fail(new Error('Could not play the channel')); }, { once: true });
-        waitForStart();
-        video.play().then(started).catch(fail);
+        playWithVideo(url);
     }
 
     function toggle() {
