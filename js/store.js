@@ -236,7 +236,14 @@ App.store = (function () {
         state.loadProgress[key] = { since: Date.now(), at: 0, lastCount: -1, label: 'Connecting', name: name };
     }
 
-    function progressOf(listId, update) {
+    // Una lista que ya se importo antes no se vuelve a descargar: se resincroniza, y
+    // el aviso lo dice asi. La primera vez si es una descarga.
+    function progressOf(listId, update, list) {
+        if (list && list.imported && update.label === 'Downloading') update.label = 'Syncing';
+        return progressOfEntry(listId, update);
+    }
+
+    function progressOfEntry(listId, update) {
         var entry = state.loadProgress[listId] ||
             { since: Date.now(), at: 0, lastCount: -1, label: 'Connecting' };
         entry.label = update.label || entry.label;
@@ -306,8 +313,10 @@ App.store = (function () {
         startLoadEntry(listId, list.name);
         emit();
 
-        var promise = App.api.load(list, function (update) { progressOf(listId, update); })
+        var promise = App.api.load(list, function (update) { progressOf(listId, update, list); })
             .then(function (channels) {
+                list.imported = true;
+                write(KEYS.lists, state.lists);
                 storeChannels(listId, channels);
                 delete state.pending[listId];
                 delete state.loadProgress[listId];
@@ -391,7 +400,8 @@ App.store = (function () {
         showNotice('Checking', list.name);
         startLoadEntry('draft', list.name);
         emit();
-        return App.api.load(list, function (update) { progressOf('draft', update); }).then(function (channels) {
+        return App.api.load(list, function (update) { progressOf('draft', update, list); }).then(function (channels) {
+            list.imported = true;
             storeChannels(list.id, channels);
             state.lists = state.lists.concat([list]);
             write(KEYS.lists, state.lists);
@@ -425,6 +435,7 @@ App.store = (function () {
             name: fields.name
         });
         if (built.error) return Promise.reject(new Error(built.error));
+        if (list.imported) draft.imported = true;
         for (var key in built.list) {
             if (built.list[key] !== undefined) draft[key] = built.list[key];
         }
@@ -434,7 +445,8 @@ App.store = (function () {
         startLoadEntry('draft', draft.name || list.name);
         emit();
 
-        return App.api.load(draft, function (update) { progressOf('draft', update); }).then(function (channels) {
+        return App.api.load(draft, function (update) { progressOf('draft', update, list); }).then(function (channels) {
+            draft.imported = true;
             storeChannels(list.id, channels);
             state.lists = state.lists.map(function (item) { return item.id === list.id ? draft : item; });
             write(KEYS.lists, state.lists);

@@ -468,6 +468,54 @@ Promise.all(pending).then(function (results) {
         store.channelsOf('l2').length === 9, String(store.channelsOf('l2').length));
     check('editar invalida la caché de la pantalla TV', store.allChannels().length >= 9);
 
+    const wording = (async function () {
+        const originalFetch = global.fetch;
+        const playlist = source('test/sample.m3u');
+        global.fetch = function () {
+            const chunks = [playlist.slice(0, 200), playlist.slice(200, 400), playlist.slice(400)];
+            let index = 0;
+            return new Promise(function (resolve) {
+                setTimeout(function () {
+                    resolve({
+                        ok: true, status: 200,
+                        headers: { get: function () { return null; } },
+                        text: function () { return Promise.resolve(playlist); },
+                        body: {
+                            getReader: function () {
+                                return {
+                                    read: function () {
+                                        return new Promise(function (done) {
+                                            setTimeout(function () {
+                                                done(index < chunks.length
+                                                    ? { done: false, value: new TextEncoder().encode(chunks[index++]) }
+                                                    : { done: true });
+                                            }, 60);
+                                        });
+                                    }
+                                };
+                            }
+                        }
+                    });
+                }, 40);
+            });
+        };
+
+        const built = store.buildSource('url', { url: 'http://localhost/test/wording.m3u', name: 'Wording' });
+        const download = store.addList(built.list);
+        await wait(150);
+        const first = (store.state.loadProgress.draft || {}).label;
+        await download;
+
+        const again = store.updateList(built.list.id, { type: 'url', name: 'Wording' });
+        await wait(150);
+        const second = (store.state.loadProgress.draft || {}).label;
+        await again;
+
+        check('la primera importación avisa de que está descargando', first === 'Downloading', first);
+        check('y la siguiente, de que resincroniza', second === 'Syncing', second);
+        global.fetch = originalFetch;
+    })();
+
     const stalker = (async function () {
         const calls = [];
         const originalFetch = global.fetch;
@@ -508,7 +556,7 @@ Promise.all(pending).then(function (results) {
         global.fetch = originalFetch;
     })();
 
-    return stalker.then(function () {
+    return Promise.all([wording, stalker]).then(function () {
         console.log('');
         console.log(failed ? failed + ' comprobaciones FALLIDAS' : 'todo correcto');
         process.exit(failed ? 1 : 0);
