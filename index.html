@@ -4,6 +4,63 @@
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=1920, user-scalable=no">
 	<title>VexonTV</title>
+	<!-- Splash en linea: es la primera pintura y no puede esperar a ninguna hoja ni
+	     a ninguna imagen, asi que va con estilos aqui mismo. La quita la app en
+	     cuanto pinta (js/ui.js). Si la app no arranca, se queda esto, que informa
+	     mas que un negro. -->
+	<style>
+		html, body { margin: 0; height: 100%; overflow: hidden; background: #050505; }
+		#splash {
+			position: fixed;
+			inset: 0;
+			z-index: 100;
+			display: grid;
+			place-content: center;
+			justify-items: center;
+			gap: 30px;
+			background-color: #050505;
+			background-image:
+				linear-gradient(rgba(255, 255, 255, .028) 1px, transparent 1px),
+				linear-gradient(90deg, rgba(255, 255, 255, .028) 1px, transparent 1px);
+			background-size: 64px 64px;
+			font-family: "SamsungOne", "Samsung Sans", system-ui, sans-serif;
+			transition: opacity .25s cubic-bezier(.32, .72, 0, 1);
+		}
+		#splash.off { opacity: 0; }
+		#splash .mark {
+			/* Un poco mas grande que el wordmark del rail: esto se mira desde el sofa. */
+			font-size: 22px;
+			font-weight: 700;
+			letter-spacing: .2em;
+			text-transform: uppercase;
+			background: linear-gradient(92deg, #febc06, #15e9a4);
+			-webkit-background-clip: text;
+			background-clip: text;
+			color: transparent;
+		}
+		#splash .bar {
+			width: 200px;
+			height: 3px;
+			border-radius: 2px;
+			background: rgba(255, 255, 255, .14);
+			overflow: hidden;
+		}
+		#splash .bar i {
+			display: block;
+			width: 40%;
+			height: 100%;
+			border-radius: 2px;
+			background: linear-gradient(90deg, #febc06, #15e9a4);
+			animation: splash-slide 1.1s cubic-bezier(.32, .72, 0, 1) infinite;
+		}
+		@keyframes splash-slide {
+			from { transform: translateX(-110%); }
+			to { transform: translateX(280%); }
+		}
+		@media (prefers-reduced-motion: reduce) {
+			#splash .bar i { animation: none; width: 100%; opacity: .5; }
+		}
+	</style>
 	<link rel="stylesheet" href="css/tokens.css">
 	<link rel="stylesheet" href="css/base.css">
 	<link rel="stylesheet" href="css/lists.css">
@@ -13,6 +70,7 @@
 	<link rel="stylesheet" href="css/media.css">
 </head>
 <body>
+	<div id="splash"><span class="mark">VexonTV</span><span class="bar"><i></i></span></div>
 	<div id="app"></div>
 	<script src="vendor/preact.umd.js"></script>
 	<script src="vendor/hooks.umd.js"></script>

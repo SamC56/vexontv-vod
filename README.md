@@ -117,6 +117,25 @@ check que lo vigila.
 1. TV en **modo desarrollador** (Apps → teclear `12345`) con la IP del PC.
 2. Apps2Samsung → `Custom WGT File` → `dist/VexonTV.wgt`.
 
+## Arranque
+
+`index.html` pinta un **splash en línea** (estilos y marca dentro del propio HTML, sin
+esperar a ninguna hoja ni a ninguna imagen, que es lo que lo hace instantáneo) y la app
+lo quita con un fundido en cuanto pinta. Si la app no llegara a arrancar, se queda ese
+splash, que informa más que un negro.
+
+Lo que **no** está cubierto es el loader del lanzador de la TV, que ocurre **antes** de
+que la app exista. Para eso Samsung documenta un *video splash* en `config.xml`:
+
+```xml
+<tizen:video_splash_screen ready_when="complete">
+    <tizen:video src="splash.mp4" />
+</tizen:video_splash_screen>
+```
+
+Necesita un MP4 **H.264** (y pequeño), que no se puede generar en este entorno: aquí no
+hay encoder H.264. El día que haya clip, se deja en la raíz y se descomenta.
+
 ## Probar sin la TV
 
 **Navegador** (UI, navegación, búsqueda, listas, favoritos): flechas = D-pad,

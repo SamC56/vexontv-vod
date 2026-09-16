@@ -136,6 +136,10 @@ async function run() {
 
     check('la app pinta algo', document.getElementById('app').innerHTML.length > 100);
     check('sin errores de runtime', errors.length === 0, errors.join(' | '));
+    check('el splash se quita en cuanto la app pinta', (function () {
+        var splash = document.getElementById('splash');
+        return !splash || splash.classList.contains('off');
+    })());
     check('pantalla de inicio montada', !!document.getElementById('screen-home'));
     check('y es la única pantalla montada', onlyScreen('screen-home'), screens().join(', '));
     check('el rail tiene sus cuatro secciones', document.querySelectorAll('.rail .rail-btn').length === 4);
@@ -663,9 +667,13 @@ async function run() {
     const htmlSource = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
     const unlinked = cssFiles.filter(function (name) { return htmlSource.indexOf('css/' + name) === -1; });
     check('index.html enlaza todas las hojas de estilo', unlinked.length === 0, unlinked.join(', '));
+    // Tambien el CSS en linea de index.html: el splash va ahi (tiene que pintar antes
+    // de que se cargue ninguna hoja).
+    const inlineCss = Array.from(htmlSource.matchAll(/<style>([\s\S]*?)<\/style>/g))
+        .map(function (match) { return match[1]; }).join('\n');
     const css = cssFiles.map(function (name) {
         return fs.readFileSync(path.join(root, 'css', name), 'utf8');
-    }).join('\n');
+    }).join('\n') + '\n' + inlineCss;
     // Los comentarios no son reglas: se quitan antes de comprobar nada.
     const code = css.replace(/\/\*[\s\S]*?\*\//g, '');
     const styleEl = document.createElement('style');

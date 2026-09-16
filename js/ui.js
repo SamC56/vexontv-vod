@@ -64,6 +64,15 @@ App.ui = (function () {
 
     function render() {
         preact.render(html`<${Root} />`, document.getElementById('app'));
+
+        // Primera pintura hecha: fuera el splash (con un fundido corto y se quita).
+        var splash = document.getElementById('splash');
+        if (splash) {
+            splash.classList.add('off');
+            setTimeout(function () {
+                if (splash.parentNode) splash.parentNode.removeChild(splash);
+            }, 300);
+        }
     }
 
     // El store es la fuente de verdad: cada cambio repinta. Se renderiza desde
