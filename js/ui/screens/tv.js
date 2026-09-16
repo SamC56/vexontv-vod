@@ -40,13 +40,16 @@ App.uiScreens = App.uiScreens || {};
         var stage = document.getElementById('previewStage');
         if (!box || !layer) return;
         var rootStyle = document.documentElement.style;
-        rootStyle.setProperty('--hole-x', Math.round(box.left) + 'px');
-        rootStyle.setProperty('--hole-y', Math.round(box.top) + 'px');
-        rootStyle.setProperty('--hole-w', Math.round(box.width) + 'px');
-        rootStyle.setProperty('--hole-h', Math.round(box.height) + 'px');
+        // Un pixel por lado: el filo de foco vive en el borde de la tarjeta y a sangre se
+        // lo comia la mascara justo a la altura del video (el borde se cortaba ahi).
+        var inset = 1;
+        rootStyle.setProperty('--hole-x', Math.round(box.left + inset) + 'px');
+        rootStyle.setProperty('--hole-y', Math.round(box.top + inset) + 'px');
+        rootStyle.setProperty('--hole-w', Math.round(box.width - inset * 2) + 'px');
+        rootStyle.setProperty('--hole-h', Math.round(box.height - inset * 2) + 'px');
         if (stage && stage.offsetParent) {
-            rootStyle.setProperty('--stage-x', Math.round(stage.offsetLeft) + 'px');
-            rootStyle.setProperty('--stage-y', Math.round(stage.offsetTop) + 'px');
+            rootStyle.setProperty('--stage-x', Math.round(stage.offsetLeft + inset) + 'px');
+            rootStyle.setProperty('--stage-y', Math.round(stage.offsetTop + inset) + 'px');
         }
     }
 

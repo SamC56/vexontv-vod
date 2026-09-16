@@ -205,15 +205,32 @@ App.api = (function () {
         try { return decodeURIComponent(escape(atob(value))); } catch (error) { return ''; }
     }
 
-    function stalkerCall(portal, mac, params, token) {
+    function stalkerCall(endpoint, mac, params, token) {
         var query = 'type=stb&mac=' + enc(mac) + '&token=' + enc(token || '') + '&' + params;
         var headers = {
             'User-Agent': STALKER_UA,
             'Cookie': 'mac=' + mac + '; stb_lang=es; timezone=Europe/Madrid',
-            'Referer': portal + '/c/'
+            'Referer': originOf(endpoint) + '/c/'
         };
         if (token) headers.Authorization = 'Bearer ' + token;
-        return withTimeout(fetchJson(portal + '/portal.php?' + query, headers), 'The Stalker portal is not responding');
+        return withTimeout(fetchJson(endpoint + '?' + query, headers), 'The Stalker portal is not responding');
+    }
+
+    var STALKER_PATHS = ['/portal.php', '/stalker_portal/server/load.php', '/server/load.php'];
+
+    function stalkerEndpoints(portal) {
+        if (/\.php$/i.test(portal)) return [portal];
+        return STALKER_PATHS.map(function (path) { return portal + path; });
+    }
+
+    function firstEndpoint(endpoints, run) {
+        var index = 0;
+        function step() {
+            if (index >= endpoints.length) return Promise.reject(new Error('The Stalker portal is not responding'));
+            var endpoint = endpoints[index++];
+            return run(endpoint).then(function (value) { return { endpoint: endpoint, value: value }; }, step);
+        }
+        return step();
     }
 
     function loadStalker(list, onProgress) {
@@ -222,13 +239,23 @@ App.api = (function () {
         if (!portal || !mac) return Promise.reject(new Error('Portal or MAC missing'));
 
         if (onProgress) onProgress({ label: 'Fetching categories' });
-        return stalkerCall(portal, mac, 'action=handshake&prehash=0').then(function (hello) {
-            var token = (hello && hello.js && hello.js.token) || '';
+        return firstEndpoint(stalkerEndpoints(portal), function (endpoint) {
+            return stalkerCall(endpoint, mac, 'action=handshake&prehash=0');
+        }).then(function (hello) {
+            var token = (hello.value && hello.value.js && hello.value.js.token) || '';
             if (!token) throw new Error('The portal gave no token (MAC not authorised?)');
+            // What a real set-top box does, and strict portals refuse the content calls
+            // until the session is opened here. Both the token and the endpoint that
+            // answered are kept on the list: create_link needs them later.
+            list.token = token;
+            list.endpoint = hello.endpoint;
             if (onProgress) onProgress({ label: 'Downloading' });
-            return stalkerCall(portal, mac, 'action=get_all_channels', token).then(function (data) {
+            return stalkerCall(hello.endpoint, mac, 'action=get_profile', token)
+                .catch(function () {  })
+                .then(function () { return stalkerCall(hello.endpoint, mac, 'action=get_all_channels', token); })
+                .then(function (data) {
                 var genres = {};
-                return stalkerCall(portal, mac, 'action=get_genres', token)
+                return stalkerCall(hello.endpoint, mac, 'action=get_genres', token)
                     .then(function (genresData) {
                         (genresData && genresData.js ? genresData.js : []).forEach(function (genre) {
                             genres[String(genre.id)] = genre.title;
@@ -254,8 +281,8 @@ App.api = (function () {
     }
 
     function resolveStalkerUrl(list, channel) {
-        var portal = (list.origin || '').replace(/\/+$/, '');
-        return stalkerCall(portal, list.mac, 'action=create_link&cmd=' + enc(channel.cmd), list.token)
+        var endpoint = list.endpoint || ((list.origin || '').replace(/\/+$/, '') + '/portal.php');
+        return stalkerCall(endpoint, list.mac, 'action=create_link&cmd=' + enc(channel.cmd), list.token)
             .then(function (data) {
                 var cmd = data && data.js && data.js.cmd;
                 if (!cmd) throw new Error('The portal returned no stream address');

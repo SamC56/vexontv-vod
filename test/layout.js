@@ -72,10 +72,19 @@ window.addEventListener('load', function () {
                         var card = document.querySelector('.browse-preview');
                         var stage = document.getElementById('previewStage');
                         var stageBox = stage.getBoundingClientRect();
+                        // Con un canal elegido la app ya puso previewing/hole, y con 'hole' el
+                        // fondo se apaga a proposito: se quitan un momento para medir la grilla.
+                        document.body.classList.remove('previewing', 'hole');
+                        var bodyStyle = window.getComputedStyle(document.body);
+                        var gridSize = bodyStyle.backgroundSize;
+                        var gridPosition = bodyStyle.backgroundPosition;
+                        var railWidth = Math.round(document.querySelector('.rail').getBoundingClientRect().width);
+                        document.body.classList.add('previewing', 'hole');
                         document.body.classList.add('previewing');
                         var backdrop = window.getComputedStyle(document.getElementById('backdrop'));
                         var edge = window.getComputedStyle(document.body, '::before');
                         var card = window.getComputedStyle(document.querySelector('.browse-preview'));
+                        var cardBox = document.querySelector('.browse-preview').getBoundingClientRect();
                         var frame = document.getElementById('tvChannels');
                         var app = document.querySelector('.app');
                         var focused = document.querySelector('.focused');
@@ -93,8 +102,14 @@ window.addEventListener('load', function () {
                             stage: [Math.round(stageBox.width), Math.round(stageBox.height)],
                             stageRatio: stageBox.height ? stageBox.width / stageBox.height : 0,
                             backdropZ: backdrop.zIndex,
+                            gridSize: gridSize,
+                            gridPosition: gridPosition,
+                            railWidth: railWidth,
                             cardBackground: card.backgroundColor,
                             holeWidth: document.documentElement.style.getPropertyValue('--hole-w'),
+                            holeX: document.documentElement.style.getPropertyValue('--hole-x'),
+                            cardLeft: Math.round(cardBox.left),
+                            cardWidth: Math.round(cardBox.width),
                             cardMaskPosition: card.maskPosition || '',
                             cardMask: card.maskComposite || '',
                             cardMaskImage: (card.maskImage || '').indexOf('gradient') !== -1,
@@ -152,10 +167,19 @@ function main() {
         check('el escenario del preview es 16:9 (el video no se ve encajado)',
             Math.abs(data.stageRatio - 16 / 9) < 0.02,
             data.stage.join('x') + ' = ' + data.stageRatio.toFixed(3));
+        check('el agujero deja fuera el filo de la tarjeta, o el foco se corta ahi',
+            parseFloat(data.holeX) > data.cardLeft && parseFloat(data.holeWidth) < data.cardWidth,
+            'agujero desde ' + data.holeX + ' ancho ' + data.holeWidth
+                + ', tarjeta desde ' + data.cardLeft + ' ancho ' + data.cardWidth);
         check('la tarjeta recorta el video donde está el escenario',
             parseFloat(data.holeWidth) > 0
             && data.cardMaskPosition.replace(/0px/g, '').replace(/[\s,]/g, '') !== '',
             'agujero ' + data.holeWidth + ', máscara de la tarjeta ' + data.cardMaskPosition);
+        check('la grilla arranca en el borde del rail (una línea cae justo ahí)',
+            data.gridPosition.indexOf(data.railWidth + 'px 50%') === 0,
+            'grilla en ' + data.gridPosition + ', rail de ' + data.railWidth + 'px');
+        check('la grilla del fondo son cuadrados de 64x64 (no estirada)',
+            /^64px 64px, 64px 64px,/.test(data.gridSize), data.gridSize);
         check('el preview es una sala negra, no la grilla de la app',
             data.cardBackground === 'rgb(0, 0, 0)', data.cardBackground);
         check('y con el canal en marcha se recorta el rectángulo del vídeo (si no, lo taparía)',

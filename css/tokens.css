@@ -41,14 +41,17 @@
 	--rail-mark-h: 0px;
 	--rail-mark-y: 0px;
 
+  /* Ancho del rail. La grilla se ancla a esta medida para que una linea caiga justo
+     en el borde del sidebar (184 no es multiplo de 64). */
+  --rail: 184px;
   --grid: 64px;
-  --grid-line: rgba(255, 255, 255, 0.022);
+  --grid-line: rgba(255, 255, 255, 0.05);
   --grad-fade: linear-gradient(180deg, rgba(5, 5, 5, 0) 0%, var(--black) 24%);
   --grad-bg: linear-gradient(
     90deg,
-    rgba(254, 188, 6, 0.16),
-    rgba(204, 66, 7, 0.12) 48%,
-    rgba(21, 233, 164, 0.16)
+    rgba(254, 188, 6, 0.30),
+    rgba(204, 66, 7, 0.23) 48%,
+    rgba(21, 233, 164, 0.30)
   );
   --focus: #fff;
   --ring: rgba(255, 255, 255, 0.5);

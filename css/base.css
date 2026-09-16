@@ -20,6 +20,9 @@ body,
     var(--grad-bg);
   background-size: var(--grid) var(--grid), var(--grid) var(--grid), 100% 100%, 100% 100%;
   background-repeat: repeat, repeat, no-repeat, no-repeat;
+  /* La grilla arranca en el borde del rail: asi una linea cae justo ahi y las demas
+     siguen cada 64px. En vertical se centra, que 1080 tampoco es multiplo. */
+  background-position: var(--rail) center, var(--rail) center, center, center;
 }
 
 body::before {
@@ -83,7 +86,7 @@ body {
 
 .app {
   display: grid;
-  grid-template-columns: 184px 1fr;
+  grid-template-columns: var(--rail) 1fr;
   grid-template-rows: minmax(0, 1fr);
   height: 100%;
 }

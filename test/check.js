@@ -468,7 +468,49 @@ Promise.all(pending).then(function (results) {
         store.channelsOf('l2').length === 9, String(store.channelsOf('l2').length));
     check('editar invalida la caché de la pantalla TV', store.allChannels().length >= 9);
 
-    console.log('');
-    console.log(failed ? failed + ' comprobaciones FALLIDAS' : 'todo correcto');
-    process.exit(failed ? 1 : 0);
+    const stalker = (async function () {
+        const calls = [];
+        const originalFetch = global.fetch;
+        const reply = (data) => Promise.resolve({
+            ok: true, status: 200,
+            json: function () { return Promise.resolve(data); }
+        });
+        global.fetch = function (url, options) {
+            const address = String(url);
+            calls.push({ url: address, headers: (options && options.headers) || {} });
+            if (address.indexOf('/portal.php') !== -1) return Promise.resolve({ ok: false, status: 404 });
+            if (address.indexOf('action=handshake') !== -1) return reply({ js: { token: 'TOKEN1' } });
+            if (address.indexOf('action=get_profile') !== -1) return reply({ js: { id: '1' } });
+            if (address.indexOf('action=get_all_channels') !== -1) return reply({ js: { data: [
+                { name: 'Canal Stalker', tv_genre_id: '7', logo: 'http://l/1.png', cmd: 'ffmpeg http://s/1.ts', id: 11 }] } });
+            if (address.indexOf('action=get_genres') !== -1) return reply({ js: [{ id: 7, title: 'Deportes' }] });
+            if (address.indexOf('action=create_link') !== -1) return reply({ js: { cmd: 'ffmpeg http://s/live.ts' } });
+            return Promise.resolve({ ok: false, status: 500 });
+        };
+
+        const list = { kind: 'stalker', source: 'mac', origin: 'http://portal.tv/c', mac: '00:1A:79:AA:BB:CC' };
+        const channels = await api.load(list);
+        check('stalker: si /portal.php no contesta, prueba el load.php del middleware',
+            calls.some(function (call) { return call.url.indexOf('/stalker_portal/server/load.php') !== -1; }));
+        check('stalker: abre sesion con get_profile antes de pedir canales',
+            calls.some(function (call) { return call.url.indexOf('action=get_profile') !== -1; }));
+        check('stalker: guarda el token y el endpoint que contesto (create_link los necesita)',
+            list.token === 'TOKEN1' && list.endpoint.indexOf('load.php') !== -1,
+            JSON.stringify({ token: list.token, endpoint: list.endpoint }));
+        check('stalker: los canales llegan con su genero y su cmd',
+            channels.length === 1 && channels[0].group === 'Deportes' && channels[0].cmd === 'ffmpeg http://s/1.ts',
+            JSON.stringify(channels[0] || null));
+        const url = await api.resolveStalkerUrl(list, channels[0]);
+        check('stalker: create_link va con el token y sin el ffmpeg delante',
+            url === 'http://s/live.ts' && calls.filter(function (call) {
+                return call.url.indexOf('create_link') !== -1;
+            }).every(function (call) { return call.headers.Authorization === 'Bearer TOKEN1'; }), url);
+        global.fetch = originalFetch;
+    })();
+
+    return stalker.then(function () {
+        console.log('');
+        console.log(failed ? failed + ' comprobaciones FALLIDAS' : 'todo correcto');
+        process.exit(failed ? 1 : 0);
+    });
 });

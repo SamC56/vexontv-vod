@@ -180,6 +180,7 @@ body.previewing .backdrop {
     var(--grad-bg);
   background-size: var(--grid) var(--grid), var(--grid) var(--grid), 100% 100%, 100% 100%;
   background-repeat: repeat, repeat, no-repeat, no-repeat;
+  background-position: var(--rail) center, var(--rail) center, center, center;
   z-index: -1;
   -webkit-mask-image: linear-gradient(#000 0 0), linear-gradient(#000 0 0);
   -webkit-mask-repeat: no-repeat, no-repeat;
