@@ -197,12 +197,18 @@ async function run() {
         var list = window.App.store.state.lists[0];
         return !!row && !!list && row.textContent.indexOf(list.name) !== -1;
     })(), (document.querySelector('.rail-src[data-list]') || {}).textContent);
-    check('y abre su TV al pulsarlo', (function () {
-        var row = document.querySelector('.rail-src[data-list]');
-        if (!row) return false;
-        row.click();
-        return window.App.store.state.screen === 'tv' && !!window.App.store.state.tvSource;
-    })(), window.App.store.state.screen + ' / tvSource=' + window.App.store.state.tvSource);
+    window.App.tv.set('rail', 3, 0);
+    await wait(40);
+    press(40);
+    await wait(60);
+    check('y el mando baja de Favoritos al atajo de la fuente',
+        !!focused() && focused().classList.contains('rail-src'),
+        focused() ? focused().className : '(nada)');
+    press(13);
+    await wait(150);
+    check('y OK entra en la TV de esa fuente',
+        window.App.store.state.screen === 'tv' && !!window.App.store.state.tvSource,
+        window.App.store.state.screen + ' / tvSource=' + window.App.store.state.tvSource);
     // el resto del flujo sigue en Sources
     window.App.store.goHome();
     await wait(80);
@@ -844,13 +850,6 @@ async function run() {
     document.getElementById('navTv').click();
     await wait(80);
     var markTv = rail.style.getPropertyValue('--rail-mark-y');
-    check('el rail tiene atajo a lo último visto',
-        !!document.querySelector('.rail-src[data-recent]'));
-    document.querySelector('.rail-src[data-recent]').click();
-    await wait(150);
-    check('y el atajo de recientes reproduce',
-        window.App.store.state.screen === 'player' && !!window.App.store.state.playing);
-
     check('la marca del rail sigue a la sección activa',
         markHome !== '' && markTv !== '' && markHome !== markTv, markHome + ' -> ' + markTv);
 

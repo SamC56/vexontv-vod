@@ -106,7 +106,6 @@ App.uiKit = (function () {
         var clock = useClock();
         var stats = store.stats();
         var sources = store.state.lists.slice(0, 3);
-        var recent = store.state.recent.slice(0, 3);
 
         useEffect(function () {
             var rail = nav.current;
@@ -147,16 +146,6 @@ App.uiKit = (function () {
                         data-list=${list.id} onClick=${function () { store.openSource(list.id); }}>
                         <span class="rail-src-name">${list.name}</span>
                         <span class="rail-src-kind">${store.listLabel(list)}</span>
-                    </button>`;
-                })}
-            </div>` : null}
-            ${recent.length ? html`<div class="rail-block">
-                <p class="rail-title">Recent</p>
-                ${recent.map(function (channel) {
-                    return html`<button class="rail-src" tabindex="-1" data-recent="1"
-                        onClick=${function () { store.play(channel, channel.listId, store.state.recent); }}>
-                        <span class="rail-src-name">${channel.name}</span>
-                        <span class="rail-src-kind">${channel.group || ''}</span>
                     </button>`;
                 })}
             </div>` : null}

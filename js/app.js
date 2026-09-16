@@ -11,7 +11,7 @@ var App = App || {};
     }
 
     function defineZones() {
-        zone('rail', '.rail .rail-btn', {
+        zone('rail', '.rail .rail-btn, .rail .rail-src', {
             onEdge: function (dir) {
                 if (dir !== 'right') return;
                 var screen = store.state.screen;
