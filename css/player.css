@@ -1,0 +1,147 @@
+/* ---------------------------------------------------------------- reproduccion */
+.screen.player {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: block;
+  background: var(--black);
+}
+
+#videoPlayer {
+  width: 100%;
+  height: 100%;
+  background: var(--black);
+}
+
+/* Mientras el canal arranca: en vez de negro, que se esta abriendo. */
+.player-status {
+	position: absolute;
+	inset: 0;
+	display: grid;
+	place-content: center;
+	justify-items: center;
+	gap: 20px;
+	pointer-events: none;
+}
+
+.player-status-text { font-size: 20px; color: var(--text-2); }
+
+/* Un canal que no arranca: el motivo, el canal y reintentar. Nunca negro mudo. */
+.player-error {
+	position: absolute;
+	inset: 0;
+	display: grid;
+	place-items: center;
+	background: rgba(5, 5, 5, .88);
+}
+
+.play-card {
+	position: relative;
+	width: min(660px, 78vw);
+	padding: 36px 38px 30px;
+	border: 1px solid var(--line-2);
+	border-radius: var(--r-xl);
+	background: linear-gradient(180deg, rgba(22, 22, 21, .98), rgba(11, 11, 10, .98));
+	box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08), 0 40px 110px rgba(0, 0, 0, .8);
+	text-align: center;
+}
+
+.play-why {
+	font-size: 15px;
+	font-weight: 700;
+	letter-spacing: .15em;
+	text-transform: uppercase;
+	color: var(--text-3);
+}
+
+.play-name {
+	margin-top: 12px;
+	font-size: clamp(30px, 2.4vw, 42px);
+	line-height: 1.1;
+	letter-spacing: -.03em;
+}
+
+.play-hint { margin-top: 14px; font-size: 18px; color: var(--text-2); }
+.play-actions { display: flex; justify-content: center; gap: 14px; margin-top: 28px; }
+
+/* Entra desde abajo, que es donde vive. */
+.overlay {
+  position: absolute;
+  inset: auto 0 0 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 32px;
+  padding: 16vh 5% 5.5%;
+  background: linear-gradient(
+    180deg,
+    transparent,
+    rgba(5, 5, 5, 0.74) 55%,
+    rgba(5, 5, 5, 0.96)
+  );
+  opacity: 0;
+  transform: translateY(16px);
+  pointer-events: none;
+  transition:
+    opacity var(--dur) var(--ease),
+    transform var(--dur) var(--ease);
+}
+
+.overlay.visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+/* Columna de texto del reproductor: puede encogerse para que el titulo largo
+   no empuje al bloque de la derecha. */
+.ov-info {
+  min-width: 0;
+}
+
+/* Aqui "en directo" dice algo: es lo que se está viendo. Brasa, como una tally. */
+.ov-live {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 12px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+
+.ov-live .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--live);
+  box-shadow: 0 0 14px var(--live);
+}
+
+/* Lo único del reproductor que se permite el degradado: es el titular. */
+.overlay h1 {
+  font-size: clamp(40px, 3.3vw, 60px);
+  line-height: 1.03;
+  letter-spacing: -0.035em;
+}
+
+.ov-group {
+  margin-top: 10px;
+  font-size: 18px;
+  color: var(--text-2);
+}
+
+/* Lo que están dando ahora, si el panel lo sabe. */
+.ov-program {
+  margin-top: 16px;
+  font-size: 21px;
+  color: var(--text);
+}
+
+.ov-time {
+  margin-left: 14px;
+  font-size: 17px;
+  color: var(--text-3);
+}

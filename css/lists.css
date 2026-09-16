@@ -1,0 +1,332 @@
+/* ---------------------------------------------------------------- listas */
+.rows {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  width: 100%;
+  min-height: 72px;
+  padding: 13px 20px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: transparent;
+  color: var(--text-2);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color var(--dur-fast) var(--ease),
+    box-shadow var(--dur-fast) var(--ease);
+}
+
+/* El foco: nucleo un punto mas claro, halo menta y texto blanco. El color entra
+   en el mismo frame que la tecla (es estado); solo el halo se interpola. */
+.row.focused {
+  background: var(--surface-2);
+  color: var(--text);
+  box-shadow:
+    inset 0 0 0 1px var(--line-2),
+    0 0 34px rgba(21, 233, 164, 0.14);
+}
+
+.row-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.row-name {
+  font-size: 22px;
+  font-weight: 550;
+  line-height: 1.25;
+  letter-spacing: -0.015em;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.row-sub {
+  font-size: 15px;
+  letter-spacing: 0.02em;
+  color: var(--text-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.row-count {
+  flex: none;
+  min-width: 6ch;
+  text-align: right;
+  font-size: 17px;
+  color: var(--text-3);
+}
+
+.row .saved {
+  flex: none;
+  font-size: 17px;
+  color: var(--saved);
+  text-shadow: 0 0 14px var(--glow-amber);
+}
+
+/* Tipo de origen: la caja es informacion, no adorno. */
+.kind {
+  flex: none;
+  display: grid;
+  place-items: center;
+  min-width: 72px;
+  padding: 6px 11px;
+  border: 1px solid var(--line-2);
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+
+/* Miniatura: una pantallita dentro de la fila, con su hairline interior. */
+.thumb {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 80px;
+  height: 45px;
+  border-radius: var(--r-sm);
+  background-color: rgba(0, 0, 0, 0.5);
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  box-shadow: inset 0 0 0 1px var(--line);
+  overflow: hidden;
+}
+
+.thumb-letter {
+  font-size: 19px;
+  font-weight: 650;
+  color: var(--text-3);
+}
+
+/* Editar, en la fila de su fuente. Los margenes verticales negativos y el
+   align-self son a proposito: asi la caja del boton empieza donde empieza la
+   fila, el motor de foco los ve en LA MISMA fila (agrupa por offsetTop) y pasar
+   de la fuente al boton es pulsar derecha, sin logica de navegacion extra. */
+.row .edit {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: -13px 0;
+  padding: 20px;
+  border: 0;
+  border-radius: 100px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-2);
+  font: inherit;
+  font-size: 17px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
+}
+
+.row .edit svg {
+  color: currentColor;
+}
+
+.row .edit.focused {
+  background: var(--surface-3);
+  color: var(--text);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.45),
+    0 0 30px rgba(21, 233, 164, 0.16);
+}
+
+/* Fila de añadir: misma rejilla, sin relleno de color. */
+.row.add .kind {
+  border-style: dashed;
+  color: var(--text-3);
+}
+
+.row.add .row-name {
+  color: var(--text-2);
+}
+
+/* ---------------------------------------------------------------- columnas */
+.columns {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(240px, 22%) 1fr;
+  gap: 32px;
+}
+
+.col-groups {
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.row.group {
+  gap: 12px;
+  min-height: 58px;
+  padding: 11px 15px;
+  border-bottom: 0;
+}
+
+.row.group .row-name {
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--text-2);
+}
+
+.row.group.selected .row-name,
+.row.group.selected .row-count {
+  color: var(--text);
+}
+
+.row.group.selected {
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+/* ---------------------------------------------------------------- categorias */
+/* Cabecera de proveedor: tratamiento eyebrow (pequena, espaciada) sin gritar.
+   El nombre se corta antes que empujar el recuento fuera de la fila. */
+.cat-source-name {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.cat-source {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 10px;
+  padding: 24px 20px 9px;
+  border-top: 1px solid var(--line);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+
+.cat-source:first-child {
+  border-top: 0;
+  margin-top: 0;
+}
+.cat-source .row-count {
+  font-size: 15px;
+  font-weight: 400;
+  letter-spacing: 0;
+  color: var(--text-3);
+}
+
+.check {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 2px solid var(--line-3);
+  border-radius: 9px;
+  color: var(--on-accent);
+  transition:
+    background-color var(--dur-fast) var(--ease),
+    box-shadow var(--dur-fast) var(--ease);
+}
+
+.row.cat.on .check {
+  background: var(--ok);
+  border-color: var(--ok);
+  box-shadow: 0 0 18px var(--glow-mint);
+}
+
+.check svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* ---------------------------------------------------------------- "ahora" */
+.row-now {
+  flex: none;
+  max-width: 32ch;
+  padding-left: 20px;
+  font-size: 16px;
+  color: var(--text-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.row.focused .row-now {
+  color: var(--text-2);
+}
+
+/* Número de canal: columna fija para que los nombres queden alineados. */
+.num {
+  flex: none;
+  width: 3ch;
+  text-align: right;
+  font-size: 17px;
+  color: var(--text-3);
+}
+
+.row.focused .num {
+  color: var(--ok);
+}
+
+/* Se teclea el número y se ve aquí arriba, como en una TV. */
+.numbuffer {
+  position: fixed;
+  top: 7%;
+  right: 5%;
+  padding: 10px 30px;
+  border-radius: var(--r-lg);
+  background: rgba(8, 8, 7, 0.92);
+  font-size: 58px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--text);
+  box-shadow:
+    inset 0 0 0 1px var(--line-2),
+    0 0 50px rgba(254, 188, 6, 0.18);
+  z-index: 50;
+  animation: pop var(--dur) var(--ease-out);
+}
+
+/* Filo de degradado en la arista de arriba: la firma de la casa en lo que
+   interrumpe. Es una linea de 3px, no un anillo: el truco del anillo necesita
+   mask-composite (Chromium 120+) y si el motor no lo entiende la capa degradada
+   tapa el contenido. Una arista nunca puede tapar nada. */
+.numbuffer::after,
+.modal-card::after {
+  content: "";
+  position: absolute;
+  inset: 0 auto auto 0;
+  width: 100%;
+  height: 3px;
+  border-radius: inherit;
+  background: var(--grad-line);
+  pointer-events: none;
+}
+
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+}

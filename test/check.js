@@ -376,8 +376,29 @@ check('programOf vacío antes de pedirlo', store.programOf(xtreamChannel) === nu
 store.loadProgramFor(xtreamChannel);
 
 // --- empaquetado y UI ---------------------------------------------------------
+// Los ficheros no se listan a mano: salen de index.html, que es lo que carga la
+// TV. Al partir un modulo, los tests se enteran solos.
+function walk(dir, out) {
+    out = out || [];
+    fs.readdirSync(path.join(root, dir), { withFileTypes: true }).forEach(function (entry) {
+        const relative = dir + '/' + entry.name;
+        if (entry.isDirectory()) walk(relative, out);
+        else if (/\.js$/.test(entry.name)) out.push(relative);
+    });
+    return out;
+}
+
+const html = source('index.html');
+const scripts = Array.from(html.matchAll(/<script src="([^"]+)"/g)).map(function (m) { return m[1]; });
+const ours = scripts.filter(function (file) { return file.indexOf('vendor/') !== 0; });
+const uiFiles = ours.filter(function (file) { return file !== 'js/app.js'; });
+
+check('index.html carga todos los módulos del repo',
+    walk('js').every(function (file) { return scripts.indexOf(file) !== -1; }),
+    walk('js').filter(function (file) { return scripts.indexOf(file) === -1; }).join(', '));
+
 const ids = new Set();
-['index.html', 'js/ui.js'].forEach(function (file) {
+['index.html'].concat(uiFiles).forEach(function (file) {
     Array.from(source(file).matchAll(/id="([A-Za-z0-9_-]+)"/g)).forEach(function (match) {
         ids.add(match[1]);
     });
@@ -387,12 +408,11 @@ const selectors = [];
 Array.from(source('js/app.js').matchAll(/zone\('[a-zA-Z]+',\s*'([^']+)'/g)).forEach(function (match) {
     selectors.push(match[1]);
 });
-fs.readdirSync(path.join(root, 'js')).filter(function (file) { return file.endsWith('.js'); })
-    .forEach(function (file) {
-        Array.from(source('js/' + file).matchAll(/qs?a?\(\s*'([^']+)'/g)).forEach(function (match) {
-            selectors.push(match[1]);
-        });
+ours.forEach(function (file) {
+    Array.from(source(file).matchAll(/qs?a?\(\s*'([^']+)'/g)).forEach(function (match) {
+        selectors.push(match[1]);
     });
+});
 
 const missing = [];
 selectors.forEach(function (selector) {
@@ -403,7 +423,9 @@ selectors.forEach(function (selector) {
 check('cada selector apunta a un id que existe', missing.length === 0, missing.join(', '));
 check('se declaran las zonas de foco esperadas', selectors.length >= 14, selectors.length + ' selectores');
 check('los elementos vacíos van autocerrados (htm lo exige)',
-    !/<(input|br|img|hr|meta|link)\b[^>]*[^/]>/i.test(source('js/ui.js')));
+    !/<(input|br|img|hr|meta|link)\b[^>]*[^/]>/i.test(
+        ours.filter(function (file) { return file.indexOf('vendor/') === -1; })
+            .map(source).join('\n')));
 
 const manifest = source('config.xml');
 check('el id de paquete tiene 10 caracteres (Tizen lo exige)',
@@ -413,14 +435,12 @@ check('config.xml apunta a index.html', manifest.indexOf('<content src="index.ht
 check('config.xml usa el perfil de TV', manifest.indexOf('tv-samsung') !== -1);
 check('hay icono', fs.existsSync(path.join(root, 'icon.png')));
 
-const html = source('index.html');
-const scripts = Array.from(html.matchAll(/<script src="([^"]+)"/g)).map(function (m) { return m[1]; });
 check('cada <script src> existe', scripts.every(function (file) { return fs.existsSync(path.join(root, file)); }));
 check('los 3 vendor están en el paquete',
     scripts.filter(function (file) { return file.indexOf('vendor/') === 0; }).length === 3);
 check('ningún script sale a un CDN', scripts.every(function (file) { return file.indexOf('http') === -1; }));
 
-const bundle = scripts.concat([source('js/api.js'), source('js/ui.js')]).join('\n');
+const bundle = ours.map(source).join('\n');
 check('el runtime no menciona ningún CDN', !/unpkg|jsdelivr|cdnjs|cdn\./i.test(bundle));
 
 // --- alta, edición y borrado (con red simulada) -------------------------------

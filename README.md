@@ -57,6 +57,36 @@ App de TV para Samsung Tizen (probada en Tizen 8, QLED 2024): importa listas
 
 Sin build step: HTML, CSS y JS a pelo. Un `.wgt` es un zip.
 
+## Estructura
+
+```
+index.html          las 16 etiquetas de script y las 7 hojas, en orden de carga
+config.xml          manifiesto Tizen (los dos privilegios y el id de 10 letras)
+icon.png brand.png  icono de app y marca del rail (tools/make-icon.py)
+css/tokens.css      colores, radios, curvas y el mesh: la identidad
+css/base.css        reset, marco de la app (rail, main) y tipografía
+css/lists.css       filas, listas de canales, categorías y columnas
+css/forms.css       buscador, panel de alta y botones
+css/player.css      reproductor, overlay y tarjeta de error
+css/overlays.css    aviso de carga, aviso breve, número tecleado y confirmación
+css/media.css       prefers-reduced-motion / -transparency / -contrast
+js/api.js           parseo M3U, Xtream, Stalker y EPG (sin DOM ni UI)
+js/store.js         estado, fuentes, navegación, categorías y reproducción
+js/tv.js            motor de foco del mando (zonas por offsetTop)
+js/player.js        AVPlay con <video> de reserva
+js/ui/kit.js        iconos y piezas compartidas (barra, fila, buscador)
+js/ui/screens/*.js  una pantalla por fichero
+js/ui.js            raíz y montaje: junta el kit con las pantallas
+js/app.js           zonas de foco, teclas del mando y arranque
+tools/              generador de marca y empaquetador .wgt
+test/               check.js (lógica) y dom.js (la app en jsdom)
+```
+
+Nada de esto se lista a mano en los tests: `test/*.js` y el capturador de
+pantallas leen los `<script>` y los `<link>` de `index.html`, así que partir un
+módulo no obliga a tocar los tests. Hay un check que exige que index.html cargue
+**todos** los ficheros: uno suelto es código muerto.
+
 ## Desarrollo
 
 ```bash

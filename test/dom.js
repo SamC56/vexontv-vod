@@ -106,10 +106,11 @@ function typeInto(selector, value) {
 }
 
 async function run() {
-    ['js/api.js', 'js/player.js', 'js/tv.js', 'js/store.js'].forEach(function (file) {
-        window.eval(fs.readFileSync(path.join(root, file), 'utf8'));
-    });
-    ['vendor/preact.umd.js', 'vendor/hooks.umd.js', 'vendor/htm.umd.js', 'js/ui.js', 'js/app.js'].forEach(function (file) {
+    // Se carga exactamente lo que carga index.html, en su orden: así un módulo
+    // nuevo entra en los tests sin tocar nada aquí.
+    const indexSource = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+    const scripts = Array.from(indexSource.matchAll(/<script src="([^"]+)"/g)).map(function (m) { return m[1]; });
+    scripts.forEach(function (file) {
         window.eval(fs.readFileSync(path.join(root, file), 'utf8'));
     });
 
@@ -448,7 +449,15 @@ async function run() {
         !!document.getElementById('screen-home') && document.querySelectorAll('#sourceList .row.source').length === 0);
 
     // --- la hoja de estilos -------------------------------------------------
-    const css = fs.readFileSync(path.join(root, 'css/style.css'), 'utf8');
+    // Las hojas se parten por asunto: se leen todas y se exige que index.html
+    // enlace cada una (una hoja nueva sin enlazar es estilo que desaparece).
+    const cssFiles = fs.readdirSync(path.join(root, 'css')).filter(function (name) { return /\.css$/.test(name); });
+    const htmlSource = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+    const unlinked = cssFiles.filter(function (name) { return htmlSource.indexOf('css/' + name) === -1; });
+    check('index.html enlaza todas las hojas de estilo', unlinked.length === 0, unlinked.join(', '));
+    const css = cssFiles.map(function (name) {
+        return fs.readFileSync(path.join(root, 'css', name), 'utf8');
+    }).join('\n');
     // Los comentarios no son reglas: se quitan antes de comprobar nada.
     const code = css.replace(/\/\*[\s\S]*?\*\//g, '');
     const styleEl = document.createElement('style');
@@ -485,9 +494,9 @@ async function run() {
         !/backdrop-filter\s*:/.test(code));
 
     // Toda clase que pinta el markup (y los estados que añade el motor) tiene regla.
-    const styles = ['js/ui.js', 'js/app.js', 'js/tv.js', 'js/player.js', 'index.html'].map(function (file) {
-        return fs.readFileSync(path.join(root, file), 'utf8');
-    }).join('\n');
+    const styles = ['index.html'].concat(scripts)
+        .filter(function (file) { return file.indexOf('vendor/') !== 0; })
+        .map(function (file) { return fs.readFileSync(path.join(root, file), 'utf8'); }).join('\n');
     const used = new Set();
     Array.from(styles.matchAll(/class="([^"$]*)"/g)).forEach(function (match) {
         match[1].trim().split(/\s+/).forEach(function (name) { if (name) used.add(name); });

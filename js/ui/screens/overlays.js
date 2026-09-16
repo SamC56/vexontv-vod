@@ -1,0 +1,63 @@
+var App = App || {};
+
+// Avisos: carga, aviso breve, número tecleado y confirmación.
+
+App.uiScreens = App.uiScreens || {};
+
+(function () {
+    var kit = App.uiKit;
+    var store = App.store;
+    var html = kit.html;
+    var useState = kit.useState;
+
+    App.uiScreens.loader = // Aviso de carga: dice QUE se esta cargando, en QUE fase esta cada fuente y
+    // cuanto lleva, para que una lista grande no parezca una app colgada.
+    function Loader() {
+        var state = store.state;
+        var rows = store.loadingRows();
+        return html`<div class="loading" id="loading">
+            <div class="spinner"></div>
+            <h1 class="loading-title" id="loadingTitle">${state.loading.title}<span
+                class="loading-time" id="loadingTime">${store.elapsedOf(state.loading)} s</span></h1>
+            <div class="loading-list" id="loadingList">
+                ${rows.map(function (row) {
+                    // Con una sola fuente, el nombre ya esta en el titular: la fila
+                    // se queda solo con el progreso y no lo repite.
+                    return html`<div class="loading-row" key=${row.key}>
+                        ${rows.length > 1 ? html`<span class="loading-name">${row.name}</span>` : null}
+                        <span class="loading-phase">${row.label}${row.count !== undefined
+                            ? ' · ' + store.formatCount(row.count) + ' channels' : ''}</span>
+                    </div>`;
+                })}
+            </div>
+            <p class="loading-hint" id="loadingHint">Very large playlists take a while.</p>
+        </div>`;
+    };
+
+    App.uiScreens.toast = function Toast(props) {
+        return html`<div class="toast" id="toast">${props.message}</div>`;
+    };
+
+    App.uiScreens.numBuffer = function NumBuffer(props) {
+        return html`<div class="numbuffer" id="numBuffer">${props.value}</div>`;
+    };
+
+    App.uiScreens.confirm = function Confirm() {
+        var confirm = store.state.confirm;
+        return html`<div class="modal" id="confirm">
+            <div class="modal-card">
+                <p id="confirmText">${confirm.message}</p>
+                <div class="actions">
+                    <button class="btn" id="confirmCancel" tabindex="-1"
+                        onClick=${function () { store.closeConfirm(); }}>Cancel</button>
+                    <button class="btn danger" id="confirmOk" tabindex="-1" onClick=${function () {
+                        var action = confirm.onAccept;
+                        store.closeConfirm();
+                        if (action) action();
+                    }}>Delete</button>
+                </div>
+            </div>
+        </div>`;
+    };
+
+})();
