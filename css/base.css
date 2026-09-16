@@ -18,11 +18,15 @@ body,
 .loading {
   background-color: var(--black);
   background-image:
+    /* La grilla arriba (se ve en toda la pantalla, es el textil de la app), debajo el
+       apagon y, al fondo, el multicolor: asi el degradado de la casa solo asoma por
+       la cabecera y el resto es sala negra. */
     linear-gradient(var(--grid-line) 1px, transparent 1px),
     linear-gradient(90deg, var(--grid-line) 1px, transparent 1px),
+    var(--grad-fade),
     var(--grad-bg);
-  background-size: var(--grid) var(--grid), var(--grid) var(--grid), 100% 100%;
-  background-repeat: repeat, repeat, no-repeat;
+  background-size: var(--grid) var(--grid), var(--grid) var(--grid), 100% 100%, 100% 100%;
+  background-repeat: repeat, repeat, no-repeat, no-repeat;
 }
 
 /* Filo de marca: la misma linea de degradado que marca el foco, en el borde de

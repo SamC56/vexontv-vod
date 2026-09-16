@@ -94,6 +94,9 @@
   /* El degradado de la casa como FONDO. Los mismos tres colores y el mismo 48% que
      --grad-line, pero con alfa: solido, blanco sobre el ambar da 1.6:1 y no hay
      quien lea una lista encima. Aqui es una luz de sala, no un relleno. */
+  /* Y encima, el apagon: el multicolor se ve en la cabecera y de ahi para abajo la
+     sala vuelve a negro. Arriba transparente, abajo negro solido. */
+  --grad-fade: linear-gradient(180deg, rgba(5, 5, 5, 0) 0%, var(--black) 24%);
   --grad-bg: linear-gradient(
     90deg,
     rgba(254, 188, 6, 0.16),

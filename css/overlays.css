@@ -201,9 +201,10 @@ body.previewing .backdrop {
   background-image:
     linear-gradient(var(--grid-line) 1px, transparent 1px),
     linear-gradient(90deg, var(--grid-line) 1px, transparent 1px),
+    var(--grad-fade),
     var(--grad-bg);
-  background-size: var(--grid) var(--grid), var(--grid) var(--grid), 100% 100%;
-  background-repeat: repeat, repeat, no-repeat;
+  background-size: var(--grid) var(--grid), var(--grid) var(--grid), 100% 100%, 100% 100%;
+  background-repeat: repeat, repeat, no-repeat, no-repeat;
   /* Detras de todo. Es un elemento posicionado (fixed) y el rail es un item de grid
      no posicionado: sin esto pintaba por encima del rail y se comia la marca. */
   z-index: -1;

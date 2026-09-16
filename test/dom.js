@@ -740,6 +740,14 @@ async function run() {
         /linear-gradient\([^)]*var\(--(amber|ember|mint)\)/.test(code));
     // El fondo es el degradado de la casa, en alfa (solido dejaria el texto blanco
     // sobre el ambar en 1.6:1). Los tres colores, y el brasa en el 48% como el filo.
+    check('y el multicolor solo asoma por la cabecera (apagón encima)', (function () {
+        var rule = code.match(/--grad-fade:[^;]*;/);
+        return !!rule && /rgba\(5,\s*5,\s*5,\s*0\)/.test(rule[0]) && /var\(--black\)/.test(rule[0]);
+    })());
+    check('la capa del agujero pinta el mismo fondo que el body', (function () {
+        var backdrop = code.match(/\.backdrop\s*\{[^}]*\}/g) || [];
+        return backdrop.some(function (block) { return block.indexOf('--grad-fade') !== -1; });
+    })());
     check('el fondo lleva el degradado de marca con los tres colores', (function () {
         var rule = code.match(/--grad-bg:\s*linear-gradient\([^;]*;/);
         if (!rule) return false;
