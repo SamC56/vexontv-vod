@@ -342,7 +342,7 @@ async function run() {
     ]);
     // El preview NO se abre al enfocar: hay que pulsar OK en un canal.
     check('elegir categoría no abre el preview por sí sola',
-        !document.querySelector('#tvPreview #previewCard'),
+        !document.querySelector('#tvPreview .preview-name'),
         document.querySelector('#tvPreview .preview-name') ? 'abrió ' + document.querySelector('#tvPreview .preview-name').textContent : 'vacío');
 
     press(40);
@@ -437,9 +437,9 @@ async function run() {
     check('el foco se va a los botones de la tarjeta',
         !!focused() && focused().id === 'playRetry', focused() ? focused().id : '(nada)');
     const before = window.App.store.state.playing.channel.name;
-    press(39);
+    press(428);
     await wait(120);
-    check('con la tarjeta de error abierta, la derecha cambia de canal',
+    check('con la tarjeta de error abierta, el botón de bajar canal cambia de canal',
         !document.getElementById('playError') && window.App.store.state.playing.channel.name !== before,
         document.getElementById('playError') ? 'sigue la tarjeta' : '(sin tarjeta)');
 
@@ -456,6 +456,52 @@ async function run() {
     document.getElementById('playRetry').click();
     await wait(90);
     check('reintentar quita la tarjeta y vuelve a abrir', !document.getElementById('playError'));
+
+    // Cursores y botones de canal. Subir/bajar de canal es cosa de los botones de
+    // canal; los cursores son de los menus. Antes la izquierda y la derecha zappeaban
+    // siempre, asi que el boton de aspecto era inalcanzable con el mando.
+    const withMenu = window.App.store.state.playing.channel.name;
+    press(40);
+    await wait(60);
+    check('abajo entra en el menú del reproductor',
+        window.App.store.state.menuFocus && !!focused() && !!focused().closest('#ovActions'),
+        focused() ? focused().id : '(nada)');
+    check('el menú no se esconde mientras está en foco',
+        document.getElementById('playerOverlay').classList.contains('visible'));
+    press(40);
+    await wait(60);
+    check('y abajo pasa al botón de aspecto sin cambiar de canal',
+        !!focused() && focused().id === 'ovAspect'
+        && window.App.store.state.playing.channel.name === withMenu,
+        focused() ? focused().id : '(nada)');
+    // Con OK el motor pulsa el botón enfocado (aqui no hay AVPlay, asi que el store
+    // avisa "Aspect: ..." sin aplicarlo; mas abajo, con el stub, se comprueba que
+    // ademas cambia de modo).
+    press(13);
+    await wait(90);
+    check('OK con el menú en foco pulsa el botón de aspecto',
+        !!window.App.store.state.toast && /^Aspect: /.test(window.App.store.state.toast.message),
+        window.App.store.state.toast ? window.App.store.state.toast.message : '(sin aviso)');
+    check('y no ha cambiado de canal', window.App.store.state.playing.channel.name === withMenu);
+    press(38);
+    await wait(60);
+    press(38);
+    await wait(60);
+    check('arriba sale del menú', !window.App.store.state.menuFocus);
+    press(37);
+    await wait(150);
+    check('y sin menú, la izquierda despliega la lista de canales',
+        !!document.getElementById('zapPanel'));
+    press(10009);
+    await wait(120);
+    check('Atrás cierra la lista y sigue viendo',
+        !document.getElementById('zapPanel') && window.App.store.state.screen === 'player');
+    const beforeChUp = window.App.store.state.playing.channel.name;
+    press(427);
+    await wait(200);
+    check('el botón de subir canal cambia de canal',
+        window.App.store.state.playing.channel.name !== beforeChUp,
+        beforeChUp + ' -> ' + window.App.store.state.playing.channel.name);
 
     press(10009);
     await wait(80);
@@ -713,6 +759,11 @@ async function run() {
     })() === true, 'variables sin definir');
     check('nada de blur de fondo (en TV repinta por software)',
         !/backdrop-filter\s*:/.test(code));
+    // El fondo del elemento raiz se propaga al lienzo y es opaco: con el preview en
+    // marcha taparia el plano de video de AVPlay y dentro del agujero no se veria nada.
+    check('el splash no pinta el fondo en html (o el vídeo del preview no se vería)',
+        !/<style>[\s\S]*?html\s*,\s*body\s*\{[^}]*background/.test(htmlSource),
+        'hay una regla html, body con background');
 
     // Toda clase que pinta el markup (y los estados que añade el motor) tiene regla.
     const styles = ['index.html'].concat(scripts)

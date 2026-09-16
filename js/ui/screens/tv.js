@@ -25,8 +25,10 @@ App.uiScreens = App.uiScreens || {};
         return !!(window.CSS && window.CSS.supports && window.CSS.supports('-webkit-mask-composite', 'xor'));
     }
 
+    // El agujero es el escenario, no la columna entera: la columna es alta (675x888) y
+    // el video de 16:9 se veia encajado entre dos franjas negras enormes.
     function previewBox() {
-        var element = document.getElementById('tvPreview');
+        var element = document.getElementById('previewStage');
         return element && element.getBoundingClientRect ? element.getBoundingClientRect() : null;
     }
 
@@ -50,36 +52,47 @@ App.uiScreens = App.uiScreens || {};
 
     var iconTvBig = kit.svg(html`<rect x="2.5" y="5" width="19" height="13" rx="2" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M8.5 21h7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>`, 64);
 
+    // El preview es escenario 16:9 arriba (el logo, y con el canal en marcha el video
+    // por el agujero) y la ficha debajo. La ficha se queda mientras se ve: no tapa el
+    // agujero y sigue diciendo que esta dando y que viene despues.
     function Preview() {
         var state = store.state;
         var channel = state.preview;
         if (!channel) {
-            return html`<div class="preview-empty" id="previewEmpty">
-                <span class="preview-icon">${iconTvBig}</span>
-                <p class="preview-hint">Select a channel to see it here</p>
+            return html`<div class="preview-card" id="previewCard">
+                <div class="preview-stage" id="previewStage">
+                    <div class="preview-empty" id="previewEmpty">
+                        <span class="preview-icon">${iconTvBig}</span>
+                        <p class="preview-hint">Select a channel to see it here</p>
+                    </div>
+                </div>
             </div>`;
         }
         var program = store.programOf(channel);
         var next = store.nextOf(channel);
         var progress = store.programProgress(program);
         return html`<div class="preview-card" id="previewCard">
-            <span class="preview-logo" style=${kit.logoStyle(channel.logo)}>
-                ${channel.logo ? null : html`<span class="preview-letter">${kit.initial(channel.name)}</span>`}
-            </span>
-            <h2 class="preview-name">${channel.name}</h2>
-            <p class="preview-group">${channel.group || ''}</p>
-            ${program ? html`<div class="preview-guide">
-                <p class="preview-program">${program.title}
-                    <span class="ov-time">${clock(program.start)} – ${clock(program.end)}</span></p>
-                ${progress !== null ? html`<div class="ov-progress">
-                    <span class="ov-progress-fill" style=${'width:' + progress + '%'}></span>
+            <div class="preview-stage" id="previewStage">
+                <span class="preview-logo" style=${kit.logoStyle(channel.logo)}>
+                    ${channel.logo ? null : html`<span class="preview-letter">${kit.initial(channel.name)}</span>`}
+                </span>
+            </div>
+            <div class="preview-info">
+                <h2 class="preview-name">${channel.name}</h2>
+                <p class="preview-group">${channel.group || ''}</p>
+                ${program ? html`<div class="preview-guide">
+                    <p class="preview-program">${program.title}
+                        <span class="ov-time">${clock(program.start)} – ${clock(program.end)}</span></p>
+                    ${progress !== null ? html`<div class="ov-progress">
+                        <span class="ov-progress-fill" style=${'width:' + progress + '%'}></span>
+                    </div>` : null}
                 </div>` : null}
-            </div>` : null}
-            ${next ? html`<p class="preview-next">
-                <span class="ov-next-tag">Next</span>${next.title}
-                ${next.start ? html`<span class="ov-time">${clock(next.start)} – ${clock(next.end)}</span>` : null}
-            </p>` : null}
-            <p class="preview-open">Press OK to watch full screen</p>
+                ${next ? html`<p class="preview-next">
+                    <span class="ov-next-tag">Next</span>${next.title}
+                    ${next.start ? html`<span class="ov-time">${clock(next.start)} – ${clock(next.end)}</span>` : null}
+                </p>` : null}
+                <p class="preview-open">Press OK to watch full screen</p>
+            </div>
         </div>`;
     }
 

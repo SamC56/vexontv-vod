@@ -196,7 +196,13 @@ var App = App || {};
         // viene seleccionado, lo selecciona el usuario con abajo.
         tv.define('playerIdle', function () { return []; });
 
-        zone('overlay', '#ovActions .btn');
+        // Menu del reproductor (favoritos y aspecto), en columna: arriba/abajo lo
+        // navegan, y arriba desde el primero sale del menu.
+        zone('overlay', '#ovActions .btn', {
+            onEdge: function (dir) {
+                if (dir === 'up') { store.setMenuFocus(false); tv.set('playerIdle', 0, 0); }
+            }
+        });
 
         // Panel de zapeo: categorias a la izquierda, canales a la derecha.
         zone('zapCats', '#zapCats .zapcat', {
@@ -212,18 +218,17 @@ var App = App || {};
         });
 
         // Con un canal caido, la zona del reproductor son los botones de la
-        // tarjeta de error: reintentar o volver.
-        zone('playError', '#playError .btn', {
-            onEdge: function (dir) {
-                if (dir === 'up' || dir === 'left') tv.set('rail', 0, 0);
-            }
-        });
+        // tarjeta: reintentar o volver. Sin bordes a proposito: el rail esta oculto
+        // mientras hay video, asi que mandar el foco ahi era mandarlo a lo invisible.
+        zone('playError', '#playError .btn');
 
         zone('confirm', '#confirm .btn');
     }
 
     function back() {
         if (store.state.confirm) { store.closeConfirm(); return true; }
+        // Atras con la lista de canales desplegada cierra la lista, no el canal.
+        if (store.state.zapOpen) { store.closeZap(); return true; }
         if (store.state.screen === 'player') { store.exitPlayer(); return true; }
         if (store.state.screen === 'edit') { store.goHome(); return true; }
         if (store.state.screen !== 'home') { store.goHome(); return true; }
@@ -274,32 +279,50 @@ var App = App || {};
         if (code === tv.KEY.ENTER && store.commitDigits()) return true;
         if (store.state.screen !== 'player') return false;
 
-        // Izquierda/derecha SIEMPRE cambian de canal, tambien con la tarjeta de
-        // error abierta: un canal que falla no puede encerrarte.
-        if (code === tv.KEY.LEFT) { store.zap(-1); return true; }
-        if (code === tv.KEY.RIGHT) { store.zap(1); return true; }
-
-        // Con el panel de zapeo abierto: OK y Atras lo cierran (y siguen viendo).
-        if (store.state.zapOpen) {
-            if (code === tv.KEY.ENTER || code === tv.KEY.UP) { store.closeZap(); return true; }
-            return false;
-        }
-        if (code === tv.KEY.ENTER && !store.state.playError) { store.openZap(); return true; }
-
-        var error = !!store.state.playError;
-        if (error && (code === tv.KEY.UP || code === tv.KEY.DOWN)) {
-            var buttons = ui.qsa('#playError .btn');
-            var index = buttons.indexOf(document.querySelector('.focused'));
-            // por fila: los botones van en columna
-            tv.set('playError', index === 0 ? 1 : 0, 0);
-            return true;
-        }
-        // Reproduciendo: abajo selecciona el boton de favoritos, arriba lo suelta.
-        if (!error && code === tv.KEY.DOWN) { tv.set('overlay', 0, 0); return true; }
-        if (!error && code === tv.KEY.UP) { tv.set('playerIdle', 0, 0); return true; }
-
+        // Subir y bajar de canal: SIEMPRE, con el canal caido incluido (un canal que
+        // falla no puede encerrarte), y SOLO con estos dos botones. Los cursores son
+        // para los menus: mientras la izquierda y la derecha zappeasen, el boton de
+        // aspecto era inalcanzable.
         if (code === tv.KEY.CH_UP) { store.zap(1); return true; }
         if (code === tv.KEY.CH_DOWN) { store.zap(-1); return true; }
+
+        // Lista de canales desplegada: los cursores son suyos, y el motor ya sabe
+        // navegar sus dos columnas. OK cierra y sigue viendo, salvo encima de una
+        // categoria, que la abre (entonces la pulsa el motor, como cualquier fila).
+        if (store.state.zapOpen) {
+            if (code === tv.KEY.ENTER && !document.querySelector('#zapCats .focused')) {
+                store.closeZap();
+                return true;
+            }
+            return false;
+        }
+
+        // Izquierda o derecha despliegan el menu lateral: la lista de canales.
+        if (code === tv.KEY.LEFT || code === tv.KEY.RIGHT) { store.openZap(); return true; }
+
+        // Tarjeta de error: reintentar o volver. Los botones van en columna, pero el
+        // motor los agrupa por posicion y en un DOM sin maquetacion no los distingue:
+        // se resuelve por indice, como el boton de editar de una fila.
+        if (store.state.playError) {
+            if (code === tv.KEY.UP || code === tv.KEY.DOWN) {
+                var buttons = ui.qsa('#playError .btn');
+                var index = buttons.indexOf(document.querySelector('.focused'));
+                tv.set('playError', index === 0 ? 1 : 0, 0);
+                return true;
+            }
+            return false;
+        }
+
+        // Menu del reproductor en foco: los cursores y OK son suyos (abajo/arriba lo
+        // navegan, OK pulsa el boton enfocado, que es lo que hace que el de aspecto
+        // funcione con el mando). Salir del menu es del borde de su zona.
+        if (store.state.menuFocus) return false;
+
+        // Abajo entra en el menu del reproductor (favoritos y aspecto); OK abre la
+        // lista de canales.
+        if (code === tv.KEY.DOWN) { store.setMenuFocus(true); tv.set('overlay', 0, 0); return true; }
+        if (code === tv.KEY.UP) { store.setMenuFocus(false); tv.set('playerIdle', 0, 0); return true; }
+        if (code === tv.KEY.ENTER) { store.openZap(); return true; }
         if (code === tv.KEY.PLAY_PAUSE) { player.toggle(); return true; }
         return false;
     }

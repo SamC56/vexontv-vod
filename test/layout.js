@@ -81,6 +81,13 @@ window.addEventListener('load', function () {
                             Object.defineProperty(event, 'keyCode', { value: 40 });
                             document.dispatchEvent(event);
                         }
+                        var stage = document.getElementById('previewStage');
+                        var stageBox = stage.getBoundingClientRect();
+                        // El agujero y el filo de arriba solo se ven con el preview en
+                        // marcha (body.previewing); el motor lo pone y no hay AVPlay aqui.
+                        document.body.classList.add('previewing');
+                        var backdrop = window.getComputedStyle(document.getElementById('backdrop'));
+                        var edge = window.getComputedStyle(document.body, '::before');
                         var frame = document.getElementById('tvChannels');
                         var app = document.querySelector('.app');
                         var focused = document.querySelector('.focused');
@@ -94,7 +101,13 @@ window.addEventListener('load', function () {
                             scrolled: Math.round(frame.scrollTop),
                             focus: (focused ? focused.textContent.slice(0, 12) : null),
                             inside: !!item && item.top >= box.top - 1 && item.bottom <= box.bottom + 1,
-                            document: document.documentElement.scrollTop + window.scrollY
+                            document: document.documentElement.scrollTop + window.scrollY,
+                            stage: [Math.round(stageBox.width), Math.round(stageBox.height)],
+                            stageRatio: stageBox.height ? stageBox.width / stageBox.height : 0,
+                            backdropZ: backdrop.zIndex,
+                            backdropPosition: backdrop.position,
+                            edgeOpacity: edge.opacity,
+                            edgeGradient: edge.backgroundImage.indexOf('gradient') !== -1
                         });
                     }, 700);
                 });
@@ -143,6 +156,14 @@ function main() {
             data.scrolled > 0, 'scrollTop ' + data.scrolled);
         check('la fila enfocada queda dentro del marco visible',
             data.inside, 'foco en "' + data.focus + '"');
+        check('el escenario del preview es 16:9 (el video no se ve encajado)',
+            Math.abs(data.stageRatio - 16 / 9) < 0.02,
+            data.stage.join('x') + ' = ' + data.stageRatio.toFixed(3));
+        check('el agujero del preview va detrás del rail, o se comería la marca',
+            parseFloat(data.backdropZ) < 0, 'z-index ' + data.backdropZ);
+        check('y el filo de marca de arriba sobrevive al preview',
+            data.edgeGradient && parseFloat(data.edgeOpacity) > 0,
+            'opacidad ' + data.edgeOpacity + ', degradado ' + data.edgeGradient);
         check('bajar por la lista no mueve el documento',
             data.document === 0, 'desplazamiento ' + data.document);
     } catch (error) {

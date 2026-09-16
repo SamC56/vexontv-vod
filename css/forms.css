@@ -63,13 +63,13 @@
 }
 
 .type-title {
-  font-size: 22px;
+  font-size: 25px;
   font-weight: 600;
   letter-spacing: -0.01em;
   color: var(--text);
 }
 .type-hint {
-  font-size: 15px;
+  font-size: 17px;
   line-height: 1.4;
   color: var(--text-3);
 }
@@ -77,7 +77,7 @@
 /* Fila de categoria en TV: es la unica fila que lleva a otro sitio, asi que va
    un punto mas grande que una fila normal. */
 .row.tvcat .row-name {
-  font-size: 18px;
+  font-size: 21px;
   font-weight: 600;
 }
 
@@ -130,7 +130,7 @@
   background: transparent;
   color: var(--text);
   font: inherit;
-  font-size: 20px;
+  font-size: 23px;
   outline: none;
 }
 
@@ -139,7 +139,7 @@
 }
 .search-count {
   flex: none;
-  font-size: 16px;
+  font-size: 18px;
   color: var(--text-3);
 }
 
@@ -180,7 +180,7 @@
 /* Etiquetas de campo: eyebrow. Son cortas y siempre van encima del campo. */
 .panel label {
   margin: 22px 0 9px;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 700;
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -198,7 +198,7 @@
   background: rgba(0, 0, 0, 0.45);
   color: var(--text);
   font: inherit;
-  font-size: 20px;
+  font-size: 23px;
   outline: none;
   transition:
     border-color var(--dur-fast) var(--ease),
@@ -231,7 +231,7 @@
   background: rgba(0, 0, 0, 0.45);
   color: var(--text);
   font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-  font-size: 17px;
+  font-size: 19px;
   line-height: 1.55;
   resize: none;
   outline: none;
@@ -267,7 +267,7 @@
 /* Lo que el campo detecta mientras escribes: evita tener que saberse el tipo. */
 .hint {
   margin-top: 11px;
-  font-size: 15px;
+  font-size: 17px;
   color: var(--text-3);
 }
 
@@ -287,7 +287,7 @@
   background: rgba(255, 255, 255, 0.02);
   color: var(--text-2);
   font: inherit;
-  font-size: 18px;
+  font-size: 21px;
   text-align: left;
   cursor: pointer;
   transition: box-shadow var(--dur-fast) var(--ease);
@@ -316,7 +316,7 @@
 .err {
   min-height: 26px;
   margin-top: 18px;
-  font-size: 18px;
+  font-size: 21px;
   color: var(--live);
 }
 
@@ -345,7 +345,7 @@
   background: rgba(255, 255, 255, 0.03);
   color: var(--text);
   font: inherit;
-  font-size: 19px;
+  font-size: 22px;
   font-weight: 600;
   letter-spacing: -0.01em;
   cursor: pointer;

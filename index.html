@@ -9,7 +9,11 @@
 	     cuanto pinta (js/ui.js). Si la app no arranca, se queda esto, que informa
 	     mas que un negro. -->
 	<style>
-		html, body { margin: 0; height: 100%; overflow: hidden; background: #050505; }
+		/* El negro va en body, NO en html: el fondo del elemento raiz se propaga al
+		   lienzo y taparia el plano de video de AVPlay (el preview no se veria).
+		   body.previewing lo deja transparente y entonces manda la capa del agujero. */
+		html, body { margin: 0; height: 100%; overflow: hidden; }
+		body { background: #050505; }
 		#splash {
 			position: fixed;
 			inset: 0;

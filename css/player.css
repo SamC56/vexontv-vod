@@ -66,7 +66,7 @@ body.playing {
 }
 
 .player-status .spinner { width: 30px; height: 30px; }
-.player-status-text { font-size: 18px; color: var(--text-2); }
+.player-status-text { font-size: 21px; color: var(--text-2); }
 
 /* Un canal que no arranca: el motivo, el canal y reintentar. Nunca negro mudo. */
 .player-error {
@@ -89,7 +89,7 @@ body.playing {
 }
 
 .play-why {
-	font-size: 15px;
+	font-size: 17px;
 	font-weight: 700;
 	letter-spacing: .15em;
 	text-transform: uppercase;
@@ -103,7 +103,7 @@ body.playing {
 	letter-spacing: -.03em;
 }
 
-.play-hint { margin-top: 14px; font-size: 18px; color: var(--text-2); }
+.play-hint { margin-top: 14px; font-size: 21px; color: var(--text-2); }
 .play-actions {
 	display: flex;
 	flex-direction: column;
@@ -153,7 +153,7 @@ body.playing {
   align-items: center;
   gap: 9px;
   margin-bottom: 12px;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 700;
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -185,7 +185,7 @@ body.playing {
 
 .ov-group {
   margin-top: 10px;
-  font-size: 18px;
+  font-size: 21px;
   color: var(--text-2);
 }
 
@@ -210,13 +210,13 @@ body.playing {
 
 .ov-next {
   margin-top: 10px;
-  font-size: 18px;
+  font-size: 21px;
   color: var(--text-2);
 }
 
 .ov-next-tag {
   margin-right: 10px;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -225,13 +225,13 @@ body.playing {
 
 .ov-program {
   margin-top: 16px;
-  font-size: 21px;
+  font-size: 24px;
   color: var(--text);
 }
 
 .ov-time {
   margin-left: 14px;
-  font-size: 17px;
+  font-size: 19px;
   color: var(--text-3);
 }
 
@@ -262,7 +262,7 @@ body.playing {
 
 .zap-head {
   padding: 6px 20px 14px;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -277,7 +277,7 @@ body.playing {
   padding: 9px 16px;
 }
 
-.row.zapcat .row-name { font-size: 17px; color: var(--text-2); }
+.row.zapcat .row-name { font-size: 19px; color: var(--text-2); }
 .row.zapcat.selected { background: var(--surface-2); }
 .row.zapcat.selected .row-name { color: var(--text); }
 .row.zapcat.selected::before {
@@ -326,7 +326,7 @@ body.playing {
 }
 
 .zap-top .row-name {
-  font-size: 18px;
+  font-size: 21px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -337,7 +337,7 @@ body.playing {
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 14px;
+  font-size: 16px;
   color: var(--text-3);
 }
 
@@ -358,11 +358,14 @@ body.playing {
   background: var(--grad-bar);
 }
 
-.zap-now { flex: none; font-size: 14px; color: var(--ok); }
+.zap-now { flex: none; font-size: 16px; color: var(--ok); }
 
-/* Los dos botones del banner, juntos. */
+/* Los dos botones del banner, en columna. En fila el motor de foco los agrupa por
+   posicion y depende de la maquetacion; en columna los navega igual en cualquier
+   maquetacion, y ademas no compiten con el titular cuando el nombre es largo. */
 .ov-actions {
   display: flex;
+  flex-direction: column;
   align-items: flex-end;
   gap: 12px;
 }

@@ -91,7 +91,8 @@ App.uiScreens = App.uiScreens || {};
                 </div>
             </div>` : null}
             ${state.zapOpen ? html`<${App.uiScreens.zap} />` : null}
-            <div class=${'overlay' + (overlay && !state.playError && !state.zapOpen ? ' visible' : '')} id="playerOverlay">
+            <div class=${'overlay' + ((overlay || state.menuFocus) && !state.playError && !state.zapOpen
+                ? ' visible' : '')} id="playerOverlay">
                 <div class="ov-info">
                     <p class="ov-live" id="ovLive"><span class="dot"></span>Live<span
                         class="ov-engine" id="ovEngine">${player.hardware() ? 'AVPlay' : 'HTML5'}</span></p>

@@ -61,6 +61,9 @@ App.store = (function () {
         playing: null,
         // Panel de zapeo sobre el video: se abre con OK mientras se ve algo.
         zapOpen: false,
+        // Menu del reproductor (favoritos / aspecto) en foco. Mientras lo este, el
+        // overlay no se esconde: si no, se pulsaria OK sobre un boton invisible.
+        menuFocus: false,
         // Canal seleccionado en el navegador de la TV: es lo que enseña el preview.
         preview: null,
         zapCategory: '',
@@ -909,7 +912,9 @@ App.store = (function () {
 
     function playFailed(message) {
         if (state.screen !== 'player') return;
-        set({ playStatus: 'error', playError: { message: message || 'Could not open the channel' } });
+        // Sin menu: con un canal caido el overlay no esta, y dejar la bandera puesta
+        // se comia la primera tecla del mando.
+        set({ playStatus: 'error', menuFocus: false, playError: { message: message || 'Could not open the channel' } });
         focus('playError');
     }
 
@@ -934,6 +939,11 @@ App.store = (function () {
     // se pare.
     var ZAP_MS = 450;
 
+    function setMenuFocus(on) {
+        if (state.menuFocus === on) return;
+        set({ menuFocus: on });
+    }
+
     function openZap() {
         var rows = tvCategories().rows;
         // La categoria del canal que se esta viendo: es donde el usuario espera
@@ -943,13 +953,13 @@ App.store = (function () {
         var exists = false;
         for (var i = 0; i < rows.length; i++) if (rows[i].name === current) exists = true;
         state.zapCategory = exists ? current : (rows[0] ? rows[0].name : '');
-        set({ zapOpen: true });
+        set({ zapOpen: true, menuFocus: false });
         focus('zapChannels', zapChannelIndex(), 0);
     }
 
     function closeZap() {
         if (zapTimer) clearTimeout(zapTimer);
-        set({ zapOpen: false });
+        set({ zapOpen: false, menuFocus: false });
         focus('playerIdle');
     }
 
@@ -1020,7 +1030,7 @@ App.store = (function () {
         state.aspect = applied === false ? state.aspect : aspect.id;
         write(KEYS.aspect, state.aspect);
         emit();
-        notify('Aspecto: ' + aspectMode(state.aspect).label);
+        notify('Aspect: ' + aspectMode(state.aspect).label);
     }
 
     function nextAspect() {
@@ -1045,6 +1055,7 @@ App.store = (function () {
         state.playStatus = 'idle';
         state.playError = null;
         state.zapOpen = false;
+        state.menuFocus = false;
         if (origin && origin.screen) { set({ screen: origin.screen }); focus(origin.zone); return; }
         goHome();
     }
@@ -1238,6 +1249,7 @@ App.store = (function () {
         zap: zap,
         openZap: openZap,
         closeZap: closeZap,
+        setMenuFocus: setMenuFocus,
         zapCategories: zapCategories,
         zapChannels: zapChannels,
         setZapCategory: setZapCategory,
