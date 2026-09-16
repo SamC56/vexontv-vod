@@ -17,8 +17,10 @@ App.uiScreens = App.uiScreens || {};
         var rows = store.loadingRows();
         return html`<div class="loading" id="loading">
             <div class="spinner"></div>
-            <h1 class="loading-title" id="loadingTitle">${state.loading.title}<span
-                class="loading-time" id="loadingTime">${store.elapsedOf(state.loading)} s</span></h1>
+            <div class="loading-head">
+                <p class="loading-eyebrow" id="loadingEyebrow">${state.loading.eyebrow}</p>
+                <h1 class="loading-title" id="loadingTitle">${state.loading.title}</h1>
+            </div>
             <div class="loading-list" id="loadingList">
                 ${rows.map(function (row) {
                     // Con una sola fuente, el nombre ya esta en el titular: la fila
@@ -30,7 +32,10 @@ App.uiScreens = App.uiScreens || {};
                     </div>`;
                 })}
             </div>
-            <p class="loading-hint" id="loadingHint">Very large playlists take a while.</p>
+            <p class="loading-meta" id="loadingMeta">
+                <span class="loading-time" id="loadingTime">${store.elapsedOf(state.loading)} s</span>
+                <span class="loading-hint" id="loadingHint">Very large playlists take a while</span>
+            </p>
         </div>`;
     };
 

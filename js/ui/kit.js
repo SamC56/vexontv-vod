@@ -88,7 +88,7 @@ App.uiKit = (function () {
     function Rail(props) {
         var items = [
             { id: 'navHome', label: 'Sources', icon: iconList, screens: ['home'], action: function () { store.goHome(); } },
-            { id: 'navTv', label: 'TV', icon: iconTv, screens: ['tv', 'cats'], action: function () { store.openTv(); } },
+            { id: 'navTv', label: 'Live TV', icon: iconTv, screens: ['tv', 'cats'], action: function () { store.openTv(); } },
             { id: 'navRecents', label: 'Recent', icon: iconClock, screens: ['recents'], action: function () { store.openRecents(); } },
             { id: 'navFavs', label: 'Favorites', icon: iconStar, screens: ['favs'], action: function () { store.openFavorites(); } }
         ];

@@ -14,21 +14,49 @@
 
 /* El tiempo va pegado al titular: suelto en su propia linea parecia un dato
    huerfano, y con una sola fuente se repetia dos veces. */
-.loading-title {
-	display: flex;
-	align-items: baseline;
-	gap: 14px;
-	font-size: clamp(26px, 1.9vw, 34px);
-	font-weight: 650;
-	letter-spacing: -.02em;
+/* Titular y eyebrow en columna: el tiempo iba pegado al titular y descuadraba el
+   bloque entero (el centro se calculaba contando con el, no con el titular). */
+.loading-head {
+	display: grid;
+	justify-items: center;
+	gap: 8px;
 }
 
-.loading-time { font-size: 18px; font-weight: 400; color: var(--text-3); }
+.loading-eyebrow {
+	font-size: 13px;
+	font-weight: 700;
+	letter-spacing: .18em;
+	text-transform: uppercase;
+	color: var(--text-3);
+}
+
+.loading-title {
+	font-size: clamp(28px, 2.1vw, 38px);
+	font-weight: 650;
+	letter-spacing: -.03em;
+	text-align: center;
+	max-width: 24ch;
+}
+
+/* Una sola linea de meta debajo: tiempo y nota, nada al lado del titular. */
+.loading-meta {
+	display: flex;
+	align-items: baseline;
+	gap: 10px;
+	font-size: 17px;
+	color: var(--text-3);
+}
+
+.loading-time { font-variant-numeric: tabular-nums; color: var(--text-2); }
+.loading-hint::before { content: "· "; }
 
 /* Las fuentes van enmarcadas: sueltas parecian descolgadas del titular. */
+/* La tarjeta se ajusta a su contenido: con ancho fijo, una fase corta dejaba una
+   fila larguisima con el texto perdido en medio. */
 .loading-list {
-	width: min(640px, 86vw);
-	min-width: 300px;
+	width: max-content;
+	min-width: 280px;
+	max-width: min(620px, 86vw);
 	padding: 2px 26px;
 	border: 1px solid var(--line);
 	border-radius: var(--r-xl);

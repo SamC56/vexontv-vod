@@ -310,8 +310,8 @@ App.store = (function () {
         });
     }
 
-    function showNotice(title) {
-        state.loading = { title: title, since: Date.now() };
+    function showNotice(eyebrow, title) {
+        state.loading = { eyebrow: eyebrow, title: title, since: Date.now() };
         noticeTick();
     }
 
@@ -429,7 +429,7 @@ App.store = (function () {
     }
 
     function addList(list) {
-        showNotice('Checking “' + list.name + '”');
+        showNotice('Checking', list.name);
         startLoadEntry('draft', list.name);
         emit();
         return App.api.load(list, function (update) { progressOf('draft', update); }).then(function (channels) {
@@ -471,7 +471,7 @@ App.store = (function () {
         }
         draft.id = list.id;
 
-        showNotice('Checking “' + (draft.name || list.name) + '”');
+        showNotice('Checking', draft.name || list.name);
         startLoadEntry('draft', draft.name || list.name);
         emit();
 
@@ -506,7 +506,7 @@ App.store = (function () {
     // solo aguanta mientras no haya nada que mirar: en cuanto una fuente trae
     // canales se retira, y las que sigan cargando se quedan como filas.
     function loadWithNotice(listIds, title) {
-        showNotice(title);
+        showNotice('Loading', title);
         emit();
 
         // El aviso se retira en cuanto hay canales que mirar, aunque queden
@@ -637,9 +637,7 @@ App.store = (function () {
             return !state.channels[list.id] && !state.pending[list.id];
         }).map(function (list) { return list.id; });
         if (todo.length) {
-            loadWithNotice(todo, todo.length === 1
-                ? 'Loading “' + listById(todo[0]).name + '”'
-                : 'Loading your sources');
+            loadWithNotice(todo, todo.length === 1 ? listById(todo[0]).name : 'your sources');
         }
     }
 
@@ -650,7 +648,7 @@ App.store = (function () {
         set({ screen: 'tv', tvSource: listId });
         focus('tvSearch');
         if (!state.channels[listId] && !state.pending[listId]) {
-            loadWithNotice([listId], 'Loading “' + listById(listId).name + '”');
+            loadWithNotice([listId], listById(listId).name);
         }
     }
 
@@ -1064,7 +1062,7 @@ App.store = (function () {
     }
 
     function setLoading(visible, label) {
-        if (visible) showNotice(label || 'Loading');
+        if (visible) showNotice('Opening', label || 'the channel');
         else hideNotice();
         emit();
     }
