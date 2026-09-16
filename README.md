@@ -12,6 +12,11 @@
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"></a>
+  <a href="https://github.com/DvzZDev/VexonTV/actions/workflows/test.yml"><img src="https://github.com/DvzZDev/VexonTV/actions/workflows/test.yml/badge.svg" alt="tests"></a>
+  <a href="https://github.com/DvzZDev/VexonTV/releases"><img src="https://img.shields.io/github/v/tag/DvzZDev/VexonTV?label=release&color=blue" alt="release"></a>
+  <img src="https://img.shields.io/badge/Tizen-8.0-1428a0.svg" alt="Tizen 8.0">
+  <img src="https://img.shields.io/badge/build_step-none-4c1.svg" alt="No build step">
+  <a href="CONTRIBUTING.md"><img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs welcome"></a>
 </p>
 
 ---

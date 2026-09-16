@@ -26,9 +26,9 @@ pnpm test
 git commit
 ```
 
-Open the pull request against `main`. There is no CI yet, so the run has to be green on your
-machine: say in the pull request that it was, and paste anything that failed in a way you
-cannot explain.
+Open the pull request against `main`. CI runs the same `pnpm test` on every pull request
+(`.github/workflows/test.yml`), but run it before you push: a red check reads better on your
+machine, and the layout suite is the one that quietly skips itself when it cannot measure.
 
 ## What `pnpm test` is
 
