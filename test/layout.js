@@ -180,8 +180,8 @@ function main() {
             'grilla en ' + data.gridPosition + ', rail de ' + data.railWidth + 'px');
         check('la grilla del fondo son cuadrados de 64x64 (no estirada)',
             /^64px 64px, 64px 64px,/.test(data.gridSize), data.gridSize);
-        check('el preview es una sala negra, no la grilla de la app',
-            data.cardBackground === 'rgb(0, 0, 0)', data.cardBackground);
+        check('el preview es una sala negra (con un poco de alfa), no la grilla',
+            /^rgba?\(0, 0, 0(, 0\.\d+)?\)$/.test(data.cardBackground), data.cardBackground);
         check('y con el canal en marcha se recorta el rectángulo del vídeo (si no, lo taparía)',
             data.cardMaskImage && data.cardMask.indexOf('exclude') !== -1,
             data.cardMask + ' / gradiente ' + data.cardMaskImage);

@@ -336,7 +336,9 @@
   display: grid;
   place-items: center;
   min-height: 0;
-  background: #000;
+  /* Un poco translucida: deja pasar la grilla del fondo. El escenario no se toca,
+     que ahi detras va el video y cualquier capa lo lavaria. */
+  background: rgba(0, 0, 0, 0.7);
 }
 
 /* The card cuts the stage rectangle out of itself so the video plane shows through. */
