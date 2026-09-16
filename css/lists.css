@@ -365,11 +365,9 @@
   display: grid;
   place-items: center;
   min-height: 0;
-  border-radius: var(--r-xl);
-  box-shadow: inset 0 0 0 1px var(--line);
-  /* Negro de sala: el preview no compite con la grilla del resto de la app. */
+  /* Negro de sala, y nada mas: ni marco, ni esquinas redondeadas, ni aire. El video
+     va a sangre, que es como se ve en el reproductor de verdad. */
   background: #000;
-  overflow: hidden;
 }
 
 /* Con el canal en marcha, la tarjeta se recorta a si misma el rectangulo del
@@ -413,13 +411,14 @@ body.previewing .preview-stage > * { opacity: 0; }
   /* El bloque entero (escenario + ficha) centrado en la columna, con el texto
      debajo y en voz mas baja que el resto de la app: aqui manda el video. */
   justify-content: center;
-  gap: 18px;
+  gap: 16px;
   width: 100%;
   height: 100%;
-  padding: 16px 20px;
+  padding: 0;
 }
 
-/* Escenario 16:9: es el rectangulo del agujero, o sea el que mide el video. */
+/* Escenario 16:9: es el rectangulo del agujero, o sea el que mide el video. A
+   sangre y sin adornos: el fondo negro ya lo pone la tarjeta. */
 .preview-stage {
   position: relative;
   flex: none;
@@ -427,10 +426,6 @@ body.previewing .preview-stage > * { opacity: 0; }
   aspect-ratio: 16 / 9;
   display: grid;
   place-items: center;
-  overflow: hidden;
-  border-radius: var(--r-lg);
-  background: rgba(0, 0, 0, 0.5);
-  box-shadow: inset 0 0 0 1px var(--line);
 }
 
 .preview-info {
@@ -440,6 +435,7 @@ body.previewing .preview-stage > * { opacity: 0; }
   gap: 8px;
   min-height: 0;
   overflow-y: auto;
+  padding: 0 16px;
   text-align: center;
 }
 

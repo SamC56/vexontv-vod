@@ -20,6 +20,21 @@ global.localStorage = (function () {
 })();
 
 const root = path.join(__dirname, '..');
+
+// El agujero del preview se activa segun lo que diga el motor: cada uno entiende una
+// forma de restar mascaras (la vieja -webkit- y la estandar). Mirar solo la vieja
+// dejaba la TV sin video dentro del preview: salia el logo y nadie sabia por que.
+(function () {
+    const tv = fs.readFileSync(path.join(root, 'js/ui/screens/tv.js'), 'utf8');
+    const supports = tv.slice(tv.indexOf('function supportsHole'), tv.indexOf('function previewBox'));
+    ['-webkit-mask-composite', 'mask-composite'].forEach(function (prop) {
+        check('el agujero del preview pregunta por ' + prop, supports.indexOf(prop) !== -1);
+    });
+    const css = fs.readFileSync(path.join(root, 'css/lists.css'), 'utf8');
+    ['-webkit-mask-composite', 'mask-composite'].forEach(function (prop) {
+        check('y la hoja aplica ' + prop, css.indexOf(prop) !== -1);
+    });
+})();
 let failed = 0;
 
 function check(label, condition, detail) {

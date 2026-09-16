@@ -21,8 +21,14 @@ App.uiScreens = App.uiScreens || {};
     // hay que dejar un agujero: se pinta el fondo de la app (negro + grilla) en una
     // capa enmascarada y se recorta justo el rectangulo del preview. Si el firmware no
     // soporta la mascara no se activa y queda la ficha, nunca un hueco negro.
+    // Se acepta cualquiera de las dos formas de restar mascaras: la hoja pone las
+    // dos y cada motor entiende una. Mirar solo la vieja (-webkit-, la de WebKit)
+    // dejaba sin agujero a un motor que si sabe hacerlo con la estandar, y eso en la
+    // TV significa ver el logo en vez del canal.
     function supportsHole() {
-        return !!(window.CSS && window.CSS.supports && window.CSS.supports('-webkit-mask-composite', 'xor'));
+        if (!window.CSS || !window.CSS.supports) return false;
+        return window.CSS.supports('-webkit-mask-composite', 'xor')
+            || window.CSS.supports('mask-composite', 'exclude');
     }
 
     // El agujero es el escenario, no la columna entera: la columna es alta (675x888) y
