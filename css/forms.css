@@ -35,8 +35,7 @@
   color: var(--text);
   transform: scale(1.015);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.12),
-    0 0 44px rgba(21, 233, 164, 0.18);
+    inset 0 1px 0 rgba(255, 255, 255, 0.12), inset 0 0 0 1px var(--ring);
 }
 
 /* El icono va en su propio circulo: el patron "boton dentro del boton". */
@@ -96,7 +95,6 @@
   height: 10px;
   border-radius: 50%;
   background: var(--grad-bar);
-  box-shadow: 0 0 16px var(--glow-mint);
   animation: breathe 1.4s var(--ease) infinite;
 }
 
@@ -152,8 +150,7 @@
 .search.focused {
   background: var(--surface-2);
   box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.4),
-    0 0 34px rgba(21, 233, 164, 0.16);
+  box-shadow: inset 0 0 0 1px var(--ring);
   color: var(--text);
 }
 
@@ -216,8 +213,7 @@
 .panel input:focus {
   border-color: transparent;
   box-shadow:
-    inset 0 0 0 2px var(--ok),
-    0 0 30px rgba(21, 233, 164, 0.14);
+  box-shadow: inset 0 0 0 2px var(--ring);
 }
 
 .pair {
@@ -252,8 +248,7 @@
 .panel textarea:focus {
   border-color: transparent;
   box-shadow:
-    inset 0 0 0 2px var(--ok),
-    0 0 30px rgba(21, 233, 164, 0.14);
+  box-shadow: inset 0 0 0 2px var(--ring);
 }
 
 /* El input de fichero va oculto: se abre desde su boton, que si recibe foco. */
@@ -312,12 +307,10 @@
 .toggle.on .toggle-dot {
   background: var(--ok);
   border-color: var(--ok);
-  box-shadow: 0 0 14px var(--glow-mint);
 }
 .toggle.focused {
   box-shadow:
-    inset 0 0 0 2px var(--ok),
-    0 0 30px rgba(21, 233, 164, 0.14);
+  box-shadow: inset 0 0 0 2px var(--ring);
 }
 
 .err {
@@ -371,7 +364,7 @@
   border-color: transparent;
   background: var(--grad-ink);
   color: var(--on-accent);
-  box-shadow: 0 0 34px rgba(254, 188, 6, 0.18);
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.45);
 }
 
 .btn.danger {
@@ -390,13 +383,11 @@
   border-color: rgba(255, 255, 255, 0.55);
   transform: scale(1.02);
   box-shadow:
-    0 0 0 2px rgba(255, 255, 255, 0.35),
-    0 0 40px rgba(21, 233, 164, 0.2);
+    inset 0 0 0 2px var(--ring);
 }
 
 .btn.primary.focused {
   border-color: rgba(255, 255, 255, 0.7);
   box-shadow:
-    0 0 0 2px rgba(255, 255, 255, 0.4),
-    0 0 50px rgba(254, 188, 6, 0.38);
+    inset 0 0 0 2px var(--ring);
 }

@@ -200,7 +200,6 @@ body {
   height: 62%;
   border-radius: 0 3px 3px 0;
   background: var(--grad-bar);
-  box-shadow: 0 0 18px var(--glow-mint);
 }
 
 .rail-btn.focused {

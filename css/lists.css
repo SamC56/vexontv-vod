@@ -31,8 +31,7 @@
   background: var(--surface-2);
   color: var(--text);
   box-shadow:
-    inset 0 0 0 1px var(--line-2),
-    0 0 34px rgba(21, 233, 164, 0.14);
+    inset 0 0 0 1px var(--ring);
 }
 
 .row-main {
@@ -75,7 +74,6 @@
   flex: none;
   font-size: 17px;
   color: var(--saved);
-  text-shadow: 0 0 14px var(--glow-amber);
 }
 
 /* Tipo de origen: la caja es informacion, no adorno. */
@@ -148,8 +146,7 @@
   background: var(--surface-3);
   color: var(--text);
   box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.45),
-    0 0 30px rgba(21, 233, 164, 0.16);
+    inset 0 0 0 1px var(--ring);
 }
 
 /* Fila de añadir: misma rejilla, sin relleno de color. */
@@ -252,7 +249,6 @@
 .row.cat.on .check {
   background: var(--ok);
   border-color: var(--ok);
-  box-shadow: 0 0 18px var(--glow-mint);
 }
 
 .check svg {
@@ -302,8 +298,7 @@
   letter-spacing: 0.04em;
   color: var(--text);
   box-shadow:
-    inset 0 0 0 1px var(--line-2),
-    0 0 50px rgba(254, 188, 6, 0.18);
+    inset 0 0 0 1px var(--line-2), 0 20px 60px rgba(0, 0, 0, 0.6);
   z-index: 50;
   animation: pop var(--dur) var(--ease-out);
 }

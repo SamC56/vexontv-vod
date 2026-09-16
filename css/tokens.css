@@ -78,11 +78,12 @@
 	   una luz cenital muy suave y nada mas. Los colores de la casa no se gastan en
 	   manchas de fondo, se gastan en lo unico que informa: el foco y el estado. */
 	--grid: 64px;
-	--grid-line: rgba(255, 255, 255, .028);
-	--sheen: linear-gradient(180deg, rgba(255, 255, 255, .05), rgba(255, 255, 255, 0) 42%);
+	--grid-line: rgba(255, 255, 255, .022);
+	--sheen: linear-gradient(180deg, rgba(253, 226, 2, .05), rgba(255, 255, 255, 0) 42%);
   --focus: #fff;
-  --glow-mint: rgba(21, 233, 164, 0.3);
-  --glow-amber: rgba(254, 188, 6, 0.26);
+  /* Anillo de foco: duro, de 1px. Con el fondo de grilla, un halo difuminado
+     desentona; el foco se marca con linea y superficie, como el resto del sistema. */
+  --ring: rgba(255, 255, 255, 0.5);
 
   --r-sm: 8px;
   --r-md: 12px;

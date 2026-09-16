@@ -165,7 +165,7 @@ body.playing {
   height: 8px;
   border-radius: 50%;
   background: var(--live);
-  box-shadow: 0 0 14px var(--live);
+  box-shadow: 0 0 0 3px rgba(204, 66, 7, 0.22);
 }
 
 /* Lo único del reproductor que se permite el degradado: es el titular. */
