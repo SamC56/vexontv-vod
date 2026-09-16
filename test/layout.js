@@ -1,18 +1,4 @@
-// node test/layout.js
-//
-// Este test existe por un fallo concreto: el punto de montaje no tenia altura, asi
-// que el grid crecia con el contenido y NINGUNA lista scrolleaba (la fila enfocada
-// se iba fuera de la pantalla). jsdom no calcula maquetacion, o sea que ningun otro
-// test podia verlo: se descubrio probando en la TV.
-//
-// Aqui se monta la app de verdad en Chrome headless, con una categoria de 200
-// canales, se baja 40 veces con el mando y se miden los numeros que importan:
-//   - el armazon mide lo que mide la pantalla (no lo que mide su contenido)
-//   - el contenedor de la lista desborda, o sea que puede scrollear
-//   - tras bajar, ha scrolleado y la fila enfocada esta dentro del marco
-//   - el documento no se ha movido (si se mueve, arrastra rail y cabecera)
-//
-// Si no hay Chrome a mano, se salta sin fallar.
+// jsdom has no layout: this is the only test that measures a real browser.
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
@@ -74,7 +60,6 @@ window.addEventListener('load', function () {
                 .then(function () {
                     store.openTv();
                     store.openTvCategory('Deportes');
-                    // Un canal elegido: es lo que enciende el agujero del preview.
                     var view = store.visibleTvCategory();
                     store.selectPreview(view.items[0]);
                     setTimeout(function () {
@@ -87,8 +72,6 @@ window.addEventListener('load', function () {
                         var card = document.querySelector('.browse-preview');
                         var stage = document.getElementById('previewStage');
                         var stageBox = stage.getBoundingClientRect();
-                        // El agujero y el filo de arriba solo se ven con el preview en
-                        // marcha (body.previewing); el motor lo pone y no hay AVPlay aqui.
                         document.body.classList.add('previewing');
                         var backdrop = window.getComputedStyle(document.getElementById('backdrop'));
                         var edge = window.getComputedStyle(document.body, '::before');
@@ -169,10 +152,6 @@ function main() {
         check('el escenario del preview es 16:9 (el video no se ve encajado)',
             Math.abs(data.stageRatio - 16 / 9) < 0.02,
             data.stage.join('x') + ' = ' + data.stageRatio.toFixed(3));
-        // El agujero de la tarjeta tiene que estar donde esta el escenario. Con las
-        // medidas puestas solo en la capa del agujero, la tarjeta media 0x0 y su
-        // mascara no recortaba nada: el video quedaba detras de un fondo opaco y solo
-        // se veia al enfocar la columna, por el fondo translucido del foco.
         check('la tarjeta recorta el video donde está el escenario',
             parseFloat(data.holeWidth) > 0
             && data.cardMaskPosition.replace(/0px/g, '').replace(/[\s,]/g, '') !== '',

@@ -1,7 +1,5 @@
 var App = App || {};
 
-// Fuentes: gestionar las listas (entrar, editar, añadir).
-
 App.uiScreens = App.uiScreens || {};
 
 (function () {
@@ -12,7 +10,7 @@ App.uiScreens = App.uiScreens || {};
     var SourceRow = kit.SourceRow;
     var AddRow = kit.AddRow;
 
-    App.uiScreens.home = // ------------------------------------------------------------------ pantallas
+    App.uiScreens.home =
     function Home() {
         var state = store.state;
         var sources = store.sources();

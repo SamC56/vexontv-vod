@@ -1,9 +1,5 @@
 var App = App || {};
 
-// Panel de zapeo: la lista encima del video. A la izquierda las categorias, a la
-// derecha los canales de la categoria elegida, con logo, lo que estan dando ahora
-// y su barra. Moverse por la columna de canales cambia de canal (con freno), como
-// en cualquier IPTV.
 App.uiScreens = App.uiScreens || {};
 (function () {
     var kit = App.uiKit;

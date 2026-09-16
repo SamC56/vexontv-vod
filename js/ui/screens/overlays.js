@@ -1,7 +1,5 @@
 var App = App || {};
 
-// Avisos: carga, aviso breve, número tecleado y confirmación.
-
 App.uiScreens = App.uiScreens || {};
 
 (function () {
@@ -10,8 +8,7 @@ App.uiScreens = App.uiScreens || {};
     var html = kit.html;
     var useState = kit.useState;
 
-    App.uiScreens.loader = // Aviso de carga: dice QUE se esta cargando, en QUE fase esta cada fuente y
-    // cuanto lleva, para que una lista grande no parezca una app colgada.
+    App.uiScreens.loader =
     function Loader() {
         var state = store.state;
         var rows = store.loadingRows();
@@ -23,8 +20,6 @@ App.uiScreens = App.uiScreens || {};
             </div>
             <div class="loading-list" id="loadingList">
                 ${rows.map(function (row) {
-                    // Con una sola fuente, el nombre ya esta en el titular: la fila
-                    // se queda solo con el progreso y no lo repite.
                     return html`<div class="loading-row" key=${row.key}>
                         ${rows.length > 1 ? html`<span class="loading-name">${row.name}</span>` : null}
                         <span class="loading-phase">${row.label}${row.count !== undefined

@@ -1,13 +1,9 @@
-/* ---------------------------------------------------------------- accesibilidad
-   Menos movimiento es movimiento distinto, no ninguno: fuera desplazamientos,
-   se queda el fundido. */
 @media (prefers-reduced-motion: reduce) {
   .screen,
   .numbuffer {
     animation: none;
   }
 
-  /* La marca del rail viaja: con menos movimiento, salta. */
   .rail::after {
     transition: none;
   }
@@ -42,8 +38,6 @@
   }
 }
 
-/* Sin transparencias: el vidrio pasa a negro solido y las luces del fondo se
-   quedan (son el fondo, no una capa de vidrio). */
 @media (prefers-reduced-transparency: reduce) {
   .modal {
     background: #000;

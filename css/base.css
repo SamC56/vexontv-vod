@@ -10,17 +10,10 @@ body {
   overflow: hidden;
 }
 
-/* El fondo es la grilla de un monitor de video: lineas de 1px cada 64px, y encima
-   el degradado de la casa en version de sala (--grad-bg, con alfa). Estatico (el
-   WebView lo pinta una vez), compartido con el aviso de carga para que no sea un
-   bloque negro sin identidad. */
 body,
 .loading {
   background-color: var(--black);
   background-image:
-    /* La grilla arriba (se ve en toda la pantalla, es el textil de la app), debajo el
-       apagon y, al fondo, el multicolor: asi el degradado de la casa solo asoma por
-       la cabecera y el resto es sala negra. */
     linear-gradient(var(--grid-line) 1px, transparent 1px),
     linear-gradient(90deg, var(--grid-line) 1px, transparent 1px),
     var(--grad-fade),
@@ -29,8 +22,6 @@ body,
   background-repeat: repeat, repeat, no-repeat, no-repeat;
 }
 
-/* Filo de marca: la misma linea de degradado que marca el foco, en el borde de
-   arriba. Identidad en 2px, no en media pantalla de color. */
 body::before {
   content: "";
   position: fixed;
@@ -69,9 +60,6 @@ body {
   color: var(--text-3);
 }
 
-/* Marca del rail: UNA barra de degradado para toda la barra lateral, que viaja
-   hasta la seccion activa al cambiar de pagina. El rail la coloca con variables
-   (posicion y alto) y la transicion hace el viaje. */
 .rail::after {
   content: "";
   position: absolute;
@@ -89,23 +77,13 @@ body {
   pointer-events: none;
 }
 
-/* ---------------------------------------------------------------- estructura */
-/* El punto de montaje tiene que tener altura: si no, su hijo .app{height:100%}
-   es "100% de nada", el grid mide lo que mida su contenido, y una lista de 200
-   canales hace que TODO crezca y no haya scroll en ninguna parte. */
 #app {
   height: 100%;
 }
 
 .app {
   display: grid;
-  /* Barra lateral ancha: los nombres caben junto al icono, y la seccion activa
-     se sigue con la marca que se desliza. */
   grid-template-columns: 184px 1fr;
-  /* minmax(0, 1fr) y no 'auto': con una fila auto, la fila crece con el contenido
-     (una lista de 200 canales son 14.400 px), .main y .screen crecen con ella y
-     NADA scrollea: la fila enfocada se va fuera de la pantalla. Con la fila
-     clavada a la altura disponible, el scroll se queda dentro de .rows. */
   grid-template-rows: minmax(0, 1fr);
   height: 100%;
 }
@@ -117,14 +95,10 @@ body {
   align-items: stretch;
   gap: 4px;
   padding: 4.5vh 14px;
-  /* Panel solido (no alfa): con el fondo de grilla, un rail translucido se
-     confundia con ella y no se veia donde acaba la barra. La altura la pone la
-     fila del grid, asi que no hace falta un 100vh. */
   background: #0a0a0a;
   border-right: 1px solid var(--line-2);
 }
 
-/* Marca: glifo y nombre en la misma linea, como la cabecera de un panel. */
 .brand {
   display: flex;
   align-items: center;
@@ -135,10 +109,6 @@ body {
   color: var(--text);
 }
 
-/* Marca: el unico sitio donde el degradado es relleno de texto. Va con @supports
-   porque si el motor no lo entiende el texto quedaria transparente e invisible. */
-/* La marca es el glifo del logo, recortado por tools/make-icon.py: el nombre
-   escrito del logo no se lee a 44px, para eso esta el wordmark. */
 .brand-img {
   display: block;
   flex: none;
@@ -146,9 +116,6 @@ body {
   height: 40px;
 }
 
-/* Marca: debajo del glifo, el nombre y su texto. El nombre es el unico sitio de
-   la app donde el degradado es relleno de texto; va con @supports porque si el
-   motor no entiende el recorte, el texto quedaria transparente e invisible. */
 .wordmark {
   display: flex;
   flex-direction: column;
@@ -212,7 +179,6 @@ body {
   color: inherit;
 }
 
-/* Activo: el icono va en menta y el texto en blanco. Color de estado, sin animar. */
 .rail-btn.active {
   color: var(--text);
 }
@@ -220,8 +186,6 @@ body {
   color: var(--ok);
 }
 
-/* Un solo idioma de seleccion en toda la app: barra de degradado a la izquierda.
-   En la barra lateral marca la seccion activa; en una fila, el foco. */
 .row:focus::before,
 .row.focused::before {
   content: "";
@@ -238,8 +202,6 @@ body {
 .rail-btn.focused {
   color: var(--text);
   background: var(--surface-2);
-  /* Sin escala: el boton ocupa la barra entera y crecer lo sacaria de ella. Se marca
-     con el anillo de foco, que es el idioma del resto de la app. */
   box-shadow: inset 0 0 0 1px var(--ring);
 }
 
@@ -256,12 +218,6 @@ body {
   height: 100%;
 }
 
-/* Entrada de pantalla: un fundido sobre la raiz de la pantalla entera y nada mas.
-   SIN desplazamiento a proposito: el agujero del preview se mide con el rectangulo
-   del escenario, y un transform lo mide a medio animar (el video saldria movido).
-   El movimiento lo lleva la marca del rail, que si se desliza. Nada de fill-mode ni
-   de retardos: si el motor no la corre o hay menos movimiento, el contenido ya esta
-   a la vista. */
 @keyframes screen-in {
   from {
     opacity: 0;
@@ -272,7 +228,6 @@ body {
   animation: screen-in var(--dur) var(--ease-out);
 }
 
-/* ---------------------------------------------------------------- tipografia */
 h1 {
   font-size: clamp(39px, 2.7vw, 50px);
   font-weight: 650;
@@ -280,9 +235,6 @@ h1 {
   letter-spacing: -0.03em;
 }
 
-/* El titular ocupa el espacio libre y los controles (boton + buscador) van
-   juntos a la derecha. Con space-between y tres hijos, el del medio flotaba solo
-   en mitad de la barra. */
 .bar {
   display: flex;
   align-items: flex-start;

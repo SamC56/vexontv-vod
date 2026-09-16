@@ -82,9 +82,8 @@ tools/              generador de marca y empaquetador .wgt
 test/               check.js (lógica), dom.js (la app en jsdom) y layout.js (maquetación)
 ```
 
-Nada de esto se lista a mano en los tests: `test/*.js` y el capturador de
-pantallas leen los `<script>` y los `<link>` de `index.html`, así que partir un
-módulo no obliga a tocar los tests. Hay un check que exige que index.html cargue
+Nada de esto se lista a mano en los tests: `test/*.js` lee los `<script>` y los
+`<link>` de `index.html`, así que partir un módulo no obliga a tocar los tests. Hay un check que exige que index.html cargue
 **todos** los ficheros: uno suelto es código muerto.
 
 ## Desarrollo

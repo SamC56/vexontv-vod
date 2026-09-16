@@ -1,9 +1,5 @@
 var App = App || {};
 
-// TV: tres columnas, como un reproductor de escritorio. Categorias a la izquierda,
-// los canales de la categoria elegida en medio y el preview a la derecha: si no hay
-// canal elegido, un estado vacio que explica que hacer; si lo hay, su ficha con logo,
-// guia y barra, y OK la abre a pantalla completa.
 App.uiScreens = App.uiScreens || {};
 (function () {
     var kit = App.uiKit;
@@ -17,28 +13,19 @@ App.uiScreens = App.uiScreens || {};
 
     var player = App.player;
 
-    // El video de AVPlay va DETRAS del webview, asi que para verlo dentro del preview
-    // hay que dejar un agujero: se pinta el fondo de la app (negro + grilla) en una
-    // capa enmascarada y se recorta justo el rectangulo del preview. Si el firmware no
-    // soporta la mascara no se activa y queda la ficha, nunca un hueco negro.
-    // Se acepta cualquiera de las dos formas de restar mascaras: la hoja pone las
-    // dos y cada motor entiende una. Mirar solo la vieja (-webkit-, la de WebKit)
-    // dejaba sin agujero a un motor que si sabe hacerlo con la estandar, y eso en la
-    // TV significa ver el logo en vez del canal.
+    // The stylesheet ships both spellings of mask subtraction; accept either.
     function supportsHole() {
         if (!window.CSS || !window.CSS.supports) return false;
         return window.CSS.supports('-webkit-mask-composite', 'xor')
             || window.CSS.supports('mask-composite', 'exclude');
     }
 
-    // El agujero es el escenario, no la columna entera: la columna es alta (675x888) y
-    // el video de 16:9 se veia encajado entre dos franjas negras enormes.
+    // CSS pixels: AVPlay converts to its grid at the other end.
     function previewBox() {
         var element = document.getElementById('previewStage');
         return element && element.getBoundingClientRect ? element.getBoundingClientRect() : null;
     }
 
-    // Rect del video: la TV lo mide en su rejilla de 1920x1080, sea cual sea el viewport.
     function videoRect() {
         var box = previewBox();
         if (!box || box.width < 2) return null;
@@ -46,22 +33,17 @@ App.uiScreens = App.uiScreens || {};
         return { x: box.left * scale, y: box.top * scale, w: box.width * scale, h: box.height * scale };
     }
 
+    // The rect goes on the document root: the card's own mask reads the same variables.
     function setHole() {
         var box = previewBox();
         var layer = document.getElementById('backdrop');
         var stage = document.getElementById('previewStage');
         if (!box || !layer) return;
-        // En la raiz, no en la capa: la mascara de la tarjeta lee estas mismas
-        // variables, y si solo estuvieran en la capa su agujero mediria 0x0 y la
-        // tarjeta taparia el video (solo se veia al enfocar, por el fondo del foco).
         var rootStyle = document.documentElement.style;
         rootStyle.setProperty('--hole-x', Math.round(box.left) + 'px');
         rootStyle.setProperty('--hole-y', Math.round(box.top) + 'px');
         rootStyle.setProperty('--hole-w', Math.round(box.width) + 'px');
         rootStyle.setProperty('--hole-h', Math.round(box.height) + 'px');
-        // Y el mismo rectangulo, pero dentro de la tarjeta: el marco negro del
-        // preview es la tarjeta entera menos el escenario, o sea una mascara con el
-        // agujero en las coordenadas locales de la tarjeta.
         if (stage && stage.offsetParent) {
             rootStyle.setProperty('--stage-x', Math.round(stage.offsetLeft) + 'px');
             rootStyle.setProperty('--stage-y', Math.round(stage.offsetTop) + 'px');
@@ -70,9 +52,6 @@ App.uiScreens = App.uiScreens || {};
 
     var iconTvBig = kit.svg(html`<rect x="2.5" y="5" width="19" height="13" rx="2" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M8.5 21h7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>`, 64);
 
-    // El preview es escenario 16:9 arriba (el logo, y con el canal en marcha el video
-    // por el agujero) y la ficha debajo. La ficha se queda mientras se ve: no tapa el
-    // agujero y sigue diciendo que esta dando y que viene despues.
     function Preview() {
         var state = store.state;
         var channel = state.preview;
@@ -117,13 +96,9 @@ App.uiScreens = App.uiScreens || {};
     function TvScreen() {
         var state = store.state;
 
-        // El canal elegido se ve aqui mismo, en el agujero del preview. A pantalla
-        // completa se pasa pulsando encima del preview.
         useEffect(function () {
             if (!state.preview || !state.preview.url) { player.stop(); return; }
             setHole();
-            // Solo se deja el agujero si la mascara funciona: si no, el fondo se
-            // quedaria tapando el video y es mejor la ficha.
             if (supportsHole()) document.body.classList.add('previewing');
             player.play(state.preview.url, videoRect());
             function onResize() { setHole(); player.play(state.preview.url, videoRect()); }

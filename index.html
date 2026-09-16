@@ -4,15 +4,13 @@
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=1920, user-scalable=no">
 	<title>VexonTV</title>
-	<!-- Splash en linea: es la primera pintura y no puede esperar a ninguna hoja ni
-	     a ninguna imagen, asi que va con estilos aqui mismo. La quita la app en
-	     cuanto pinta (js/ui.js). Si la app no arranca, se queda esto, que informa
-	     mas que un negro. -->
+	<!-- Inline on purpose: this is the first frame, before any stylesheet loads. -->
 	<style>
-		/* El negro va en body, NO en html: el fondo del elemento raiz se propaga al
-		   lienzo y taparia el plano de video de AVPlay (el preview no se veria).
-		   body.previewing lo deja transparente y entonces manda la capa del agujero. */
 		html, body { margin: 0; height: 100%; overflow: hidden; }
+		/* On body, not html: the root background propagates to the canvas and would
+		   cover the AVPlay video plane. */
+		/* On body, not html: the root background propagates to the canvas and would
+		   cover the AVPlay video plane. */
 		body { background: #050505; }
 		#splash {
 			position: fixed;
@@ -32,7 +30,6 @@
 		}
 		#splash.off { opacity: 0; }
 		#splash .mark {
-			/* Un poco mas grande que el wordmark del rail: esto se mira desde el sofa. */
 			font-size: 22px;
 			font-weight: 700;
 			letter-spacing: .2em;

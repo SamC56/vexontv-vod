@@ -1,7 +1,5 @@
 var App = App || {};
 
-// Arranque: zonas de foco, teclas del mando y render. La lógica vive en el store
-// y el pintado en App.ui; aquí solo se unen.
 (function () {
     var store = App.store;
     var tv = App.tv;
@@ -13,8 +11,6 @@ var App = App || {};
     }
 
     function defineZones() {
-        // Listas verticales de un solo eje; se sale al rail por la izquierda y,
-        // en las pantallas con columnas, a la derecha.
         zone('rail', '.rail .rail-btn', {
             onEdge: function (dir) {
                 if (dir !== 'right') return;
@@ -50,23 +46,15 @@ var App = App || {};
             onEdge: function (dir) {
                 if (dir === 'left') tv.set('types', 0, 0);
                 else if (dir === 'up') tv.set('homeActions', 0, 0);
-                // La derecha entra en el boton de editar DE ESA fila. No puede ser
-                // parte de la misma zona: el boton vive dentro de la fila, y su
-                // offsetTop es relativo a ella, asi que el motor no puede agruparlos
-                // en la misma fila por posicion. Se resuelve por indice.
                 else if (dir === 'right') enterEditFromRow();
             }
         });
 
-        // Zona de un solo elemento: el boton de la fila que se este editando. Asi
-        // arriba/abajo pasan de una fila a otra (con el indice) y la izquierda vuelve
-        // a la lista, sin depender de posiciones.
         var editRow = 0;
 
         function enterEditFromRow() {
             var rows = ui.qsa('#sourceList .row.source');
             var fromRow = rows.indexOf(document.querySelector('.focused'));
-            // la fila de añadir no tiene boton de editar: ahi la derecha no hace nada
             if (fromRow !== -1) showEdit(fromRow);
         }
 
@@ -83,8 +71,6 @@ var App = App || {};
                 else if (dir === 'right') tv.set('rail', 0, 0);
             }
         });
-
-
 
         zone('tvActions', '#tvActions .btn', {
             onEdge: function (dir) {
@@ -192,19 +178,14 @@ var App = App || {};
             onEdge: function (dir) { if (dir === 'up') tv.set('fields', 9, 0); }
         });
 
-        // El reproductor empieza SIN foco (zona vacia): el boton de favoritos no
-        // viene seleccionado, lo selecciona el usuario con abajo.
         tv.define('playerIdle', function () { return []; });
 
-        // Menu del reproductor (favoritos y aspecto), en columna: arriba/abajo lo
-        // navegan, y arriba desde el primero sale del menu.
         zone('overlay', '#ovActions .btn', {
             onEdge: function (dir) {
                 if (dir === 'up') { store.setMenuFocus(false); tv.set('playerIdle', 0, 0); }
             }
         });
 
-        // Panel de zapeo: categorias a la izquierda, canales a la derecha.
         zone('zapCats', '#zapCats .zapcat', {
             onEdge: function (dir) {
                 if (dir === 'right') tv.set('zapChannels', 0, 0);
@@ -217,9 +198,6 @@ var App = App || {};
             }
         });
 
-        // Con un canal caido, la zona del reproductor son los botones de la
-        // tarjeta: reintentar o volver. Sin bordes a proposito: el rail esta oculto
-        // mientras hay video, asi que mandar el foco ahi era mandarlo a lo invisible.
         zone('playError', '#playError .btn');
 
         zone('confirm', '#confirm .btn');
@@ -227,17 +205,14 @@ var App = App || {};
 
     function back() {
         if (store.state.confirm) { store.closeConfirm(); return true; }
-        // Atras con la lista de canales desplegada cierra la lista, no el canal.
         if (store.state.zapOpen) { store.closeZap(); return true; }
         if (store.state.screen === 'player') { store.exitPlayer(); return true; }
         if (store.state.screen === 'edit') { store.goHome(); return true; }
         if (store.state.screen !== 'home') { store.goHome(); return true; }
-        try { tizen.application.getCurrentApplication().exit(); } catch (error) { /* no es Tizen */ }
+        try { tizen.application.getCurrentApplication().exit(); } catch (error) {  }
         return true;
     }
 
-    // Tecla roja: guardar o quitar de favoritos lo enfocado, o borrar la lista
-    // cuando la fila enfocada es una lista.
     function red() {
         var element = tv.focusedElement();
         var state = store.state;
@@ -270,7 +245,6 @@ var App = App || {};
         store.notify(saved ? 'Added to favorites' : 'Removed from favorites');
     }
 
-    // Devuelve true si la app se queda la tecla.
     function onKey(code) {
         if (code >= 48 && code <= 57) { store.pushDigit(String(code - 48)); return true; }
         if (code >= 96 && code <= 105) { store.pushDigit(String(code - 96)); return true; }
@@ -279,25 +253,13 @@ var App = App || {};
         if (code === tv.KEY.ENTER && store.commitDigits()) return true;
         if (store.state.screen !== 'player') return false;
 
-        // Subir y bajar de canal: SIEMPRE, con el canal caido incluido (un canal que
-        // falla no puede encerrarte), y SOLO con estos dos botones. Los cursores son
-        // para los menus: mientras la izquierda y la derecha zappeasen, el boton de
-        // aspecto era inalcanzable.
         if (code === tv.KEY.CH_UP) { store.zap(1); return true; }
         if (code === tv.KEY.CH_DOWN) { store.zap(-1); return true; }
 
-        // Lista de canales desplegada: las teclas son suyas. El motor navega sus dos
-        // columnas y pulsa lo que este enfocado (una categoria la abre, un canal lo
-        // pone y cierra la lista, que de eso se encarga el store).
         if (store.state.zapOpen) return false;
 
-        // La izquierda es la UNICA tecla que despliega la lista de canales. Pidieron
-        // que la derecha no lo hiciera, asi que se queda libre.
         if (code === tv.KEY.LEFT) { store.openZap(); return true; }
 
-        // Tarjeta de error: reintentar o volver. Los botones van en columna, pero el
-        // motor los agrupa por posicion y en un DOM sin maquetacion no los distingue:
-        // se resuelve por indice, como el boton de editar de una fila.
         if (store.state.playError) {
             if (code === tv.KEY.UP || code === tv.KEY.DOWN) {
                 var buttons = ui.qsa('#playError .btn');
@@ -308,13 +270,8 @@ var App = App || {};
             return false;
         }
 
-        // Menu del reproductor en foco: los cursores y OK son suyos. Arriba/abajo lo
-        // navega el motor y OK pulsa el boton enfocado. Salir del menu es su borde, y
-        // la izquierda sigue desplegando la lista (eso va antes).
         if (store.state.menuFocus) return false;
 
-        // Abajo entra en el menu del reproductor (favoritos); OK abre la lista de
-        // canales, que es la otra forma natural de pedirla sin saberse el mando.
         if (code === tv.KEY.DOWN) { store.setMenuFocus(true); tv.set('overlay', 0, 0); return true; }
         if (code === tv.KEY.UP) { store.setMenuFocus(false); tv.set('playerIdle', 0, 0); return true; }
         if (code === tv.KEY.ENTER) { store.openZap(); return true; }

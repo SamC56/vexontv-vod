@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Genera icon.png (512x512, el icono de la app) y brand.png (la marca del rail)
 a partir del logo de VexonTV. Sin dependencias: zlib y struct.
 
@@ -10,15 +9,15 @@ vacias que separa el dibujo del texto y se recorta ahi. Los negros del fondo se
 vuelven transparentes para que la marca se apoye en el degradado de la app.
 """
 import struct
+# Cuts the glyph out of the logo for icon.png and brand.png.
 import sys
 import zlib
 
 ICON = 512
 BRAND_HEIGHT = 140
-BLACK = 26          # por debajo de esto es fondo
-PAD = 10            # aire alrededor del glifo, en pixeles del origen
-GAP_ROWS = 10       # filas vacias seguidas que separan dibujo y texto
-
+BLACK = 26
+PAD = 10
+GAP_ROWS = 10
 
 def decode_png(path):
     """PNG de 8 bits, sin entrelazar, RGB o RGBA -> (w, h, bytearray rgba)."""
@@ -85,14 +84,12 @@ def decode_png(path):
         previous = line
     return width, height, out
 
-
 def background(rgba, i):
     """Fondo: o transparente (el recorte del logo trae RGB basura debajo del
     alfa 0) o negro. Todo lo demas es dibujo."""
     if rgba[i + 3] < 64:
         return True
     return rgba[i] < BLACK and rgba[i + 1] < BLACK and rgba[i + 2] < BLACK
-
 
 def glyph_box(width, height, rgba):
     """Caja del dibujo (arriba), cortando en el hueco que deja el texto."""
@@ -125,7 +122,6 @@ def glyph_box(width, height, rgba):
                 right = max(right, x)
     return first, left, last, right
 
-
 def crop(width, rgba, box):
     top, left, bottom, right = box
     w = right - left + 1
@@ -136,14 +132,12 @@ def crop(width, rgba, box):
         out[y * w * 4:(y + 1) * w * 4] = rgba[src:src + w * 4]
     return w, h, out
 
-
 def keyed(width, height, rgba):
     """Los negros del fondo pasan a transparentes: la marca va sobre el mesh."""
     out = bytearray(rgba)
     for i in range(0, len(out), 4):
         out[i + 3] = 0 if background(out, i) else 255
     return out
-
 
 def scale(width, height, rgba, dw, dh):
     """Media de caja: al reducir es lo que evita que el texto salga con dientes."""
@@ -168,7 +162,6 @@ def scale(width, height, rgba, dw, dh):
             out[o:o + 4] = bytes((r // total, g // total, b // total, a // total))
     return out
 
-
 def encode_png(width, height, rgba):
     rows = bytearray()
     for y in range(height):
@@ -184,12 +177,10 @@ def encode_png(width, height, rgba):
             + chunk(b'IDAT', zlib.compress(bytes(rows), 9))
             + chunk(b'IEND', b''))
 
-
 def write(path, width, height, rgba):
     png = encode_png(width, height, rgba)
     open(path, 'wb').write(png)
     print('%s %dx%d, %d KB' % (path, width, height, len(png) / 1024))
-
 
 def main():
     path = sys.argv[1] if len(sys.argv) > 1 else '/mnt/c/Users/DvzZ/Downloads/3f2fa38f-4796-4834-90db-11a7ce859cac-Photoroom.png'
@@ -208,7 +199,6 @@ def main():
     cw, ch, cimg = crop(width, rgba, (top, left, bottom, right))
     brand = scale(cw, ch, keyed(cw, ch, cimg), max(1, round(cw * BRAND_HEIGHT / ch)), BRAND_HEIGHT)
     write('brand.png', max(1, round(cw * BRAND_HEIGHT / ch)), BRAND_HEIGHT, brand)
-
 
 if __name__ == '__main__':
     main()

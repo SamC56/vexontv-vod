@@ -1,7 +1,5 @@
 var App = App || {};
 
-// Categorías por proveedor: cuáles se ven y cuáles no.
-
 App.uiScreens = App.uiScreens || {};
 
 (function () {
@@ -12,7 +10,7 @@ App.uiScreens = App.uiScreens || {};
     var Search = kit.Search;
     var iconCheck = kit.iconCheck;
 
-    App.uiScreens.cats = // Categorías por proveedor: se eligen las que se ven y se guardan.
+    App.uiScreens.cats =
     function Categories() {
         var state = store.state;
         var view = store.categoriesView();

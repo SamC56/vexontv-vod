@@ -1,7 +1,5 @@
 var App = App || {};
 
-// Favoritos: los canales guardados con la tecla roja.
-
 App.uiScreens = App.uiScreens || {};
 
 (function () {

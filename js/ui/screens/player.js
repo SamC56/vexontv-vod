@@ -1,7 +1,5 @@
 var App = App || {};
 
-// Reproductor: AVPlay (o <video>) con su overlay y su tarjeta de error.
-
 App.uiScreens = App.uiScreens || {};
 
 (function () {
@@ -35,15 +33,11 @@ App.uiScreens = App.uiScreens || {};
             if (state.playing) player.play(state.playing.channel.url);
         }, [state.playing]);
 
-        // Mientras se reproduce, la app entera deja de pintar: si el plano de video
-        // de AVPlay compone por detras del webview, cualquier capa opaca lo tapa.
         useEffect(function () {
             document.body.classList.add('playing');
             return function () { document.body.classList.remove('playing'); };
         }, []);
 
-        // La guia avanza con el reloj: sin esto la barra se queda congelada y el
-        // programa "de ahora" se queda pegado al cambiar de programa.
         useEffect(function () {
             var tick = setInterval(function () { store.refreshProgram(); }, 30000);
             return function () { clearInterval(tick); };

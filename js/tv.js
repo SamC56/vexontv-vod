@@ -1,8 +1,5 @@
 var App = App || {};
 
-// D-pad navigation. Zones are declared as "rows of elements" and the matrix is
-// rebuilt on every move, so a list that changed since the last keypress cannot
-// leave the focus on a node that no longer exists.
 App.tv = (function () {
     var KEY = { LEFT: 37, UP: 38, RIGHT: 39, DOWN: 40, ENTER: 13, BACK: 10009, RED: 403, CH_UP: 427, CH_DOWN: 428, PLAY_PAUSE: 10252 };
 
@@ -13,8 +10,6 @@ App.tv = (function () {
     var onKey = function () {};
     var onFocus = null;
 
-    // Groups elements into rows by their vertical position, which follows the
-    // real layout however the grid wraps.
     function rows(elements) {
         var out = [];
         var top = null;
@@ -33,6 +28,7 @@ App.tv = (function () {
         zones[name] = { items: items, onEdge: options && options.onEdge };
     }
 
+    // Rows are grouped by offsetTop: what a TV layout needs, and what jsdom lacks.
     function matrix() {
         var zone = zones[current];
         if (!zone) return [];
@@ -56,15 +52,10 @@ App.tv = (function () {
         var element = line[col];
         element.classList.add('focused');
         reveal(element);
-        // La app puede aprovechar el cambio de foco (por ejemplo para pedir el
-        // "ahora" de esa fila).
         if (onFocus) onFocus(element);
     }
 
-    // Llevar el foco a la vista sin tocar el documento. scrollIntoView puede
-    // arrastrar la pagina entera y con ella el rail y el margen del header, que es
-    // lo que se veia en la TV al bajar por una lista. Aqui solo se mueve el
-    // contenedor que scrollea, si hay alguno.
+    // Scroll only the container that overflows: scrollIntoView dragged the whole document.
     function reveal(element) {
         var box = scrollBox(element);
         if (!box || !element.getBoundingClientRect) return;
@@ -116,23 +107,16 @@ App.tv = (function () {
         return document.querySelector('.focused');
     }
 
-    // Enter on a field is what summons the TV's IME: focusing it from inside
-    // the key handler counts as user action, the TV shows the keyboard, and the
-    // phone keyboard/paste comes with it.
+    // Focusing a field from inside the key handler is what summons the TV's IME.
     function select() {
         var element = focusedElement();
         if (!element) return;
-        // Un input de fichero se abre; enfocarlo no haría nada.
         if (element.tagName === 'INPUT' && element.type === 'file') element.click();
-        // En un campo, enfocarlo es lo que abre el teclado de la TV y lo que deja
-        // pegar. En un boton, pulsarlo es todo lo que hay que hacer.
         else if (field(element)) element.focus();
         else element.click();
     }
 
-    // Campo de texto: el <input> y TAMBIEN el <textarea>. Sin el textarea, el motor
-    // seguia comiendose las teclas encima de el y no habia forma de escribir ni de
-    // pegar nada (el alta por "Detect" es justo un textarea).
+    // Keys belong to the focused text field, textarea included.
     function field(element) {
         if (!element) return false;
         return element.tagName === 'TEXTAREA'
@@ -147,7 +131,6 @@ App.tv = (function () {
         if (typing()) {
             var field = document.activeElement;
             if (event.keyCode === KEY.UP || event.keyCode === KEY.DOWN) {
-                // The way out of a field: close the IME, then move.
                 field.blur();
             } else {
                 if (event.keyCode === KEY.BACK) field.blur();
@@ -155,9 +138,6 @@ App.tv = (function () {
             }
         }
 
-        // La app ve antes cada tecla: si la maneja, devuelve true y el motor no
-        // hace nada (asi el teclado numerico o el buffer de canal funcionan sin
-        // pelearse con el foco).
         if (onKey(event.keyCode)) return;
 
         switch (event.keyCode) {
@@ -169,16 +149,16 @@ App.tv = (function () {
         }
     }
 
+    // Some firmwares only deliver the non-arrow keys if they are registered first.
     function listen(handler, options) {
         onKey = handler;
         onFocus = (options && options.onFocus) || null;
         document.addEventListener('keydown', handle);
-        // Some firmwares need the non-arrow keys registered before they arrive.
         try {
             if (typeof tizen !== 'undefined') {
                 tizen.tvinputdevice.registerKeyBatch(['ColorF0Red', 'ChannelUp', 'ChannelDown', 'MediaPlayPause']);
             }
-        } catch (error) { /* not a Tizen device, or already registered */ }
+        } catch (error) {  }
     }
 
     return {

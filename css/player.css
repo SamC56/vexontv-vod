@@ -1,42 +1,23 @@
-/* ---------------------------------------------------------------- reproduccion */
 .screen.player {
   position: fixed;
   inset: 0;
   z-index: 10;
   display: block;
-  /* Sin fondo a proposito: el plano de video de AVPlay puede ir por detras del
-     webview, y una capa opaca aqui lo tapa (se oiria y no se veria). El negro lo
-     pone el body. */
   background: transparent;
 }
 
-/* Superficie de AVPlay: la TV pinta el video AQUI (no en el <video>), asi que tiene
-   que cubrir la pantalla y coincidir con el rect de setDisplayRect. */
-/* La caja es el "hueco" por donde la TV pinta el video, pero si el plugin no se
-   engancha a ella, pinta SU aviso ("Couldn't load plugin" en el navegador, y en la
-   TV eso es el punto que se veia sobre el video). Con opacidad 0 la caja sigue
-   existiendo y colocada igual -que es lo que necesita setDisplayRect- pero no pinta
-   nada: el video va a su plano, por detras del webview. Si en alguna TV el video se
-   pintase DENTRO de la caja, habria que quitar esta linea. */
 .av-surface {
   opacity: 0;
   position: absolute;
   left: 0;
   top: 0;
-  /* En PIXELES, como el demo oficial de Samsung (1920px x 1080px), no en %: una
-     superficie de 0x0 reproduce el audio y no pinta nada, que es el fallo tipico
-     de AVPlay en la TV. */
   width: 1920px;
   height: 1080px;
   border: 0;
 }
 
-/* Con AVPlay disponible el <video> sobra, y si se queda tapa la superficie: es el
-   fallo de "se oye pero no se ve". */
 .screen.player.hw #videoPlayer { display: none; }
 
-/* Reproduciendo, detras del reproductor no queda nada: ni rail, ni listas, ni el
-   fondo con las luces de la app. */
 .app.playing .rail { display: none; }
 .app.playing .main { padding: 0; }
 body.playing {
@@ -50,8 +31,6 @@ body.playing {
   background: transparent;
 }
 
-/* Mientras el canal arranca. En la esquina y no en el centro: centrado tapa el
-   video justo cuando lo estas mirando, y un circulo en medio parece un punto. */
 .player-status {
 	position: absolute;
 	top: 5%;
@@ -68,7 +47,6 @@ body.playing {
 .player-status .spinner { width: 30px; height: 30px; }
 .player-status-text { font-size: 21px; color: var(--text-2); }
 
-/* Un canal que no arranca: el motivo, el canal y reintentar. Nunca negro mudo. */
 .player-error {
 	position: absolute;
 	inset: 0;
@@ -112,7 +90,6 @@ body.playing {
 	margin-top: 28px;
 }
 
-/* Entra desde abajo, que es donde vive. */
 .overlay {
   position: absolute;
   inset: auto 0 0 0;
@@ -141,13 +118,10 @@ body.playing {
   pointer-events: auto;
 }
 
-/* Columna de texto del reproductor: puede encogerse para que el titulo largo
-   no empuje al bloque de la derecha. */
 .ov-info {
   min-width: 0;
 }
 
-/* Aqui "en directo" dice algo: es lo que se está viendo. Brasa, como una tally. */
 .ov-live {
   display: flex;
   align-items: center;
@@ -168,9 +142,6 @@ body.playing {
   box-shadow: 0 0 0 3px rgba(204, 66, 7, 0.22);
 }
 
-/* Lo único del reproductor que se permite el degradado: es el titular. */
-/* Motor de reproduccion, discreto: sin consola en la TV, este dato es la unica
-   forma de saber si esta tirando de AVPlay o del <video>. */
 .ov-engine {
   padding-left: 12px;
   letter-spacing: 0.1em;
@@ -189,8 +160,6 @@ body.playing {
   color: var(--text-2);
 }
 
-/* Lo que están dando ahora, si el panel lo sabe. */
-/* Guia en el banner: ahora con su barra, y el siguiente programa. */
 .ov-guide { margin-top: 16px; max-width: 60ch; }
 
 .ov-progress {
@@ -235,10 +204,6 @@ body.playing {
   color: var(--text-3);
 }
 
-/* ---------------------------------------------------------------- panel de zapeo
-   La lista encima del video. Ocupa la izquierda y es solida (el video sigue
-   detras, a la derecha): categorias, y los canales de la elegida con logo, lo que
-   estan dando y su barra. Estilo de la referencia, con nuestro sistema. */
 .zap {
   position: absolute;
   inset: 0 auto 0 0;
@@ -260,8 +225,6 @@ body.playing {
 
 .zap-cats { border-right: 1px solid var(--line); }
 
-/* Leyenda de teclas del reproductor: el mando de la TV no viene con esta app, asi
-   que aqui se dice que hace cada boton. Una linea, en voz baja. */
 .ov-keys {
   margin-top: 14px;
   font-size: 15px;
@@ -283,11 +246,8 @@ body.playing {
   letter-spacing: 0.08em;
 }
 
-/* Cada accion, separada de la siguiente. */
 .ov-keys > span:not(.ov-key) { margin-right: 22px; }
 
-/* Cabecera del panel: la categoria a la izquierda y, a la derecha, que hace OK
-   (antes el canal se abria solo con pasar por encima; ahora hay que pulsarlo). */
 .zap-head {
   display: flex;
   align-items: baseline;
@@ -324,7 +284,6 @@ body.playing {
   background: var(--grad-bar);
 }
 
-/* Punto en la categoria que se esta viendo. */
 .zap-dot {
   flex: none;
   width: 6px;
@@ -364,7 +323,6 @@ body.playing {
   white-space: nowrap;
 }
 
-/* Guia de la fila: horas en los extremos y la barra en medio, como la referencia. */
 .zap-guide {
   display: flex;
   align-items: center;
@@ -399,9 +357,6 @@ body.playing {
 
 .zap-now { flex: none; font-size: 16px; color: var(--ok); }
 
-/* Botones del banner, en columna: en fila el motor de foco los agrupa por posicion
-   y depende de la maquetacion, y en columna los navega igual en cualquier
-   maquetacion. Hoy es uno (favoritos); el modo de pantalla se quito a peticion. */
 .ov-actions {
   display: flex;
   flex-direction: column;

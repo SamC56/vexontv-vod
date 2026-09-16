@@ -1,7 +1,5 @@
 var App = App || {};
 
-// Recientes: lo último visto.
-
 App.uiScreens = App.uiScreens || {};
 
 (function () {

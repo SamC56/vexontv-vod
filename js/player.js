@@ -1,15 +1,7 @@
 var App = App || {};
 
-// Playback goes through Samsung's AVPlay when the TV exposes it: HLS and
-// MPEG-TS are decoded in hardware there. The <video> element is only the
-// fallback for environments without webapis.avplay (emulator, browser).
 App.player = (function () {
-    // Reading webapis.avplay can throw when the privilege was not granted (the
-    // package then installs as Public but still calls nothing): a throw here
-    // would take the whole app down, so it is probed defensively.
-    // Se pregunta a la TV cada vez, no una sola vez al cargar: si webapis.avplay
-    // aparece despues (o el privilegio tarda), capturarlo al principio nos dejaba
-    // sin AVPlay para siempre y todo caia al <video>.
+    // Reading webapis.avplay can throw when the privilege was not granted: probe defensively.
     function avplay() {
         try {
             return (typeof webapis !== 'undefined' && webapis.avplay) ? webapis.avplay : null;
@@ -22,12 +14,10 @@ App.player = (function () {
     var handlers = {};
     var startTimer = null;
 
-    // Cuanto se espera a que el canal empiece antes de darlo por muerto. Un
-    // stream que no responde no da error: se queda abriendo para siempre.
+    // A stream that never answers sends no error event; give up after this.
     var START_TIMEOUT_MS = 12000;
 
-    // Los errores de AVPlay no traen texto util (son PLAYER_ERROR_*), asi que se
-    // traducen: el usuario tiene que poder leer por que no se ve.
+    // AVPlay reports PLAYER_ERROR_* codes; the viewer needs words.
     var REASONS = {
         PLAYER_ERROR_CONNECTION_FAILED: 'No connection to the channel',
         PLAYER_ERROR_TIMEOUT: 'The channel took too long to answer',
@@ -62,18 +52,11 @@ App.player = (function () {
         if (avplay()) setRect();
     }
 
-
-    // La doc de AVPlay es explicita: el rect se mide SIEMPRE en la rejilla de
-    // 1920x1080 de la TV, sea cual sea la resolucion o el viewport de la app.
-    // Y el style del object tiene que coincidir con este rect (va a pantalla
-    // completa por CSS).
-    // El rect se mide SIEMPRE en la rejilla de 1920x1080 de la TV, sea cual sea el
-    // viewport. Si viene uno degenerado (el preview a medio maquetar), se usa la
-    // pantalla entera: una superficie de 0x0 deja solo audio.
     var lastRect = null;
 
     function clearRect() { lastRect = null; }
 
+    // AVPlay measures the display rect in the TV's 1920x1080 grid, whatever the viewport.
     function setRect(rect) {
         if (rect) lastRect = rect;
         if (!surface) surface = document.getElementById('avPlayer');
@@ -99,6 +82,7 @@ App.player = (function () {
         }
     }
 
+    // Without the <object type="application/avplayer"> surface it plays audio and paints nothing.
     function checkSurface() {
         if (!avplay()) return true;
         if (!surface) surface = document.getElementById('avPlayer');
@@ -117,8 +101,6 @@ App.player = (function () {
         if (handlers.onStart) handlers.onStart();
     }
 
-    // Si en START_TIMEOUT_MS no ha arrancado ni ha fallado, se trata como fallo:
-    // es lo que convierte una pantalla negra muda en un boton de reintentar.
     function waitForStart() {
         clearStart();
         startTimer = setTimeout(function () {
@@ -130,7 +112,7 @@ App.player = (function () {
     function clearVideo() {
         if (!video) return;
         video.removeAttribute('src');
-        try { video.load(); } catch (error) { /* not attached to a source */ }
+        try { video.load(); } catch (error) {  }
     }
 
     function stop() {
@@ -139,15 +121,13 @@ App.player = (function () {
         if (AV) {
             try {
                 if (state() === 'PLAYING' || state() === 'PAUSED') AV.stop();
-            } catch (error) { /* nothing playing */ }
-            try { AV.close(); } catch (error) { /* already closed */ }
+            } catch (error) {  }
+            try { AV.close(); } catch (error) {  }
         }
         clearVideo();
     }
 
-    // Reserva: el <video> del navegador. Se usa cuando no hay AVPlay o cuando
-    // AVPlay esta pero sus llamadas fallan (el privilegio no concedido instala la
-    // app como Public, pero webapis.avplay puede seguir ahi y no hacer nada).
+    // Fallback for environments without AVPlay: emulator, browser, Public install.
     function playWithVideo(url) {
         if (!video) { fail(new Error('No player available')); return; }
         video.src = url;
@@ -162,9 +142,6 @@ App.player = (function () {
         lastRect = rect || null;
         if (!rect) clearRect();
 
-        // Red de seguridad: si a los 4 s no ha llegado ningun evento, se quita el
-        // aviso de "abriendo" igual. Un aviso pegado encima del video (un circulo
-        // en medio de la pantalla) es peor que no avisar.
         setTimeout(started, 4000);
 
         var AV = avplay();
@@ -173,12 +150,9 @@ App.player = (function () {
             try {
                 AV.open(url);
                 setRect();
-                // Letterbox: 4:3 channels keep their shape instead of stretching.
                 AV.setDisplayMethod('PLAYER_DISPLAY_MODE_LETTER_BOX');
                 AV.setListener({
                     onerror: function (error) { fail(error); },
-                    // En directo, 'started' tambien por buffering: prepareAsync puede
-                    // tardar o no llegar nunca y dejaba el aviso de "abriendo" fijo.
                     onbufferingcomplete: function () { started(); },
                     oncurrentplaytime: function () { started(); },
                     onstreamcompleted: function () { if (handlers.onEnd) handlers.onEnd(); }
@@ -190,8 +164,6 @@ App.player = (function () {
                 }, function (error) { fail(error); });
                 return;
             } catch (error) {
-                // AVPlay sin privilegio: se sigue con el <video> en vez de dejar
-                // la pantalla en negro.
                 console.error('AVPlay no disponible, se usa <video>:', error);
             }
         }

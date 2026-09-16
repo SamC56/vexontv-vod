@@ -1,4 +1,3 @@
-/* ---------------------------------------------------------------- listas */
 .rows {
   flex: 1;
   min-height: 0;
@@ -25,8 +24,6 @@
     box-shadow var(--dur-fast) var(--ease);
 }
 
-/* El foco: nucleo un punto mas claro, halo menta y texto blanco. El color entra
-   en el mismo frame que la tecla (es estado); solo el halo se interpola. */
 .row.focused {
   background: var(--surface-2);
   color: var(--text);
@@ -76,7 +73,6 @@
   color: var(--saved);
 }
 
-/* Tipo de origen: la caja es informacion, no adorno. */
 .kind {
   flex: none;
   display: grid;
@@ -92,7 +88,6 @@
   color: var(--text-2);
 }
 
-/* Miniatura: una pantallita dentro de la fila, con su hairline interior. */
 .thumb {
   flex: none;
   display: grid;
@@ -114,10 +109,6 @@
   color: var(--text-3);
 }
 
-/* Editar, en la fila de su fuente. Los margenes verticales negativos y el
-   align-self son a proposito: asi la caja del boton empieza donde empieza la
-   fila, el motor de foco los ve en LA MISMA fila (agrupa por offsetTop) y pasar
-   de la fuente al boton es pulsar derecha, sin logica de navegacion extra. */
 .row .edit {
   flex: none;
   display: flex;
@@ -149,7 +140,6 @@
     inset 0 0 0 1px var(--ring);
 }
 
-/* Fila de añadir: misma rejilla, sin relleno de color. */
 .row.add .kind {
   border-style: dashed;
   color: var(--text-3);
@@ -159,7 +149,6 @@
   color: var(--text-2);
 }
 
-/* ---------------------------------------------------------------- columnas */
 .columns {
   flex: 1;
   min-height: 0;
@@ -196,9 +185,6 @@
   box-shadow: inset 0 0 0 1px var(--line);
 }
 
-/* ---------------------------------------------------------------- categorias */
-/* Cabecera de proveedor: tratamiento eyebrow (pequena, espaciada) sin gritar.
-   El nombre se corta antes que empujar el recuento fuera de la fila. */
 .cat-source-name {
   min-width: 0;
   overflow: hidden;
@@ -256,7 +242,6 @@
   height: 18px;
 }
 
-/* ---------------------------------------------------------------- "ahora" */
 .row-now {
   flex: none;
   max-width: 32ch;
@@ -272,7 +257,6 @@
   color: var(--text-2);
 }
 
-/* Número de canal: columna fija para que los nombres queden alineados. */
 .num {
   flex: none;
   width: 3ch;
@@ -285,7 +269,6 @@
   color: var(--ok);
 }
 
-/* Se teclea el número y se ve aquí arriba, como en una TV. */
 .numbuffer {
   position: fixed;
   top: 7%;
@@ -303,10 +286,6 @@
   animation: pop var(--dur) var(--ease-out);
 }
 
-/* Filo de degradado en la arista de arriba: la firma de la casa en lo que
-   interrumpe. Es una linea de 3px, no un anillo: el truco del anillo necesita
-   mask-composite (Chromium 120+) y si el motor no lo entiende la capa degradada
-   tapa el contenido. Una arista nunca puede tapar nada. */
 .numbuffer::after,
 .modal-card::after {
   content: "";
@@ -326,23 +305,15 @@
   }
 }
 
-/* ---------------------------------------------------------------- navegador TV
-   Tres columnas, como un reproductor de escritorio: categorias, canales de la
-   categoria elegida y preview. El preview no reproduce (eso es OK, a pantalla
-   completa): enseña el logo, la guia y el siguiente. */
 .browse {
   flex: 1;
   min-height: 0;
   display: grid;
-  /* minmax(0, 1fr) en la fila, igual que en .app: con una fila auto, la columna de
-     canales crece con su contenido y no scrollea nunca. */
   grid-template-columns: minmax(260px, 24%) minmax(360px, 32%) 1fr;
   grid-template-rows: minmax(0, 1fr);
   gap: 22px;
 }
 
-/* Las categorias scrollean ellas mismas; la columna de canales es un flex para que
-   scrollee la lista de dentro (.rows), que es quien sabe hacerlo. */
 .browse-cats {
   min-height: 0;
   overflow-y: auto;
@@ -365,16 +336,11 @@
   display: grid;
   place-items: center;
   min-height: 0;
-  /* Negro de sala, y nada mas: ni marco, ni esquinas redondeadas, ni aire. El video
-     va a sangre, que es como se ve en el reproductor de verdad. */
   background: #000;
 }
 
-/* Con el canal en marcha, la tarjeta se recorta a si misma el rectangulo del
-   escenario: queda el video dentro y negro alrededor, que es lo que se pidio. Se
-   hace con mascara y no con fondos porque cualquier capa opaca encima del escenario
-   taparia el plano de video de AVPlay. Si el firmware no sabe restar mascaras no se
-   activa nada (sin body.previewing) y se ve la ficha de siempre. */
+/* The card cuts the stage rectangle out of itself so the video plane shows through. */
+/* The card cuts the stage rectangle out of itself so the video plane shows through. */
 body.previewing .browse-preview {
   -webkit-mask-image: linear-gradient(#000 0 0), linear-gradient(#000 0 0);
   -webkit-mask-repeat: no-repeat, no-repeat;
@@ -388,10 +354,6 @@ body.previewing .browse-preview {
   mask-composite: exclude;
 }
 
-/* Con el video dentro (agujero activo) se apaga lo que hay en el escenario: se
-   pintaria encima del video. Se hace con opacidad y no con display para no mover
-   nada: el escenario es el que mide el agujero. La ficha de debajo se queda, y la
-   tarjeta se queda sin fondo: cualquier capa opaca ahi taparia el video. */
 body.previewing .preview-stage > * { opacity: 0; }
 
 .preview-empty {
@@ -408,8 +370,6 @@ body.previewing .preview-stage > * { opacity: 0; }
 .preview-card {
   display: flex;
   flex-direction: column;
-  /* El bloque entero (escenario + ficha) centrado en la columna, con el texto
-     debajo y en voz mas baja que el resto de la app: aqui manda el video. */
   justify-content: center;
   gap: 16px;
   width: 100%;
@@ -417,8 +377,6 @@ body.previewing .preview-stage > * { opacity: 0; }
   padding: 0;
 }
 
-/* Escenario 16:9: es el rectangulo del agujero, o sea el que mide el video. A
-   sangre y sin adornos: el fondo negro ya lo pone la tarjeta. */
 .preview-stage {
   position: relative;
   flex: none;
@@ -439,7 +397,6 @@ body.previewing .preview-stage > * { opacity: 0; }
   text-align: center;
 }
 
-/* El logo llena el escenario (fondo contener): el marco ya lo pone el escenario. */
 .preview-logo {
   display: grid;
   place-items: center;
@@ -466,8 +423,6 @@ body.previewing .preview-stage > * { opacity: 0; }
   color: var(--text-3);
 }
 
-/* El foco se marca con el filo y nada mas: si el fondo cambiara, el video se veria a
-   traves de una capa translucida y pareceria apagado justo al enfocar la columna. */
 .browse-preview:focus,
 .browse-preview.focused {
   box-shadow: inset 0 0 0 1px var(--ring);

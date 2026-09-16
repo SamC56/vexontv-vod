@@ -1,19 +1,5 @@
 var App = App || {};
 
-// Fuentes en, lista plana de canales out: { name, group, logo, url }.
-//
-// ponytail: no hay tope de tamano a proposito. Lo hubo (40 MB) porque una lista
-// de reseller de 500 MB tumbaba el WebView; el usuario pidio quitarlo para
-// ajustarlo en su TV. Lo que SI se mantiene es leer en streaming, que es lo que
-// evita el pico de memoria (no se guarda el texto entero ni un array de lineas).
-// Si vuelve a colgarse: poner el tope otra vez es una linea en readStream.
-//
-// Una fuente tiene kind (m3u | xtream | stalker) y source (url | text | creds |
-// mac), que es lo que permite luego filtrarlas por tipo:
-//   m3u + url    una dirección .m3u / .m3u8
-//   m3u + text   contenido pegado (o leido de un fichero)
-//   xtream       portal + usuario + contraseña, o una URL que ya los trae
-//   stalker      portal + MAC
 App.api = (function () {
     var MOVIE_OR_SERIES = /\/(?:movie|series)\//i;
     var TIMEOUT_MS = 60000;
@@ -31,7 +17,6 @@ App.api = (function () {
         return match ? match[1] : 'Lista';
     }
 
-    // ------------------------------------------------------------------ m3u
     function lineFeeder(emit) {
         var pending = null;
         var attrRe = /([a-zA-Z0-9-]+)="([^"]*)"/g;
@@ -119,8 +104,6 @@ App.api = (function () {
         return step();
     }
 
-    // M3U por URL: se lee en streaming y con tope, porque una lista de reseller
-    // puede ser de cientos de MB.
     function loadM3uUrl(url, onProgress) {
         if (onProgress) onProgress({ label: 'Connecting' });
         return withTimeout(fetch(url), 'The playlist is not responding').then(function (res) {
@@ -140,7 +123,6 @@ App.api = (function () {
         return Promise.resolve(channels);
     }
 
-    // ------------------------------------------------------------------ xtream
     function parseXtreamUrl(url) {
         if (!url || !/^https?:\/\/[^\/?#]+\/(?:get|player_api|panel_api)\.php/i.test(url)) return null;
         var origin = originOf(url);
@@ -188,8 +170,6 @@ App.api = (function () {
             });
     }
 
-    // De una URL de directo .../live/<user>/<pass>/<id>.ts saca lo necesario para
-    // volver a hablar con la API del panel (por ejemplo para el EPG).
     function parseLiveUrl(url) {
         var match = (url || '').match(/^(https?:\/\/[^\/?#]+)\/live\/([^\/]+)\/([^\/]+)\/([^\/.]+)\.(?:ts|m3u8)/i);
         if (!match) return null;
@@ -201,13 +181,9 @@ App.api = (function () {
         };
     }
 
-    // "Ahora" en ese canal, si el panel lo sabe. Falla en silencio: el EPG es un
-    // extra, no algo por lo que haya que molestar al que esta viendo.
     function loadNowPlaying(url) {
         var live = parseLiveUrl(url);
         if (!live) return Promise.resolve(null);
-        // 3 programas: el de ahora y los siguientes, que es lo que enseña la guia
-        // de un reproductor de IPTV normal.
         var api = live.origin + '/player_api.php?username=' + enc(live.user) + '&password=' + enc(live.pass) +
             '&action=get_short_epg&stream_id=' + enc(live.id) + '&limit=3';
         return Promise.resolve().then(function () { return fetchJson(api); }).then(function (data) {
@@ -229,9 +205,6 @@ App.api = (function () {
         try { return decodeURIComponent(escape(atob(value))); } catch (error) { return ''; }
     }
 
-    // ------------------------------------------------------------------ stalker
-    // Portal Ministra/Stalker: handshake con la MAC, catalogo de canales y, para
-    // reproducir, create_link (devuelve el comando con la URL real).
     function stalkerCall(portal, mac, params, token) {
         var query = 'type=stb&mac=' + enc(mac) + '&token=' + enc(token || '') + '&' + params;
         var headers = {
@@ -261,7 +234,7 @@ App.api = (function () {
                             genres[String(genre.id)] = genre.title;
                         });
                     })
-                    .catch(function () { /* sin generos: todos a "Otros" */ })
+                    .catch(function () {  })
                     .then(function () {
                         var rows = data && data.js && data.js.data ? data.js.data : (data && data.js) || [];
                         if (!rows.length) throw new Error('The portal returned no channels');
@@ -280,7 +253,6 @@ App.api = (function () {
         });
     }
 
-    // Stalker no da la URL en el catalogo: hay que pedirla al vuelo.
     function resolveStalkerUrl(list, channel) {
         var portal = (list.origin || '').replace(/\/+$/, '');
         return stalkerCall(portal, list.mac, 'action=create_link&cmd=' + enc(channel.cmd), list.token)
@@ -291,9 +263,6 @@ App.api = (function () {
             });
     }
 
-    // ------------------------------------------------------------------ tipos
-    // Auto-detección: lo que pegue el usuario, sea una URL, unas credenciales o
-    // el mensaje entero del proveedor.
     function parseAuto(text, name) {
         var value = (text || '').trim();
         if (!value) return { error: 'Paste the address, the credentials or the playlist text' };
@@ -333,7 +302,6 @@ App.api = (function () {
         return { error: 'No playlist, portal or MAC found in that text' };
     }
 
-    // ------------------------------------------------------------------ carga
     function load(list, onProgress) {
         if (!list) return Promise.reject(new Error('Unknown source'));
 
@@ -356,8 +324,6 @@ App.api = (function () {
         return Promise.reject(new Error('I do not know how to load that source'));
     }
 
-    // Filtra por nombre. La copia en minúsculas se cachea en el canal porque la
-    // búsqueda corre en cada tecla sobre listas de decenas de miles.
     function match(channels, query) {
         var needle = (query || '').trim().toLowerCase();
         if (!needle) return channels;

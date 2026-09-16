@@ -1,7 +1,5 @@
 var App = App || {};
 
-// Raíz y montaje: junta el kit (App.uiKit) con las pantallas (App.uiScreens) y
-// repinta con cada cambio del store. Cada pantalla vive en js/ui/screens/.
 App.ui = (function () {
     var preact = window.preact;
     var html = window.htm.bind(preact.h);
@@ -25,8 +23,6 @@ App.ui = (function () {
     var NumBuffer = screens.numBuffer;
     var Confirm = screens.confirm;
 
-    // Ojo con el nombre: una funcion llamada App aqui dentro sombrearia el App
-    // global (hoisting) y store/player/tv se leerian undefined. De ahi "Root".
     function Root() {
         useEffect(function () {
             var request = store.takeFocus();
@@ -65,7 +61,6 @@ App.ui = (function () {
     function render() {
         preact.render(html`<${Root} />`, document.getElementById('app'));
 
-        // Primera pintura hecha: fuera el splash (con un fundido corto y se quita).
         var splash = document.getElementById('splash');
         if (splash) {
             splash.classList.add('off');
@@ -75,9 +70,6 @@ App.ui = (function () {
         }
     }
 
-    // El store es la fuente de verdad: cada cambio repinta. Se renderiza desde
-    // fuera del ciclo de Preact a proposito, para no depender de que un dispatch
-    // de hooks lanzado desde un callback externo llegue a propagarse.
     store.subscribe(render);
 
     return { render: render, qsa: qsa };

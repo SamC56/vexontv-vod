@@ -1,7 +1,5 @@
 var App = App || {};
 
-// Alta y edición de una fuente: elegir tipo, rellenar y guardar.
-
 App.uiScreens = App.uiScreens || {};
 
 (function () {
@@ -16,7 +14,7 @@ App.uiScreens = App.uiScreens || {};
     var FIELD_SETS = kit.FIELD_SETS;
     var TYPE_ICONS = kit.TYPE_ICONS;
 
-    App.uiScreens.sourceForm = // Alta (dos pasos: tipo y campos) y edición (un paso).
+    App.uiScreens.sourceForm =
     function SourceForm(props) {
         var state = store.state;
         var editing = props.mode === 'edit';
@@ -135,8 +133,6 @@ App.uiScreens = App.uiScreens || {};
         </section>`;
     };
 
-    // Un M3U guardado puede venir de una URL o de texto pegado: se edita con el
-    // juego de campos que le corresponde.
     function fieldTypeOf(list) {
         if (!list) return 'url';
         var kind = store.listKind(list);
@@ -153,7 +149,7 @@ App.uiScreens = App.uiScreens || {};
         return '';
     };
 
-    App.uiScreens.addTypePicker = // Primer paso del alta: cómo te quieres conectar (soporta todos los formatos).
+    App.uiScreens.addTypePicker =
     function AddTypePicker() {
         return html`<section class="screen" id="screen-add">
             <${Bar} title="Add source" titleId="addTitle"

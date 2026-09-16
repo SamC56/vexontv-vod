@@ -1,7 +1,5 @@
 var App = App || {};
 
-// Estado y acciones, sin DOM ni framework. La UI solo pinta lo que hay aquí, y
-// todo esto se puede probar en node (test/check.js).
 App.store = (function () {
     var KEYS = {
         lists: 'ts.lists',
@@ -12,15 +10,6 @@ App.store = (function () {
         seeded: 'ts.seeded',
     };
 
-    // Fuente de fabrica: los canales publicos y gratuitos de iptv-org, agrupados
-    // por pais, para que la app tenga algo que enseñar recien instalada.
-    //   - Se pone UNA vez: si el usuario la borra, no vuelve (ts.seeded).
-    //   - No se descarga hasta que se abre la TV o se entra en ella, como
-    //     cualquier otra fuente.
-    //   - Se puede editar o borrar como las demas: es una fuente normal.
-    // Aviso para el que la mantenga: parte de esos streams piden su propio
-    // User-Agent o vienen bloqueados por pais, asi que algunos no abriran (sale
-    // la tarjeta de reintentar con el motivo, no una pantalla negra).
     var DEFAULT_LIST = {
         url: 'https://iptv-org.github.io/iptv/index.country.m3u',
         name: 'Free channels of the world'
@@ -28,7 +17,9 @@ App.store = (function () {
     var MAX_TILES = 200;
     var MAX_RECENT = 12;
     var TOAST_MS = 3600;
+    // A channel number typed on the remote commits by itself after this.
     var DIGITS_MS = 2200;
+    // How long a programme listing is trusted before asking the panel again.
     var PROGRAM_MS = 10 * 60 * 1000;
 
     var TYPES = [
@@ -49,7 +40,6 @@ App.store = (function () {
         recent: [],
         programs: {},
         filter: 'all',
-        // Fuente cuya TV se esta viendo, o null para la TV de todas.
         tvSource: null,
         editId: null,
         catDraft: null,
@@ -58,16 +48,10 @@ App.store = (function () {
         loadProgress: {},
         search: {},
         playing: null,
-        // Panel de zapeo sobre el video: se abre con OK mientras se ve algo.
         zapOpen: false,
-        // Menu del reproductor (favoritos) en foco. Mientras lo este, el overlay
-        // no se esconde: si no, se pulsaria OK sobre un boton invisible.
         menuFocus: false,
-        // Canal seleccionado en el navegador de la TV: es lo que enseña el preview.
         preview: null,
         zapCategory: '',
-        // 'idle' | 'opening' | 'playing' | 'error': lo que se ve en el reproductor
-        // mientras un canal arranca, o cuando no arranca.
         playStatus: 'idle',
         playError: null,
         zapping: [],
@@ -81,7 +65,6 @@ App.store = (function () {
         pendingZone: null
     };
 
-    // Ritmo maximo de repintado mientras se carga una lista (ms).
     var PROGRESS_MS = 250;
 
     var listeners = [];
@@ -90,7 +73,6 @@ App.store = (function () {
     var toastTimer = null;
     var digitsTimer = null;
 
-    // ------------------------------------------------------------------ plumbing
     function subscribe(fn) {
         listeners.push(fn);
         return function () {
@@ -109,8 +91,6 @@ App.store = (function () {
         emit();
     }
 
-    // El foco se aplica después del render (Root lo recoge): una acción puede
-    // pedir "vete a esta zona" sin pelear con Preact.
     function focus(zone, row, col) {
         state.pendingZone = { zone: zone, row: row || 0, col: col || 0 };
     }
@@ -133,15 +113,13 @@ App.store = (function () {
     function write(key, value) {
         try {
             localStorage.setItem(key, JSON.stringify(value));
-        } catch (error) { /* sin espacio o sin storage: no es fatal */ }
+        } catch (error) {  }
     }
 
     function formatCount(value) {
         return String(value).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
     }
 
-    // Se siembra solo en una instalacion nueva: sin fuentes y sin haberse
-    // sembrado antes.
     function seedDefault() {
         if (state.lists.length) return;
         if (read(KEYS.seeded, false)) return;
@@ -168,7 +146,6 @@ App.store = (function () {
         return null;
     }
 
-    // ------------------------------------------------------------------ fuentes
     function listById(id) {
         for (var i = 0; i < state.lists.length; i++) {
             if (state.lists[i].id === id) return state.lists[i];
@@ -176,8 +153,6 @@ App.store = (function () {
         return null;
     }
 
-    // Tipo de una fuente. Las listas guardadas antes de existir 'kind' se
-    // deducen: con usuario es Xtream, sin él es M3U.
     function listKind(list) {
         if (!list) return 'm3u';
         if (list.kind) return list.kind;
@@ -193,7 +168,6 @@ App.store = (function () {
     function channelsOf(listId) { return state.channels[listId] || []; }
     function groupsOf(listId) { return state.groups[listId] || []; }
 
-    // Categorías silenciadas por el usuario en ese proveedor (lista).
     function isMuted(list, group) {
         return !!(list && list.muted && list.muted.indexOf(group) !== -1);
     }
@@ -208,7 +182,6 @@ App.store = (function () {
         return names;
     }
 
-    // Todas las fuentes del tipo activo, con el recuento por tipo para el filtro.
     function sources() {
         var counts = { all: state.lists.length, m3u: 0, xtream: 0, stalker: 0 };
         state.lists.forEach(function (list) {
@@ -232,7 +205,6 @@ App.store = (function () {
         focus('sources');
     }
 
-    // Todas las fuentes del filtro activo, para el filtro por tipo.
     function allChannels() {
         if (state.flat) return state.flat;
         var flat = [];
@@ -260,10 +232,6 @@ App.store = (function () {
         return null;
     }
 
-    // Progreso de carga por fuente. readStream avisa en cada trozo leido, y en
-    // una lista de cientos de MB eso son cientos de repintados por segundo: se
-    // guarda siempre pero solo se repinta cada PROGRESS_MS, o antes si el
-    // contador ha pegado un salto (asi el numero avanza a la vista).
     function startLoadEntry(key, name) {
         state.loadProgress[key] = { since: Date.now(), at: 0, lastCount: -1, label: 'Connecting', name: name };
     }
@@ -293,11 +261,6 @@ App.store = (function () {
         return Math.max(0, Math.round((Date.now() - entry.since) / 1000));
     }
 
-    // Las fuentes que se estan cargando ahora mismo, para pintarlas como filas
-    // en la pantalla en vez de tapar todo con un aviso.
-    // Todo lo que se esta cargando ahora mismo, sea una fuente guardada o una que
-    // se esta comprobando antes de añadir. El aviso y las filas de la pantalla
-    // salen de aqui, asi que dicen siempre lo mismo.
     function loadingRows() {
         return Object.keys(state.loadProgress).map(function (key) {
             var entry = state.loadProgress[key];
@@ -361,9 +324,6 @@ App.store = (function () {
         return promise;
     }
 
-    // ------------------------------------------------------------------ alta y edición
-    // Cada tipo de fuente pide unos campos distintos (ver ADD_TYPES en la UI) y
-    // aquí se normaliza todo al mismo modelo.
     function buildSource(type, fields) {
         fields = fields || {};
         var name = (fields.name || '').trim();
@@ -401,7 +361,6 @@ App.store = (function () {
             return { list: decorate({ kind: 'stalker', source: 'mac', origin: (origin || url).replace(/\/+$/, ''), mac: mac, name: name || App.api.hostOf(origin || url) }) };
         }
 
-        // m3u por URL (el caso de siempre)
         if (!/^https?:\/\/.+/i.test(url)) return { error: 'The address must start with http:// or https://' };
         var inline = App.api.parseXtreamUrl(url);
         if (inline) {
@@ -502,15 +461,10 @@ App.store = (function () {
         emit();
     }
 
-    // Carga un grupo de fuentes enseñando que pasa. El aviso a pantalla completa
-    // solo aguanta mientras no haya nada que mirar: en cuanto una fuente trae
-    // canales se retira, y las que sigan cargando se quedan como filas.
     function loadWithNotice(listIds, title) {
         showNotice('Loading', title);
         emit();
 
-        // El aviso se retira en cuanto hay canales que mirar, aunque queden
-        // fuentes cargando: esas pasan a ser filas dentro de la pantalla.
         function maybeDismiss() {
             if (state.loading && anythingLoaded()) {
                 hideNotice();
@@ -532,8 +486,6 @@ App.store = (function () {
         });
     }
 
-    // Mientras el aviso esta en pantalla, un latido por segundo para que el
-    // tiempo corra y se vea que la app sigue viva. Sin aviso, no hay latido.
     function noticeTick() {
         if (state.loading && !loadTick) {
             loadTick = setInterval(function () { emit(); }, 1000);
@@ -543,9 +495,6 @@ App.store = (function () {
         }
     }
 
-    // ------------------------------------------------------------------ categorías
-    // Cada proveedor puede tener cientos de categorías de relleno; aquí se
-    // eligen las que se ven (image 3 del diseño de referencia).
     function openCategories() {
         var draft = {};
         state.lists.forEach(function (list) {
@@ -624,14 +573,12 @@ App.store = (function () {
         set({ catSearch: value });
     }
 
-    // ------------------------------------------------------------------ navegación
     function goHome() {
         set({ screen: 'home' });
         focus('sources');
     }
 
     function openTv() {
-        // Se entra en la TV de cero: sin el preview de la vez anterior.
         set({ screen: 'tv', tvSource: null, preview: null });
         focus('tvSearch');
         var todo = state.lists.filter(function (list) {
@@ -642,8 +589,6 @@ App.store = (function () {
         }
     }
 
-    // TV de una sola fuente: la misma pantalla, con sus categorias. Fuentes es
-    // para gestionar; para ver canales se viene aqui.
     function openSource(listId) {
         if (!listById(listId)) return;
         set({ screen: 'tv', tvSource: listId, preview: null });
@@ -653,8 +598,6 @@ App.store = (function () {
         }
     }
 
-    // Volver de una categoria sin perder de que fuente era la TV, y con el foco
-    // puesto en esa misma categoria: si entraste en Espana, vuelves a Espana.
     function backToTv() {
         var index = 0;
         var rows = tvCategories().rows;
@@ -665,21 +608,13 @@ App.store = (function () {
         focus('tvCats', index);
     }
 
-    // Una categoria de TV: los canales de esa categoria, de todas las fuentes.
-    // En el layout de tres columnas, elegir categoria no cambia de pantalla: mueve
-    // la columna de canales y lleva el foco alli.
     function openTvCategory(name) {
         var patch = { catName: name };
-        // El preview pertenece a la lista que se esta mirando: al cambiar de categoria
-        // se suelta, o el canal seguiria reproduciendose fuera de su lista.
         if (state.preview && state.catName !== name) patch.preview = null;
         set(patch);
         focus('tvChannels', 0, 0);
     }
 
-    // El canal que se esta mirando en la lista (el preview): se reproduce ahi mismo,
-    // en el escenario de la columna, con su ficha debajo. OK encima lo abre a pantalla
-    // completa.
     function selectPreview(channel) {
         if (!channel || !channel.url) return;
         if (state.preview && state.preview.url === channel.url) return;
@@ -722,7 +657,6 @@ App.store = (function () {
 
     function searchOf(scope) { return state.search[scope] || ''; }
 
-    // ------------------------------------------------------------------ números
     function pushDigit(digit) {
         state.numBuffer = (state.numBuffer + digit).slice(0, 4);
         emit();
@@ -761,7 +695,6 @@ App.store = (function () {
         return true;
     }
 
-    // ------------------------------------------------------------------ favoritos y vistos
     function favoriteIndex(listId, url) {
         for (var i = 0; i < state.favorites.length; i++) {
             var favorite = state.favorites[i];
@@ -803,15 +736,11 @@ App.store = (function () {
         write(KEYS.recent, state.recent);
     }
 
-    // ------------------------------------------------------------------ EPG
-    // "Ahora" por canal, cacheado: se pide al enfocar una fila (no se pueden
-    // pedir 200 programas de golpe) y se guarda 10 minutos.
     function programOf(channel) {
         var entry = channel && channel.url ? state.programs[channel.url] : null;
         return entry && entry.list && entry.list.length ? entry.list[0] : null;
     }
 
-    // El siguiente programa, para la guia del banner como en cualquier reproductor.
     function nextOf(channel) {
         var entry = channel && channel.url ? state.programs[channel.url] : null;
         return entry && entry.list && entry.list.length > 1 ? entry.list[1] : null;
@@ -832,11 +761,9 @@ App.store = (function () {
                 state.nextProgram = nextOf(channel);
             }
             emit();
-        }).catch(function () { /* el EPG es opcional */ });
+        }).catch(function () {  });
     }
 
-    // Porcentaje del programa que ya ha pasado, para la barra del banner. Devuelve
-    // null si el panel no dio horas (o no se pueden leer).
     function programProgress(program) {
         if (!program || !program.start || !program.end) return null;
         var start = Date.parse(String(program.start).replace(' ', 'T'));
@@ -846,7 +773,6 @@ App.store = (function () {
         return Math.max(0, Math.min(100, Math.round(ratio * 100)));
     }
 
-    // Cada 30 s: recalcula el "ahora" (por si ha cambiado el programa) y repinta.
     function refreshProgram() {
         if (!state.playing) return;
         state.nowProgram = programOf(state.playing.channel);
@@ -861,13 +787,8 @@ App.store = (function () {
         var channel = channelByUrl(element.dataset.url, element.dataset.list);
         if (!channel) return;
         loadProgramFor(channel);
-        // Aqui NO se reproduce nada: en el panel de zapeo el canal se abre al
-        // pulsarlo, no al pasar por encima con el foco.
-        // En el navegador de la TV NO: ahi el preview se abre al pulsar OK en el
-        // canal, no al pasar por encima.
     }
 
-    // ------------------------------------------------------------------ reproducción
     function play(channel, listId, list) {
         if (!listId && channel.listId) listId = channel.listId;
         var list_ = listById(listId);
@@ -882,13 +803,9 @@ App.store = (function () {
         state.zapIndex = Math.max(0, state.zapping.indexOf(channel));
         state.nowProgram = programOf(channel);
         state.nextProgram = nextOf(channel);
-        // al abrir a pantalla completa, el preview pasa a ser ese canal: al volver
-        // con Atras la ficha es la del que estabas viendo
         state.preview = channel;
         pushRecent(channel, listId);
 
-        // Stalker no trae la URL en el catálogo: se pide al vuelo y se guarda en
-        // el propio canal, así el siguiente zap es instantáneo.
         if (!channel.url && channel.cmd && listKind(list_) === 'stalker') {
             set({ screen: 'player' });
             focus('playerIdle');
@@ -906,17 +823,12 @@ App.store = (function () {
         loadProgramFor(channel);
     }
 
-    // El reproductor avisa: arranco, o fallo. Un fallo no puede quedarse en una
-    // pantalla negra con un aviso que se va solo: se pinta una tarjeta con el
-    // motivo y un boton de reintentar.
     function playStarted() {
         if (state.playStatus === 'opening') set({ playStatus: 'playing' });
     }
 
     function playFailed(message) {
         if (state.screen !== 'player') return;
-        // Sin menu: con un canal caido el overlay no esta, y dejar la bandera puesta
-        // se comia la primera tecla del mando.
         set({ playStatus: 'error', menuFocus: false, playError: { message: message || 'Could not open the channel' } });
         focus('playError');
     }
@@ -926,15 +838,10 @@ App.store = (function () {
         var playing = state.playing;
         set({ playStatus: 'opening', playError: null });
         focus('playerIdle');
-        // Un objeto nuevo: el efecto del reproductor depende de state.playing, y
-        // asi vuelve a intentarlo sin ninguna via extra.
         state.playing = { channel: playing.channel, listId: playing.listId, origin: playing.origin };
         emit();
     }
 
-    // ------------------------------------------------------------------ panel de zapeo
-    // La lista encima del video, como en cualquier IPTV: a la izquierda las
-    // categorias, a la derecha los canales, y el canal cambia al moverse.
     function setMenuFocus(on) {
         if (state.menuFocus === on) return;
         set({ menuFocus: on });
@@ -942,8 +849,6 @@ App.store = (function () {
 
     function openZap() {
         var rows = tvCategories().rows;
-        // La categoria del canal que se esta viendo: es donde el usuario espera
-        // encontrarse, y donde esta marcado el que suena.
         var playing = state.playing && state.playing.channel ? state.playing.channel.group : '';
         var current = playing || state.zapCategory || state.catName;
         var exists = false;
@@ -976,8 +881,6 @@ App.store = (function () {
         });
     }
 
-    // Indice del canal que se esta viendo dentro de la lista del panel (para abrir
-    // el foco donde toca).
     function zapChannelIndex() {
         var list = zapChannels();
         var url = state.playing && state.playing.channel ? state.playing.channel.url : null;
@@ -991,9 +894,6 @@ App.store = (function () {
         focus('zapChannels', 0, 0);
     }
 
-    // Pulsar un canal del panel: ese pasa a ser el que se ve y el panel se cierra.
-    // Pasar por encima con el foco no cambia nada: abrir un stream por donde pasa el
-    // foco es gastar la conexion en canales que nadie ha pedido.
     function zapTo(channel) {
         if (!channel || !channel.url) return;
         if (state.screen !== 'player') return;
@@ -1023,7 +923,6 @@ App.store = (function () {
         goHome();
     }
 
-    // ------------------------------------------------------------------ avisos
     function notify(message) {
         toastSeq++;
         state.toast = { message: message, id: toastSeq };
@@ -1053,7 +952,6 @@ App.store = (function () {
         else goHome();
     }
 
-    // ------------------------------------------------------------------ vistas
     function view(source, scope, options) {
         options = options || {};
         var needle = searchOf(scope).trim();
@@ -1076,9 +974,6 @@ App.store = (function () {
         };
     }
 
-    // Categorias que quedan despues de filtrar en el panel (las silenciadas no
-    // entran: allChannels ya las deja fuera). Se juntan por nombre, asi que
-    // "Deportes" de dos proveedores es una sola entrada.
     function tvCategories() {
         var counts = {}, lists = {};
         var scope = state.tvSource;
@@ -1144,10 +1039,6 @@ App.store = (function () {
     }
 
     function currentView() {
-        // La pantalla TV ya no tiene canales sueltos: el salto por numero solo
-        // tiene sentido en las pantallas que si los listan.
-        // El salto por numero funciona en el navegador de la TV: los canales estan
-        // en la columna del medio.
         if (state.screen === 'tv') return visibleTvCategory();
         if (state.screen === 'recents') return visibleRecents();
         if (state.screen === 'favs') return visibleFavorites();

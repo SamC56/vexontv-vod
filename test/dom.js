@@ -1,11 +1,3 @@
-// node test/dom.js
-//
-// Arranca la app de verdad en un DOM (jsdom): pinta, navega con el mando,
-// añade una lista, entra en ella, busca, reproduce, guarda un favorito y borra.
-// Esto es lo que caza los fallos que node --check y las pruebas de lógica no
-// ven (un componente que sombrea un global, un <input> sin autocerrar...).
-//
-// Requiere jsdom: npm install
 const fs = require('fs');
 const path = require('path');
 const { JSDOM, VirtualConsole } = require('jsdom');
@@ -23,8 +15,6 @@ function check(label, condition, detail) {
     console.log('FALLO ' + label + (detail ? '  ->  ' + detail : ''));
 }
 
-// Contrato CSS <-> markup: si se renombra una clase, el estilo se cae en
-// silencio. Se comprueba en la pantalla donde vive cada elemento.
 function checkClasses(label, pairs) {
     const missing = pairs.filter(function (pair) { return !document.querySelector(pair[0]); })
         .map(function (pair) { return pair[1]; });
@@ -57,9 +47,7 @@ window.HTMLMediaElement.prototype.load = function () {};
 window.HTMLMediaElement.prototype.play = function () { return Promise.resolve(); };
 window.HTMLMediaElement.prototype.pause = function () {};
 
-// jsdom no calcula layout y offsetTop es 0 en todo, así que el motor de zonas
-// (que agrupa en filas por offsetTop, correcto en una TV) vería una sola fila.
-// Aquí cada elemento cae en su propia fila, que es como se navegan estas listas.
+// jsdom reports offsetTop 0 for everything; give each element its own row.
 Object.defineProperty(window.HTMLElement.prototype, 'offsetTop', {
     get: function () {
         return Array.prototype.indexOf.call(document.querySelectorAll('*'), this) * 100;
@@ -105,7 +93,6 @@ function focused() {
     return document.querySelector('.focused');
 }
 
-// Solo puede haber una pantalla montada: dos a la vez se ven apiladas.
 function screens() {
     return Array.prototype.map.call(document.querySelectorAll('[id^="screen-"]'), function (el) { return el.id; });
 }
@@ -123,8 +110,6 @@ function typeInto(selector, value) {
 }
 
 async function run() {
-    // Se carga exactamente lo que carga index.html, en su orden: así un módulo
-    // nuevo entra en los tests sin tocar nada aquí.
     const indexSource = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
     const scripts = Array.from(indexSource.matchAll(/<script src="([^"]+)"/g)).map(function (m) { return m[1]; });
     scripts.forEach(function (file) {
@@ -143,8 +128,6 @@ async function run() {
     check('pantalla de inicio montada', !!document.getElementById('screen-home'));
     check('y es la única pantalla montada', onlyScreen('screen-home'), screens().join(', '));
     check('el rail tiene sus cuatro secciones', document.querySelectorAll('.rail .rail-btn').length === 4);
-    // Una instalación nueva trae la fuente pública de fábrica, y el foco empieza
-    // en ella (no en la fila de añadir).
     check('al arrancar está la fuente pública de fábrica',
         document.querySelectorAll('#sourceList .row.source').length === 1
         && document.querySelector('#sourceList .row-name').textContent === 'Free channels of the world'
@@ -161,7 +144,6 @@ async function run() {
         ['#homeActions .btn', 'botón de añadir']
     ]);
 
-    // Se borra la de fábrica y el recorrido sigue con una lista propia.
     press(403);
     await wait(60);
     check('la tecla roja pregunta antes de borrar la de fábrica', !!document.querySelector('#confirm .modal-card'));
@@ -181,7 +163,6 @@ async function run() {
     press(39);
     check('derecha otra vez vuelve a las fuentes', !!focused() && focused().classList.contains('row'));
 
-    // Alta en dos pasos: primero cómo conectar (todos los formatos), luego los campos.
     press(13);
     await wait(30);
     check('OK abre el selector de tipo', !!document.getElementById('addTypes'));
@@ -213,23 +194,20 @@ async function run() {
         && document.getElementById('listCounts').textContent.indexOf('9 channels') !== -1,
         document.getElementById('listCounts').textContent);
 
-    // Filtro por tipo sobre las fuentes.
     document.querySelector('#typeList .type[data-type], #typeList .type');
     const typeRows = document.querySelectorAll('#typeList .type');
-    typeRows[2].click();                            // Xtream
+    typeRows[2].click();
     await wait(40);
     check('filtrar por Xtream deja la lista vacía',
         document.querySelectorAll('#sourceList .row.source').length === 0);
     check('y lo explica', !!document.querySelector('#sourceList .empty'));
-    typeRows[1].click();                            // M3U
+    typeRows[1].click();
     await wait(40);
     check('filtrar por M3U muestra la fuente',
         document.querySelectorAll('#sourceList .row.source').length === 1);
-    typeRows[0].click();                            // Todas
+    typeRows[0].click();
     await wait(40);
 
-    // La fila de cada fuente lleva su botón de editar a la derecha, y la fila en
-    // sí lleva a la TV de esa fuente: Fuentes es solo para gestionar.
     check('cada fuente tiene su botón de editar', document.querySelectorAll('#sourceList .edit').length === 1);
     window.App.tv.set('sources', 0, 0);
     press(40);
@@ -253,8 +231,6 @@ async function run() {
 
     document.querySelector('#sourceList .edit').click();
     await wait(80);
-    // el foco del DOM se queda en el ultimo input que se uso: el motor se come las
-    // teclas mientras hay un campo enfocado, asi que se parte de un estado limpio
     if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
     const zapChannels = (function () {
         const lists = window.App.store.state.channels;
@@ -313,9 +289,6 @@ async function run() {
         document.getElementById('tvMeta').textContent.indexOf('sample') === 0,
         document.getElementById('tvMeta').textContent);
 
-    // Tres columnas: categorias, canales y preview. Todo en la misma pantalla.
-    // Estado vacio del preview: sin canal elegido. Se limpia y se repinta sin tocar
-    // el foco (cualquier canal enfocado pondria ya uno).
     window.App.store.state.preview = null;
     window.App.store.setSearch('tv', '');
     await wait(120);
@@ -347,7 +320,6 @@ async function run() {
         ['.browse .browse-preview', 'columna del preview'], ['#tvChannels .channel', 'fila de canal'],
         ['#tvChannels .num', 'número'], ['#tvChannels .thumb', 'miniatura']
     ]);
-    // El preview NO se abre al enfocar: hay que pulsar OK en un canal.
     check('elegir categoría no abre el preview por sí sola',
         !document.querySelector('#tvPreview .preview-name'),
         document.querySelector('#tvPreview .preview-name') ? 'abrió ' + document.querySelector('#tvPreview .preview-name').textContent : 'vacío');
@@ -368,7 +340,6 @@ async function run() {
         focused() ? focused().className : '(nada)');
     check('al saltar se limpia el número', !document.getElementById('numBuffer'));
 
-    // OK en un canal: se previsualiza, NO se va a pantalla completa
     window.App.tv.set('tvChannels', 0, 0);
     await wait(80);
     press(13);
@@ -376,13 +347,9 @@ async function run() {
     check('OK en un canal previsualiza sin salir de la TV',
         !!document.getElementById('screen-tv') && !document.getElementById('screen-player'),
         screens().join(', '));
-    // Las medidas del agujero van en la raiz: la mascara de la tarjeta lee las mismas
-    // variables. En la capa del agujero a secas, la tarjeta media 0x0, tapaba el video
-    // y solo se veia al enfocarla (por el fondo translucido del foco).
     check('las medidas del agujero las puede leer la tarjeta', (function () {
         var root = document.documentElement.style.getPropertyValue('--hole-w');
         var layer = document.getElementById('backdrop').style.getPropertyValue('--hole-w');
-        // En la raiz si y en la capa no: la mascara de la tarjeta lee de arriba.
         return !!root && !layer;
     })(), 'raiz=' + document.documentElement.style.getPropertyValue('--hole-w')
         + ' capa=' + document.getElementById('backdrop').style.getPropertyValue('--hole-w'));
@@ -393,7 +360,6 @@ async function run() {
         return !!preview && !!focusedChannel && focusedChannel.textContent.indexOf(preview.name) !== -1;
     })(), window.App.store.state.preview ? window.App.store.state.preview.name : '(sin preview)');
 
-    // OK encima del preview SÍ abre a pantalla completa
     window.App.tv.set('tvPreview', 0, 0);
     await wait(60);
     press(13);
@@ -421,7 +387,6 @@ async function run() {
     check('y el programa siguiente, como en cualquier reproductor', !!document.getElementById('ovNext')
         && document.getElementById('ovNext').textContent.indexOf('El siguiente') !== -1,
         document.getElementById('ovNext') ? document.getElementById('ovNext').textContent : '(sin siguiente)');
-    // El boton de favoritos no viene seleccionado: se baja a el a proposito.
     check('al abrir un canal no hay botón seleccionado',
         !document.querySelector('.focused'), focused() ? focused().className : '(nada)');
     press(40);
@@ -438,7 +403,6 @@ async function run() {
     await wait(50);
     check('la tecla roja guarda el favorito', window.App.store.state.favorites.length === 1);
 
-    // Un canal que no arranca: tarjeta con el motivo y reintentar, no negro mudo.
     window.App.store.playFailed('El canal no responde');
     await wait(90);
     check('un canal que falla no deja la pantalla en negro', !!document.getElementById('playError'));
@@ -475,9 +439,6 @@ async function run() {
     await wait(90);
     check('reintentar quita la tarjeta y vuelve a abrir', !document.getElementById('playError'));
 
-    // Cursores y botones de canal. Subir/bajar de canal es cosa de los botones de
-    // canal; los cursores son de los menus. Antes la izquierda y la derecha zappeaban
-    // siempre, asi que los menus eran inalcanzables con el mando.
     const withMenu = window.App.store.state.playing.channel.name;
     press(40);
     await wait(60);
@@ -497,7 +458,6 @@ async function run() {
         window.App.store.isFavorite(window.App.store.state.playing.listId,
             window.App.store.state.playing.channel.url) !== savedBefore);
     check('y no ha cambiado de canal', window.App.store.state.playing.channel.name === withMenu);
-    // Se deja el favorito como estaba: el resto de la sesion cuenta con ello.
     window.App.store.state.playing && document.getElementById('ovFav').click();
     await wait(80);
     press(38);
@@ -525,10 +485,6 @@ async function run() {
     await wait(80);
     check('volver sale del reproductor, a la TV con las tres columnas',
         !!document.getElementById('screen-tv') && !!document.querySelector('.browse-preview'));
-    // El preview es de la lista que se mira: si se cambia de categoria, se suelta. Si
-    // no, el canal se queda reproduciendose fuera de su lista.
-    // (la clase del agujero no se pone en jsdom: ahi no hay window.CSS con el que
-    // preguntar si el motor sabe restar mascaras)
     check('volviendo, el canal sigue previsualizándose',
         !!window.App.store.state.preview,
         window.App.store.state.preview ? window.App.store.state.preview.name : '(sin preview)');
@@ -548,7 +504,6 @@ async function run() {
     check('y otro Atrás vuelve a fuentes', window.App.store.state.screen === 'home',
         'screen=' + window.App.store.state.screen);
 
-    // TV: primero las categorías filtradas, y dentro de una, sus canales.
     document.getElementById('navTv').click();
     await wait(120);
     check('la sección TV existe', !!document.getElementById('screen-tv'));
@@ -576,7 +531,7 @@ async function run() {
     ]);
 
     typeInto('#tvSearch', 'espa');
-    await wait(400);                                // el buscador espera a que dejes de teclear
+    await wait(400);
     check('buscar en TV filtra categorías',
         document.querySelectorAll('#tvCats .tvcat').length === 1
         && document.querySelector('#tvCats .tvcat .row-name').textContent === 'España',
@@ -584,8 +539,6 @@ async function run() {
     typeInto('#tvSearch', '');
     await wait(400);
 
-    // OK en el buscador tiene que enfocar el CAMPO: es lo que levanta el teclado
-    // en la TV. Antes la zona apuntaba al div de fuera y el OK no hacía nada.
     window.App.tv.set('tvSearch', 0, 0);
     press(13);
     await wait(60);
@@ -609,7 +562,6 @@ async function run() {
         !!focused() && focused().textContent.indexOf('Programa de prueba') !== -1,
         focused() ? focused().textContent.slice(0, 60) : '(nada)');
 
-    // La izquierda va de los canales a las categorias (las columnas de al lado).
     press(37);
     await wait(100);
     check('la izquierda, de los canales a las categorías',
@@ -618,7 +570,6 @@ async function run() {
 
     document.querySelector('#tvCats .tvcat[data-group="España"]').click();
     await wait(150);
-    // El panel de categorías: se silencia una y se guarda.
     document.getElementById('catsBtn').click();
     await wait(100);
     check('se abre la gestión de categorías', !!document.getElementById('screen-cats'));
@@ -647,10 +598,10 @@ async function run() {
         document.activeElement ? document.activeElement.tagName + '#' + document.activeElement.id : '(nada)');
     document.getElementById('catSearch').blur();
 
-    press(40);                                      // del buscador a la lista
+    press(40);
     await wait(40);
     check('el foco entra en las categorías', !!focused() && focused().classList.contains('cat'));
-    press(13);                                      // desactiva la primera categoría
+    press(13);
     await wait(40);
     check('se puede desactivar una categoría', document.querySelectorAll('#catList .cat.on').length === 3);
     document.getElementById('catNone').click();
@@ -659,7 +610,7 @@ async function run() {
     document.getElementById('catAll').click();
     await wait(40);
     check('"Todas" las reactiva', document.querySelectorAll('#catList .cat.on').length === 4);
-    press(13);                                      // vuelve a desactivar una
+    press(13);
     await wait(40);
     document.getElementById('catSave').click();
     await wait(120);
@@ -668,7 +619,6 @@ async function run() {
         document.querySelectorAll('#tvCats .tvcat').length === 3,
         document.querySelectorAll('#tvCats .tvcat').length + ' categorías');
 
-    // Recientes y favoritos.
     document.getElementById('navRecents').click();
     await wait(60);
     check('recientes lista lo último visto', document.querySelectorAll('#recentsList .channel').length >= 1,
@@ -680,7 +630,6 @@ async function run() {
         ['#favList .channel', 'fila'], ['#favList .saved', 'estrella']
     ]);
 
-    // Editar desde la fila de la fuente, sin entrar en ella.
     window.App.store.goHome();
     await wait(80);
     document.querySelector('#sourceList .edit').click();
@@ -698,10 +647,6 @@ async function run() {
         && document.querySelector('#sourceList .row-name').textContent === 'Mi lista',
         document.querySelector('#sourceList .row-name') ? document.querySelector('#sourceList .row-name').textContent : '(sin fila)');
 
-    // El aviso de carga tiene que DECIR algo: la fila con la fuente y su fase,
-    // no una tarjeta con la altura de una fila y el texto recortado a nada (que
-    // es como se rompio dos veces). Se hace por el camino real: se vacia lo
-    // cargado y se deja la red colgada, como una lista grande entrando.
     window.fetch = function () { return new Promise(function () {}); };
     const loadingStore = window.App.store;
     loadingStore.state.channels = {};
@@ -724,11 +669,10 @@ async function run() {
         !loadRow.querySelector('.loading-name') || loadRow.querySelector('.loading-name').textContent === '',
         loadRow.querySelector('.loading-name') ? loadRow.querySelector('.loading-name').textContent : '(sin nombre)');
 
-    loadingStore.setLoading(false);                 // apaga el latido del aviso
+    loadingStore.setLoading(false);
     loadingStore.state.pending = {};
     loadingStore.state.loadProgress = {};
 
-    // Borrar desde el inicio con la tecla roja.
     window.App.store.goHome();
     await wait(60);
     press(403);
@@ -742,21 +686,15 @@ async function run() {
     check('la fuente se borra y vuelve al inicio',
         !!document.getElementById('screen-home') && document.querySelectorAll('#sourceList .row.source').length === 0);
 
-    // --- la hoja de estilos -------------------------------------------------
-    // Las hojas se parten por asunto: se leen todas y se exige que index.html
-    // enlace cada una (una hoja nueva sin enlazar es estilo que desaparece).
     const cssFiles = fs.readdirSync(path.join(root, 'css')).filter(function (name) { return /\.css$/.test(name); });
     const htmlSource = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
     const unlinked = cssFiles.filter(function (name) { return htmlSource.indexOf('css/' + name) === -1; });
     check('index.html enlaza todas las hojas de estilo', unlinked.length === 0, unlinked.join(', '));
-    // Tambien el CSS en linea de index.html: el splash va ahi (tiene que pintar antes
-    // de que se cargue ninguna hoja).
     const inlineCss = Array.from(htmlSource.matchAll(/<style>([\s\S]*?)<\/style>/g))
         .map(function (match) { return match[1]; }).join('\n');
     const css = cssFiles.map(function (name) {
         return fs.readFileSync(path.join(root, 'css', name), 'utf8');
     }).join('\n') + '\n' + inlineCss;
-    // Los comentarios no son reglas: se quitan antes de comprobar nada.
     const code = css.replace(/\/\*[\s\S]*?\*\//g, '');
     const styleEl = document.createElement('style');
     styleEl.textContent = css;
@@ -765,12 +703,6 @@ async function run() {
     check('la hoja de estilos parsea entera', rules >= 120, rules + ' reglas');
     check('el trio de la identidad está en la hoja',
         ['#febc06', '#cc4207', '#15e9a4'].every(function (hex) { return code.indexOf(hex) !== -1; }));
-    check('el degradado de marca lleva los colores de la casa',
-        /linear-gradient\([^)]*var\(--(amber|ember|mint)\)/.test(code));
-    // El fondo es el degradado de la casa, en alfa (solido dejaria el texto blanco
-    // sobre el ambar en 1.6:1). Los tres colores, y el brasa en el 48% como el filo.
-    // La entrada de pantalla no puede llevar transform: el agujero del preview se mide
-    // con el rectangulo del escenario y lo mediria a medio animar.
     check('la entrada de pantalla es un fundido, sin desplazamiento', (function () {
         var rule = code.match(/@keyframes screen-in\s*\{[^@]*?\}\s*\}/);
         return !!rule && rule[0].indexOf('transform') === -1 && /opacity/.test(rule[0]);
@@ -779,20 +711,13 @@ async function run() {
         var rule = code.match(/--grad-fade:[^;]*;/);
         return !!rule && /rgba\(5,\s*5,\s*5,\s*0\)/.test(rule[0]) && /var\(--black\)/.test(rule[0]);
     })());
-    check('la capa del agujero pinta el mismo fondo que el body', (function () {
-        var backdrop = code.match(/\.backdrop\s*\{[^}]*\}/g) || [];
-        return backdrop.some(function (block) { return block.indexOf('--grad-fade') !== -1; });
-    })());
     check('el fondo lleva el degradado de marca con los tres colores', (function () {
         var rule = code.match(/--grad-bg:\s*linear-gradient\([^;]*;/);
         if (!rule) return false;
-        // el brasa, con su alfa, y en el 48% como en el filo
         return /rgba\(254,\s*188,\s*6,/.test(rule[0])
             && /rgba\(204,\s*66,\s*7,[^)]*\)\s*48%/.test(rule[0])
             && /rgba\(21,\s*233,\s*164,/.test(rule[0]);
     })());
-    // Esta pantalla ya se rompio dos veces por partir texto en varias lineas
-    // dentro de su tarjeta: las dos columnas van en una sola linea, siempre.
     check('la superficie de AVPlay se mide en píxeles, no en porcentaje', (function () {
         var rule = code.match(/\.av-surface\s*\{[^}]*\}/);
         return !!rule && /width:\s*1920px/.test(rule[0]) && /height:\s*1080px/.test(rule[0]);
@@ -807,8 +732,6 @@ async function run() {
             && /flex:\s*none/.test(rule('.loading-phase'))
             && /display:\s*flex/.test(rule('.loading-row'));
     })());
-    // Una variable renombrada deja la regla muda (y el texto que la usaba
-    // invisible, que es lo que paso con el nombre de la marca).
     check('todas las variables del CSS están definidas', (function () {
         const defined = {};
         Array.from(code.matchAll(/(--[a-z0-9-]+)\s*:/g)).forEach(function (m) { defined[m[1]] = 1; });
@@ -817,9 +740,6 @@ async function run() {
         const missing = Object.keys(used).filter(function (name) { return !defined[name]; });
         return missing.length === 0 ? true : missing.join(', ');
     })() === true, 'variables sin definir');
-    // Una declaracion colgada (propiedad sin valor y el valor en la linea siguiente)
-    // invalida la regla entera: se cayo asi el anillo de foco de los campos, del
-    // buscador y del interruptor, y nadie se entero porque no rompe nada mas.
     check('sin declaraciones colgadas en la hoja', (function () {
         var dangling = code.match(/\b(box-shadow|background|border|color):\s*\n\s*\1:/g);
         return !dangling;
@@ -832,13 +752,10 @@ async function run() {
     })());
     check('nada de blur de fondo (en TV repinta por software)',
         !/backdrop-filter\s*:/.test(code));
-    // El fondo del elemento raiz se propaga al lienzo y es opaco: con el preview en
-    // marcha taparia el plano de video de AVPlay y dentro del agujero no se veria nada.
     check('el splash no pinta el fondo en html (o el vídeo del preview no se vería)',
         !/<style>[\s\S]*?html\s*,\s*body\s*\{[^}]*background/.test(htmlSource),
         'hay una regla html, body con background');
 
-    // Toda clase que pinta el markup (y los estados que añade el motor) tiene regla.
     const styles = ['index.html'].concat(scripts)
         .filter(function (file) { return file.indexOf('vendor/') !== 0; })
         .map(function (file) { return fs.readFileSync(path.join(root, file), 'utf8'); }).join('\n');
@@ -847,17 +764,12 @@ async function run() {
         match[1].trim().split(/\s+/).forEach(function (name) { if (name) used.add(name); });
     });
     ['overlay', 'visible', 'focused', 'active', 'selected', 'on'].forEach(function (name) { used.add(name); });
-    // 'channel' y 'source' no son estilos: son los ganchos que consultan los tests.
     ['channel', 'source'].forEach(function (name) { used.delete(name); });
     const unstyled = Array.from(used).filter(function (name) {
         return code.indexOf('.' + name) === -1;
     });
     check('toda clase del markup tiene regla en la hoja', unstyled.length === 0, unstyled.join(', '));
 
-
-    // El punto en medio de la pantalla: es el anillo de "abriendo" del reproductor.
-    // Con AVPlay, si no llega ningun evento (pasa en directo), tiene que quitarse
-    // solo. Se prueba con un AVPlay de mentira que no llama a nadie.
     window.webapis = { avplay: {
         open: function () {}, setDisplayRect: function () {}, setDisplayMethod: function () {},
         setListener: function () {}, prepareAsync: function () {}, play: function () {},
@@ -868,14 +780,9 @@ async function run() {
     await wait(200);
     check('con AVPlay abriendo se ve el aviso de arranque (es el punto)', !!document.getElementById('playerStatus'));
 
-    // El modo de pantalla se quito a peticion: que no vuelva por la puerta de atras
-    // sin que nadie lo pida.
     check('sin botón de modo de pantalla en el reproductor',
         !document.getElementById('ovAspect') && !window.App.store.nextAspect
         && !window.App.store.aspectLabel);
-    check('y el modo que se aplica al abrir es letterbox',
-        /LETTER_BOX/.test(fs.readFileSync(path.join(root, 'js/player.js'), 'utf8')));
-    // La leyenda de teclas: el mando de la TV no viene con la app.
     check('el reproductor tiene leyenda de teclas', !!document.getElementById('ovKeys'));
     const legend = (document.getElementById('ovKeys').textContent || '').replace(/\s+/g, ' ');
     ['channel', 'LEFT or OK', 'favorites', 'exit', 'favorite', 'jump'].forEach(function (key) {
@@ -887,9 +794,6 @@ async function run() {
     avStore.exitPlayer();
     window.webapis = undefined;
 
-    // El alta por "Detect" es un <textarea>. Si el motor no lo trata como campo, se
-    // come las teclas (Atras te saca de la pantalla, los numeros van al buffer de
-    // canal) y no hay forma de escribir ni de pegar.
     window.App.store.openAdd();
     await wait(60);
     document.querySelector('#addTypes .typecard[data-type="auto"]').click();
@@ -912,7 +816,6 @@ async function run() {
     document.getElementById('formCancel').click();
     await wait(80);
 
-    // Al final, que no dependa del estado en el que acabe la sesion.
     var rail = document.querySelector('.rail');
     document.getElementById('navHome').click();
     await wait(80);

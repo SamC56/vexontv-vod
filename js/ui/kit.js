@@ -1,8 +1,5 @@
 var App = App || {};
 
-// Kit de la UI: iconos, piezas compartidas (barra, fila de canal, buscador) y las
-// funciones de pintado comunes. Las pantallas viven en js/ui/screens/ y tiran de
-// aqui; el orden de carga lo fija index.html.
 App.uiKit = (function () {
     var preact = window.preact;
     var hooks = window.preactHooks;
@@ -14,7 +11,6 @@ App.uiKit = (function () {
 
     var SEARCH_DEBOUNCE_MS = 150;
 
-    // Tipos de fuente del alta (los mismos que se pueden filtrar despues).
     var ADD_TYPES = [
         { id: 'url', title: 'M3U from URL', hint: 'An .m3u or .m3u8 address', icon: 'link' },
         { id: 'file', title: 'M3U from a file', hint: 'An .m3u on a USB drive', icon: 'file' },
@@ -40,7 +36,6 @@ App.uiKit = (function () {
         auto: [{ id: 'text', label: 'Paste the address, the credentials or the whole message', multiline: true }]
     };
 
-    // ------------------------------------------------------------------ iconos
     function svg(paths, size) {
         return html`<svg viewBox="0 0 24 24" width=${size || 22} height=${size || 22}>${paths}</svg>`;
     }
@@ -66,9 +61,6 @@ App.uiKit = (function () {
         return match ? match[0].toUpperCase() : '?';
     }
 
-
-    // La miniatura va como fondo y no como <img>: asi es como se veia bien. La letra
-    // del canal va de hijo, asi que un logo que no carga la deja ver igual.
     function logoStyle(url) {
         return url ? { backgroundImage: 'url(' + JSON.stringify(url) + ')' } : null;
     }
@@ -84,9 +76,6 @@ App.uiKit = (function () {
         return program.title + span;
     }
 
-    // ------------------------------------------------------------------ piezas
-    // Barra lateral: marca arriba y las cuatro secciones debajo, con la marca de
-    // degradado (una sola, en .rail::after) viajando hasta la activa.
     function Rail(props) {
         var items = [
             { id: 'navHome', label: 'Sources', icon: iconList, screens: ['home'], action: function () { store.goHome(); } },
@@ -96,8 +85,6 @@ App.uiKit = (function () {
         ];
         var nav = useRef(null);
 
-        // Se mide el boton activo y se le pasan al CSS la posicion y el alto de la
-        // marca: el viaje lo hace la transicion de la hoja, no el JS.
         useEffect(function () {
             var rail = nav.current;
             if (!rail) return;
@@ -125,14 +112,10 @@ App.uiKit = (function () {
         </nav>`;
     }
 
-    // Fila de canal: numero, miniatura, nombre, grupo y lo que están dando ahora
-    // (cuando el proveedor lo sabe y ya se ha mirado esa fila).
     function ChannelRow(props) {
         var channel = props.channel;
         var listId = props.listId || channel.listId;
         var now = programText(store.programOf(channel));
-        // En el navegador (variante detail) OK abre el preview de ese canal; a
-        // pantalla completa se pasa pulsando encima del preview.
         function open() {
             if (props.detail) store.selectPreview(channel);
             else store.play(channel, listId, props.source);
@@ -154,8 +137,6 @@ App.uiKit = (function () {
 
     function ChannelList(props) {
         var view = props.view;
-        // En la pantalla de lista hay que decir la fuente: el canal solo la trae
-        // cuando viene de la pantalla TV.
         function listOf(channel) { return props.listId || channel.listId; }
         return html`<div class="rows" id=${props.id}>
             ${view.total ? null : html`<p class="empty">${view.empty || 'No channels.'}</p>`}
@@ -168,9 +149,6 @@ App.uiKit = (function () {
         </div>`;
     }
 
-    // Ojo: es un div y no un button porque dentro va el boton de editar, y un
-    // boton dentro de otro no es HTML valido. El motor de foco hace click() sobre
-    // el elemento enfocado, que funciona igual en un div.
     function SourceRow(props) {
         var channels = props.channels;
         return html`<div class="row source" data-list=${props.list.id} tabindex="-1"

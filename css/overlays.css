@@ -1,7 +1,3 @@
-/* ---------------------------------------------------------------- avisos */
-/* El aviso de carga dice que se esta cargando, en que fase esta cada fuente y
-   cuanto lleva. Antes era un giro y "Cargando…", que es lo mismo que no decir
-   nada. Lleva el mismo fondo que la app para no ser un bloque negro. */
 .loading {
 	position: fixed;
 	inset: 0;
@@ -12,10 +8,6 @@
 	z-index: 40;
 }
 
-/* El tiempo va pegado al titular: suelto en su propia linea parecia un dato
-   huerfano, y con una sola fuente se repetia dos veces. */
-/* Titular y eyebrow en columna: el tiempo iba pegado al titular y descuadraba el
-   bloque entero (el centro se calculaba contando con el, no con el titular). */
 .loading-head {
 	display: grid;
 	justify-items: center;
@@ -38,7 +30,6 @@
 	max-width: 24ch;
 }
 
-/* Una sola linea de meta debajo: tiempo y nota, nada al lado del titular. */
 .loading-meta {
 	display: flex;
 	align-items: baseline;
@@ -50,9 +41,6 @@
 .loading-time { font-variant-numeric: tabular-nums; color: var(--text-2); }
 .loading-hint::before { content: "· "; }
 
-/* Las fuentes van enmarcadas: sueltas parecian descolgadas del titular. */
-/* La tarjeta se ajusta a su contenido: con ancho fijo, una fase corta dejaba una
-   fila larguisima con el texto perdido en medio. */
 .loading-list {
 	width: max-content;
 	min-width: 280px;
@@ -64,10 +52,6 @@
 	box-shadow: inset 0 1px 0 rgba(255, 255, 255, .06);
 }
 
-/* Fila en flex y no en grid: la fase va con flex: none, asi que NUNCA se encoge
-   ni se recorta (es la que lleva el recuento), y solo el nombre puede acortarse.
-   En grid el texto podia quedar recortado a ancho cero: la fila conservaba su
-   altura y la tarjeta salia vacia. */
 .loading-row {
 	display: flex;
 	align-items: center;
@@ -79,7 +63,6 @@
 
 .loading-row:last-child { border-bottom: 0; }
 
-/* Una linea cada cosa: el nombre se acorta, la fase no. */
 .loading-name {
 	flex: 1;
 	min-width: 0;
@@ -99,7 +82,6 @@
 }
 .loading-hint { font-size: 18px; color: var(--text-3); }
 
-/* Arco de degradado: ambar entrando, menta girando. */
 .spinner {
   width: 50px;
   height: 50px;
@@ -126,7 +108,6 @@
   animation: fade var(--dur) var(--ease-out);
 }
 
-/* Los modales no se anclan a nada: crecen desde el centro, nunca desde cero. */
 .modal-card {
   position: relative;
   width: 620px;
@@ -185,12 +166,6 @@
   }
 }
 
-/* ---------------------------------------------------------------- hueco del preview
-   El video de AVPlay va detras del webview: para verlo dentro del preview hay que
-   dejar un agujero en el fondo. Esta capa pinta el fondo de la app (negro + grilla) y
-   se recorta el rectangulo del preview con una mascara. Solo se enseña mientras hay
-   preview (body.previewing), y solo si la mascara funciona; si no, no se activa y se
-   queda la ficha del preview, nunca un hueco negro. */
 .backdrop { display: none; }
 
 body.previewing .backdrop {
@@ -205,10 +180,7 @@ body.previewing .backdrop {
     var(--grad-bg);
   background-size: var(--grid) var(--grid), var(--grid) var(--grid), 100% 100%, 100% 100%;
   background-repeat: repeat, repeat, no-repeat, no-repeat;
-  /* Detras de todo. Es un elemento posicionado (fixed) y el rail es un item de grid
-     no posicionado: sin esto pintaba por encima del rail y se comia la marca. */
   z-index: -1;
-  /* El agujero: dos mascaras opacas que se restan (la de dentro es el preview). */
   -webkit-mask-image: linear-gradient(#000 0 0), linear-gradient(#000 0 0);
   -webkit-mask-repeat: no-repeat, no-repeat;
   -webkit-mask-size: 100% 100%, var(--hole-w, 0) var(--hole-h, 0);
@@ -221,7 +193,6 @@ body.previewing .backdrop {
   mask-composite: exclude;
 }
 
-/* Con el agujero, el fondo se lo lleva la capa: el body no pinta. */
 body.previewing {
   background-color: transparent;
   background-image: none;

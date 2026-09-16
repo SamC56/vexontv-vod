@@ -1,43 +1,10 @@
-/* VexonTV — hoja de estilos
-   Punto de vista: software de television de noche, en una sala a oscuras.
-
-   Identidad: cristal sobre OLED. Fondo #050505 con la grilla de un monitor de
-   video y una luz cenital, superficies vantablack con doble bisel (concha +
-   nucleo) y hairlines alfa en lugar de bordes grises. El degradado de la casa
-   (ambar → brasa → menta) no se gasta en manchas de fondo: va en el filo de
-   arriba, en las barras de foco y en las aristas de lo que interrumpe. El degradado es la marca; los tres
-   colores siguen teniendo significado estricto cuando son solidos:
-     - brasa #cc4207  = EN DIRECTO (luz de tally, convencion broadcast)
-     - ambar #febc06  = guardado (favoritos)
-     - menta #15e9a4  = activo / seleccionado / reproduciendo
-
-   Adaptaciones a TV (la skill de diseno es de web; esto es un mando a 3 metros):
-   - NADA de backdrop-blur: en un Tizen repinta por software y tira frames. El
-     vidrio se simula con alfa, no con blur.
-   - NADA de reveals por scroll: en TV la interaccion ES el foco, no el scroll.
-     La entrada se anima una vez por pantalla y a partir de ahi manda el mando.
-   - NADA de rotaciones ni solapes del "Z-Axis Cascade": en un panel plano
-     parecen un fallo, no un recurso editorial.
-   - Fuente: la de la TV (SamsungOne). Una fuente vendorizada son 100 KB de
-     WebView para algo que la tele ya trae mejor ajustado a su panel.
-   - Sin grano de pelicula: es un filtro por pixel sobre 1080p.
-
-   Reglas de la casa:
-   - La estructura la llevan las lineas de 1px en alfa, no las cajas ni sombras.
-   - La jerarquia la lleva el tipo (peso, tamano, numeros tabulares), no el color.
-   - El foco del mando es RAPIDO, casi instantaneo (140ms): en un D-pad con
-     repeticion, una animacion larga se siente atascada. Solo se anima lo que
-     muestra un cambio de estado (transform, opacidad y halo); el color de
-     estado entra en el mismo frame que la tecla. */
 
 :root {
-  /* negro OLED y grises frios: la estructura son lineas, no tintes */
   --black: #050505;
   --surface: rgba(255, 255, 255, 0.035);
   --surface-2: rgba(255, 255, 255, 0.075);
   --surface-3: rgba(255, 255, 255, 0.11);
 
-  /* hairlines: alfa en vez de gris, para que se apoyen en lo que tengan debajo */
   --line: rgba(255, 255, 255, 0.08);
   --line-2: rgba(255, 255, 255, 0.16);
   --line-3: rgba(255, 255, 255, 0.3);
@@ -46,7 +13,6 @@
   --text-2: #adadad;
   --text-3: #74746f;
 
-  /* el trio, y solo el trio */
   --amber: #febc06;
   --ember: #cc4207;
   --mint: #15e9a4;
@@ -55,14 +21,6 @@
   --saved: var(--amber);
   --ok: var(--mint);
 
-  /* La marca es el degradado: ambar -> brasa -> menta. Dos versiones, y la
-	   diferencia no es estetica, es de contraste:
-	     - --grad-line / --grad-bar (con brasa): solo en TRAZOS (barras de foco,
-	       aristas). No hay tinta encima, asi que la brasa se ve entera.
-	     - --grad-ink (ambar -> menta): en RELLENOS que llevan texto o icono
-	       encima. La brasa #cc4207 con tinta casi negra da 2.4:1, ilegible; el
-	       tramo ambar-menta mantiene el degradado y pasa de 8:1 en todo su
-	       recorrido. */
   --grad-ink: linear-gradient(92deg, var(--amber) 0%, var(--mint) 100%);
   --grad-bar: linear-gradient(180deg, var(--amber) 0%, var(--mint) 100%);
   --grad-line: linear-gradient(
@@ -73,34 +31,18 @@
   );
   --on-accent: #080807;
 
-  /* Fondo: la grilla de un monitor de video, no una nube de colores. El sujeto de
-	   esta app es una tele, asi que el fondo habla de senal: lineas de 1px cada 64px,
-	   una luz cenital muy suave y nada mas. Los colores de la casa no se gastan en
-	   manchas de fondo, se gastan en lo unico que informa: el foco y el estado. */
-
-	/* Agujero del preview: la posicion y el tamano los pone el JS con el rect del
-	   preview. Aqui van declarados para que la hoja se sostenga sola. */
 	--hole-x: 0px;
 	--hole-y: 0px;
 	--hole-w: 0px;
 	--hole-h: 0px;
-	/* El mismo rectangulo, en coordenadas de la tarjeta del preview: es el agujero
-	   que la tarjeta se recorta para dejar el video sobre negro. */
 	--stage-x: 0px;
 	--stage-y: 0px;
 
-	/* Marca del rail: alto y posicion del boton activo. Las pone el rail midiendo;
-	   aqui van declaradas para que la hoja se sostenga sola. */
 	--rail-mark-h: 0px;
 	--rail-mark-y: 0px;
 
   --grid: 64px;
   --grid-line: rgba(255, 255, 255, 0.022);
-  /* El degradado de la casa como FONDO. Los mismos tres colores y el mismo 48% que
-     --grad-line, pero con alfa: solido, blanco sobre el ambar da 1.6:1 y no hay
-     quien lea una lista encima. Aqui es una luz de sala, no un relleno. */
-  /* Y encima, el apagon: el multicolor se ve en la cabecera y de ahi para abajo la
-     sala vuelve a negro. Arriba transparente, abajo negro solido. */
   --grad-fade: linear-gradient(180deg, rgba(5, 5, 5, 0) 0%, var(--black) 24%);
   --grad-bg: linear-gradient(
     90deg,
@@ -109,8 +51,6 @@
     rgba(21, 233, 164, 0.16)
   );
   --focus: #fff;
-  /* Anillo de foco: duro, de 1px. Con el fondo de grilla, un halo difuminado
-     desentona; el foco se marca con linea y superficie, como el resto del sistema. */
   --ring: rgba(255, 255, 255, 0.5);
 
   --r-sm: 8px;
@@ -118,7 +58,6 @@
   --r-lg: 18px;
   --r-xl: 26px;
 
-  /* Curvas con masa: nada de linear ni ease-in-out. */
   --ease: cubic-bezier(0.32, 0.72, 0, 1);
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --dur-fast: 140ms;

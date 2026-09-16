@@ -1,14 +1,7 @@
-// node test/check.js
-//
-// Capa lógica: carga los fuentes reales (sin DOM) y comprueba parseo, tipos de
-// fuente, auto-detección, filtros, categorías, búsqueda, favoritos, recientes,
-// números de canal, EPG, alta/edición/borrado y los ids que enlazan el JS con la
-// UI. La UI (Preact) se valida con node --check y con el test de DOM.
+// Loads the real sources with no DOM: parsing, sources, filters, storage, EPG.
 const fs = require('fs');
 const path = require('path');
 
-// localStorage de mentira: el store guarda ahi lo que no debe perderse entre
-// arranques (fuentes, favoritos y la senal de "ya se sembro la fuente de fabrica").
 global.localStorage = (function () {
     const data = {};
     return {
@@ -21,9 +14,6 @@ global.localStorage = (function () {
 
 const root = path.join(__dirname, '..');
 
-// El agujero del preview se activa segun lo que diga el motor: cada uno entiende una
-// forma de restar mascaras (la vieja -webkit- y la estandar). Mirar solo la vieja
-// dejaba la TV sin video dentro del preview: salia el logo y nadie sabia por que.
 (function () {
     const tv = fs.readFileSync(path.join(root, 'js/ui/screens/tv.js'), 'utf8');
     const supports = tv.slice(tv.indexOf('function supportsHole'), tv.indexOf('function previewBox'));
@@ -50,7 +40,6 @@ function source(relative) {
     return fs.readFileSync(path.join(root, relative), 'utf8');
 }
 
-// --- módulos sin DOM ---------------------------------------------------------
 const App = {};
 function load(file) {
     try {
@@ -66,8 +55,6 @@ const api = App.api;
 const store = App.store;
 const player = App.player;
 
-// Red simulada: api.load() recibe la playlist de ejemplo, así que alta, edición
-// y carga se prueban de verdad (parseo incluido) sin salir de node.
 const b64 = value => Buffer.from(value, 'utf8').toString('base64');
 global.fetch = function () {
     return Promise.resolve({
@@ -92,7 +79,6 @@ function wait(ms) {
     return new Promise(function (resolve) { setTimeout(resolve, ms); });
 }
 
-// --- M3U ---------------------------------------------------------------------
 const playlist = [
     '#EXTM3U',
     '#EXTINF:-1 tvg-id="la1" tvg-logo="http://cdn/logo.png" group-title="España",La 1 HD',
@@ -113,7 +99,6 @@ check('parseM3u lee la url del canal', !!channels[0] && channels[0].url === 'htt
 check('parseM3u aguanta una lista vacía', api.parseM3u('#EXTM3U\r\n').length === 0);
 check('parseM3u con el fichero de ejemplo deja 9 canales', api.parseM3u(source('test/sample.m3u')).length === 9);
 
-// --- Xtream ------------------------------------------------------------------
 const xtreamCases = [
     ['https://operator2.barfik.org/get.php?username=abc&password=def&type=m3u_plus',
         { origin: 'https://operator2.barfik.org', user: 'abc', pass: 'def' }],
@@ -137,7 +122,6 @@ check('parsePortal acepta portal + credenciales',
     JSON.stringify(api.parsePortal('http://host:8080', 'u', 'p')) ===
     JSON.stringify({ origin: 'http://host:8080', user: 'u', pass: 'p' }));
 
-// --- tipos de fuente ---------------------------------------------------------
 var built = store.buildSource('url', { url: 'http://panel.tv/list.m3u' });
 check('M3U por URL', built.list.kind === 'm3u' && built.list.source === 'url');
 check('el nombre se deduce de la dirección', built.list.name === 'list', built.list.name);
@@ -160,7 +144,6 @@ built = store.buildSource('stalker', { origin: 'http://portal.tv/c', mac: 'aa:bb
 check('Stalker con portal y MAC', built.list.kind === 'stalker' && built.list.mac === 'AA:BB:CC:DD:EE:FF');
 check('una MAC con formato raro se rechaza', !!store.buildSource('stalker', { origin: 'http://p', mac: 'nope' }).error);
 
-// --- auto-detección ----------------------------------------------------------
 let guess = api.parseAuto('URL: http://panel.tv:8080\nUser: pepe\nPass: 1234');
 check('detecta Xtream en el mensaje del proveedor', guess.list && guess.list.kind === 'xtream'
     && guess.list.user === 'pepe' && guess.list.pass === '1234', JSON.stringify(guess));
@@ -177,14 +160,12 @@ check('avisa cuando no reconoce nada', !!api.parseAuto('buenas tardes').error);
 check('una URL de get.php con credenciales se detecta como Xtream',
     api.parseAuto('http://h/get.php?username=u&password=p').list.kind === 'xtream');
 
-// --- búsqueda ----------------------------------------------------------------
 const sample = [{ name: 'La 1 HD' }, { name: 'laSexta' }, { name: 'TVE Internacional' }];
 check('match ignora mayúsculas', api.match(sample, 'LA 1').length === 1);
 check('match busca en cualquier posición', api.match(sample, 'nacional').length === 1);
 check('match sin consulta devuelve todo', api.match(sample, '   ').length === 3);
 check('match sin resultados', api.match(sample, 'no-existe').length === 0);
 
-// --- fuente de fábrica --------------------------------------------------------
 global.localStorage.clear();
 store.init();
 check('una instalación nueva trae una fuente pública de fábrica', (function () {
@@ -211,7 +192,6 @@ check('y a quien ya tiene fuentes no se le añade nada', (function () {
     return ok;
 })());
 
-// --- store: fuentes, filtro y categorías --------------------------------------
 store.init();
 store.state.lists = [
     { id: 'l1', name: 'panel', kind: 'xtream', source: 'creds', origin: 'http://h', user: 'u', pass: 'p' },
@@ -238,7 +218,6 @@ check('filtrar por Xtream deja solo esa fuente', store.sources().items.length ==
 store.setFilter('all');
 check('sin filtro salen todas', store.sources().items.length === 3);
 
-// --- TV por categorías --------------------------------------------------------
 check('la TV agrupa por categoría, no vuelca los canales sueltos', (function () {
     var view = store.tvCategories();
     return view.rows.length === 2 && view.rows[0].name === 'Deportes' && view.rows[1].name === 'España';
@@ -267,7 +246,6 @@ check('los grupos siguen estando para poder reactivarlos', store.groupsOf('l1').
 
 store.openCategories();
 const catView = store.categoriesView();
-// l1 aporta 2 categorías (una silenciada), l2 una; l3 todavía no tiene canales.
 check('la vista de categorías cuenta activas y totales',
     catView.selected === 2 && catView.total === 3, catView.selected + '/' + catView.total);
 check('la vista de categorías se agrupa por proveedor',
@@ -287,7 +265,6 @@ check('al guardar se persiste la categoría silenciada',
         return (store.listById('l1').muted || []).indexOf(group) === -1;
     })) === JSON.stringify(['España']));
 
-// --- TV de una sola fuente ----------------------------------------------------
 store.openSource('l1');
 check('la TV de una fuente solo ofrece sus categorías', (function () {
     var view = store.tvCategories();
@@ -305,7 +282,6 @@ check('la TV de todas las fuentes vuelve a juntarlas', (function () {
     return store.state.tvSource === null && store.tvCategories().rows.length === 2;
 })());
 
-// --- vistas y números ---------------------------------------------------------
 check('la vista TV junta los canales de todas las fuentes', store.allChannels().length === 3,
     String(store.allChannels().length));
 check('stats resume fuentes y canales', store.stats().counts === '3 sources, 4 channels', store.stats().counts);
@@ -345,7 +321,6 @@ check('un número que no existe no mueve el foco', store.takeFocus() === null);
 store.pushDigit('1');
 check('Back limpia el buffer', store.clearDigits() === true && store.clearDigits() === false);
 
-// --- un canal que no arranca -------------------------------------------------
 store.play(store.state.channels.l1[0], 'l1', store.state.channels.l1);
 check('al abrir un canal el reproductor dice que esta abriendo',
     store.state.screen === 'player' && store.state.playStatus === 'opening' && !store.state.playError);
@@ -370,7 +345,6 @@ store.exitPlayer();
 check('salir del reproductor deja el estado limpio',
     store.state.playStatus === 'idle' && store.state.playError === null);
 
-// --- la barra de progreso del banner ------------------------------------------
 check('el progreso de un programa a medias ronda la mitad', (function () {
     var start = new Date(Date.now() - 30 * 60000);
     var end = new Date(Date.now() + 30 * 60000);
@@ -384,7 +358,6 @@ check('el progreso de un programa a medias ronda la mitad', (function () {
 check('sin horas no hay progreso', store.programProgress({ title: 'x' }) === null);
 check('y con horas imposibles tampoco', store.programProgress({ start: '2026-09-16 22:00:00', end: '2026-09-16 21:00:00' }) === null);
 
-// --- favoritos ----------------------------------------------------------------
 check('favorito nuevo', store.toggleFavorite(store.state.channels.l1[0], 'l1') === true);
 check('no se duplica', store.state.favorites.length === 1);
 check('se puede buscar en favoritos', (function () {
@@ -395,14 +368,10 @@ check('se puede buscar en favoritos', (function () {
 })());
 check('quitar favorito', store.toggleFavorite(store.state.channels.l1[0], 'l1') === false && store.state.favorites.length === 0);
 
-// --- EPG ---------------------------------------------------------------------
 const xtreamChannel = { name: 'La 1', group: 'España', url: 'https://panel.example/live/user/pass/1.ts' };
 check('programOf vacío antes de pedirlo', store.programOf(xtreamChannel) === null);
 store.loadProgramFor(xtreamChannel);
 
-// --- empaquetado y UI ---------------------------------------------------------
-// Los ficheros no se listan a mano: salen de index.html, que es lo que carga la
-// TV. Al partir un modulo, los tests se enteran solos.
 function walk(dir, out) {
     out = out || [];
     fs.readdirSync(path.join(root, dir), { withFileTypes: true }).forEach(function (entry) {
@@ -455,8 +424,6 @@ check('los elementos vacíos van autocerrados (htm lo exige)',
 const manifest = source('config.xml');
 check('el id de paquete tiene 10 caracteres (Tizen lo exige)',
     /package="[A-Za-z0-9]{10}"/.test(manifest), (manifest.match(/package="([^"]*)"/) || [])[1]);
-// Desde 2015 ese privilegio no se usa en apps web de TV: pedirlo hace que el
-// instalador rechace el paquete y obliga a la variante Public, que no tiene AVPlay.
 check('config.xml no pide el privilegio avplay (no se usa desde 2015)',
     manifest.indexOf('privilege/avplay') === -1);
 check('config.xml apunta a index.html', manifest.indexOf('<content src="index.html" />') !== -1);
@@ -471,7 +438,6 @@ check('ningún script sale a un CDN', scripts.every(function (file) { return fil
 const bundle = ours.map(source).join('\n');
 check('el runtime no menciona ningún CDN', !/unpkg|jsdelivr|cdnjs|cdn\./i.test(bundle));
 
-// --- alta, edición y borrado (con red simulada) -------------------------------
 const pending = [
     store.updateList('nope', { url: 'http://h/x.m3u' }).then(
         function () { return 'no falló al editar una fuente inexistente'; },
