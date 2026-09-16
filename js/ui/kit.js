@@ -66,8 +66,11 @@ App.uiKit = (function () {
         return match ? match[0].toUpperCase() : '?';
     }
 
-    function logoStyle(url) {
-        return url ? { backgroundImage: 'url(' + JSON.stringify(url) + ')' } : null;
+
+    // Un logo que no carga se quita y deja ver la letra que hay debajo: son logos
+    // de proveedor y caen a diario.
+    function dropLogo(event) {
+        event.target.remove();
     }
 
     function clock(value) {
@@ -111,8 +114,9 @@ App.uiKit = (function () {
         function open() { store.play(channel, listId, props.source); }
         return html`<button class="row channel" data-url=${channel.url} data-list=${listId} tabindex="-1" onClick=${open}>
             <span class="num">${props.number}</span>
-            <span class="thumb" style=${logoStyle(channel.logo)}>
-                ${channel.logo ? null : html`<span class="thumb-letter">${initial(channel.name)}</span>`}
+            <span class="thumb">
+                ${channel.logo ? html`<img class="thumb-img" src=${channel.logo} alt=""
+                    onError=${dropLogo} />` : html`<span class="thumb-letter">${initial(channel.name)}</span>`}
             </span>
             <span class="row-main">
                 <span class="row-name">${channel.name}</span>
@@ -214,7 +218,6 @@ App.uiKit = (function () {
         FIELD_SETS: FIELD_SETS,
         clock: clock,
         initial: initial,
-        logoStyle: logoStyle,
         programText: programText,
         iconCheck: iconCheck,
         Rail: Rail,

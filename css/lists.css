@@ -108,6 +108,15 @@
   overflow: hidden;
 }
 
+/* El logo se pinta con <img> + scale-down y no como fondo con contain: scale-down
+   encaja el logo sin deformarlo Y NO LO AMPLIA, que con contain pasaba (un logo de
+   60px se dibujaba a 80 y en la TV se veia borroso, como estirado). */
+.thumb-img {
+  width: 100%;
+  height: 100%;
+  object-fit: scale-down;
+}
+
 .thumb-letter {
   font-size: 19px;
   font-weight: 650;

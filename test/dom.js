@@ -309,6 +309,11 @@ async function run() {
     check('y es la única montada', onlyScreen('screen-tvcat'), screens().join(', '));
     check('con sus canales', document.querySelectorAll('#tvChannels .channel').length === 2,
         document.querySelectorAll('#tvChannels .channel').length + ' canales');
+    check('el canal con logo pinta su miniatura como imagen (y no revienta al pintar)',
+        !!document.querySelector('#tvChannels .thumb-img'),
+        'sin .thumb-img');
+    check('y el que no tiene logo deja la letra',
+        !!document.querySelector('#tvChannels .thumb-letter'));
     check('las filas llevan número de canal',
         document.querySelector('#tvChannels .num').textContent === '1');
     checkClasses('la pantalla de categoría usa las clases que estiliza el CSS', [
