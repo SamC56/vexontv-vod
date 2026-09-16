@@ -14,10 +14,6 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"></a>
 </p>
 
-> **TL;DR** — a live TV player for Samsung Tizen TVs. Side-load it with Apps2Samsung, open it,
-> add your M3U link or your panel's login, and watch. Free and open source, no accounts, no
-> ads.
-
 ---
 
 ## 📑 What's in here
@@ -133,7 +129,7 @@ _I started looking for an IPTV player for my own TV and just could not find anyt
 | ---------------------------------------------------------------------- | ------------------------------------------------ |
 | ![Browsing channels with the inline preview](docs/screens/browser.png) | ![Full screen playback](docs/screens/player.png) |
 
-| Sources                              | Channel list                                                   |
+| Sources                              | Player channel list                                                   |
 | ------------------------------------ | -------------------------------------------------------------- |
 | ![Sources](docs/screens/sources.png) | ![Channel list over the stream](docs/screens/channel-list.png) |
 
@@ -178,11 +174,12 @@ Not affiliated with Samsung or the Tizen Project.
 ## 🛠 For developers
 
 ```bash
-npm install && npm test            # the test suites
+pnpm install && pnpm test          # the test suites
 python3 tools/build-wgt.py         # -> dist/VexonTV.wgt
 ```
 
 Tests, file map and packaging: [docs/DEVELOPING.md](docs/DEVELOPING.md).
+Before opening a pull request: [CONTRIBUTING.md](CONTRIBUTING.md).
 
 [devvideo]: https://www.youtube.com/watch?v=F8kkdIh1TGY
 [a2s]: https://github.com/Apps2Samsung/Apps2Samsung/releases

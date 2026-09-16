@@ -6,11 +6,19 @@ Notes for whoever works on the app. If you only want to watch TV, the
 ## Build and test
 
 ```bash
-npm install                            # once: jsdom, for the tests
-npm test                               # logic + the app in jsdom + layout in Chrome
+pnpm install                           # once: jsdom + prettier + eslint
+pnpm test                              # style, lint, logic, the app in jsdom, layout in Chrome
+pnpm format                            # prettier: rewrite whatever it complains about
+pnpm lint                              # eslint: the ES6 rules prettier does not know about
 python3 tools/make-icon.py logo.png    # -> icon.png + brand.png
 python3 tools/build-wgt.py             # -> dist/VexonTV.wgt
 ```
+
+pnpm is the only package manager here. `tools/only-pnpm.mjs` runs on `preinstall` and aborts
+`npm`/`yarn` with a message, because they would write a second lockfile next to
+`pnpm-lock.yaml`. They still drop a `package-lock.json` on their way out: it is in
+`.gitignore`, and it is not a problem. `package.json` pins the pnpm version in
+`packageManager`.
 
 `check.js` loads the real sources with no DOM (parsing, sources, filters, storage, EPG),
 `dom.js` boots the whole app in jsdom and drives it with the remote, and `layout.js`
@@ -44,7 +52,22 @@ see it without touching disk or repackaging.
 
 ## How it is put together
 
-Everything is plain ES5 with Preact and htm vendored, so there is no transpiler in the way.
+## Style
+
+Prettier is the only opinion on looks, and it is not up for debate: four spaces, double
+quotes, **no semicolons**, 100 columns. ESLint covers what prettier cannot see — `no-var`,
+`prefer-const`, `prefer-template`, `prefer-arrow-callback`, `object-shorthand`. `pnpm test`
+runs both, so a PR in its own style fails before anything else does. `pnpm format` and
+`pnpm lint` fix most of it. `vendor/`, the generated `dist/` and the markdown are left
+alone.
+
+Two `var`s survive on purpose: `var App = App || {}` at the top of every file, which with no
+modules is what shares the namespace (`test/check.js` hands each file its `App` as a
+parameter), and the snippet `layout.js` injects into Chrome, which is a string no linter
+looks inside.
+
+Everything is plain ES2022 with Preact and htm vendored, so there is no transpiler in the
+way and no build step for the app. Tizen 8 is a 2022 engine; nothing here needs older.
 Channels are decoded through AVPlay, Samsung's native player, which is what handles
 MPEG-TS and HLS at 1080p and above in hardware.
 
@@ -62,8 +85,8 @@ js/ui/kit.js        icons, rows, lists, search, bar
 js/ui/screens/      one file per screen
 tools/              brand generator, .wgt packager
 test/               the three suites and a sample playlist
-contrib/            the manifest for the community packages
-docs/               this file, the banner and the screenshots
+tools/only-pnpm.mjs the guard that keeps npm out
+docs/               these notes, publishing, the banner and the screenshots
 ```
 
 `htm` is not HTML5, so empty elements (`input`, `br`, `img`) are always self closed or the
