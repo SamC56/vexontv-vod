@@ -286,19 +286,14 @@ var App = App || {};
         if (code === tv.KEY.CH_UP) { store.zap(1); return true; }
         if (code === tv.KEY.CH_DOWN) { store.zap(-1); return true; }
 
-        // Lista de canales desplegada: los cursores son suyos, y el motor ya sabe
-        // navegar sus dos columnas. OK cierra y sigue viendo, salvo encima de una
-        // categoria, que la abre (entonces la pulsa el motor, como cualquier fila).
-        if (store.state.zapOpen) {
-            if (code === tv.KEY.ENTER && !document.querySelector('#zapCats .focused')) {
-                store.closeZap();
-                return true;
-            }
-            return false;
-        }
+        // Lista de canales desplegada: las teclas son suyas. El motor navega sus dos
+        // columnas y pulsa lo que este enfocado (una categoria la abre, un canal lo
+        // pone y cierra la lista, que de eso se encarga el store).
+        if (store.state.zapOpen) return false;
 
-        // Izquierda o derecha despliegan el menu lateral: la lista de canales.
-        if (code === tv.KEY.LEFT || code === tv.KEY.RIGHT) { store.openZap(); return true; }
+        // La izquierda es la UNICA tecla que despliega la lista de canales. Pidieron
+        // que la derecha no lo hiciera, asi que se queda libre.
+        if (code === tv.KEY.LEFT) { store.openZap(); return true; }
 
         // Tarjeta de error: reintentar o volver. Los botones van en columna, pero el
         // motor los agrupa por posicion y en un DOM sin maquetacion no los distingue:
@@ -313,13 +308,13 @@ var App = App || {};
             return false;
         }
 
-        // Menu del reproductor en foco: los cursores y OK son suyos (abajo/arriba lo
-        // navegan, OK pulsa el boton enfocado, que es lo que hace que el de aspecto
-        // funcione con el mando). Salir del menu es del borde de su zona.
+        // Menu del reproductor en foco: los cursores y OK son suyos. Arriba/abajo lo
+        // navega el motor y OK pulsa el boton enfocado. Salir del menu es su borde, y
+        // la izquierda sigue desplegando la lista (eso va antes).
         if (store.state.menuFocus) return false;
 
-        // Abajo entra en el menu del reproductor (favoritos y aspecto); OK abre la
-        // lista de canales.
+        // Abajo entra en el menu del reproductor (favoritos); OK abre la lista de
+        // canales, que es la otra forma natural de pedirla sin saberse el mando.
         if (code === tv.KEY.DOWN) { store.setMenuFocus(true); tv.set('overlay', 0, 0); return true; }
         if (code === tv.KEY.UP) { store.setMenuFocus(false); tv.set('playerIdle', 0, 0); return true; }
         if (code === tv.KEY.ENTER) { store.openZap(); return true; }

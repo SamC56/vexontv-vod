@@ -148,20 +148,6 @@ App.player = (function () {
     // Reserva: el <video> del navegador. Se usa cuando no hay AVPlay o cuando
     // AVPlay esta pero sus llamadas fallan (el privilegio no concedido instala la
     // app como Public, pero webapis.avplay puede seguir ahi y no hacer nada).
-    // Modo de visualizacion (fit / cover / fill / auto). Devuelve false si la TV no
-    // acepta ese modo, para que el store no lo de por aplicado.
-    function setAspect(mode) {
-        var AV = avplay();
-        if (!AV || !mode) return false;
-        try {
-            AV.setDisplayMethod(mode);
-            return true;
-        } catch (error) {
-            console.error('AVPlay no acepta el modo ' + mode + ':', error);
-            return false;
-        }
-    }
-
     function playWithVideo(url) {
         if (!video) { fail(new Error('No player available')); return; }
         video.src = url;
@@ -170,7 +156,7 @@ App.player = (function () {
         video.play().then(started).catch(fail);
     }
 
-    function play(url, mode, rect) {
+    function play(url, rect) {
         stop();
         if (!url) return;
         lastRect = rect || null;
@@ -188,7 +174,7 @@ App.player = (function () {
                 AV.open(url);
                 setRect();
                 // Letterbox: 4:3 channels keep their shape instead of stretching.
-                AV.setDisplayMethod(mode || 'PLAYER_DISPLAY_MODE_LETTER_BOX');
+                AV.setDisplayMethod('PLAYER_DISPLAY_MODE_LETTER_BOX');
                 AV.setListener({
                     onerror: function (error) { fail(error); },
                     // En directo, 'started' tambien por buffering: prepareAsync puede
@@ -233,7 +219,6 @@ App.player = (function () {
         stop: stop,
         toggle: toggle,
         state: state,
-        setAspect: setAspect,
         clearRect: clearRect,
         resize: resize,
         describe: describe,

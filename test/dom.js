@@ -281,12 +281,19 @@ async function run() {
     press(40);
     press(40);
     await wait(700);
-    check('moverse por los canales cambia el canal que se ve',
-        window.App.store.state.playing.channel.name !== beforeZap,
+    check('moverse por los canales NO cambia el canal que se ve',
+        window.App.store.state.playing.channel.name === beforeZap,
         beforeZap + ' -> ' + window.App.store.state.playing.channel.name);
+    const zapFocused = focused();
+    check('con el foco en otro canal del panel',
+        !!zapFocused && zapFocused.classList.contains('zapch') && zapFocused.dataset.url !== beforeZap,
+        zapFocused ? (zapFocused.textContent || '').trim().slice(0, 24) : '(nada)');
     press(13);
-    await wait(120);
-    check('y OK lo cierra', !document.getElementById('zapPanel'));
+    await wait(200);
+    check('y OK abre el canal enfocado y cierra la lista',
+        !document.getElementById('zapPanel')
+        && window.App.store.state.playing.channel.url === zapFocused.dataset.url,
+        window.App.store.state.playing.channel.name);
     window.App.store.exitPlayer();
     await wait(80);
 
@@ -459,7 +466,7 @@ async function run() {
 
     // Cursores y botones de canal. Subir/bajar de canal es cosa de los botones de
     // canal; los cursores son de los menus. Antes la izquierda y la derecha zappeaban
-    // siempre, asi que el boton de aspecto era inalcanzable con el mando.
+    // siempre, asi que los menus eran inalcanzables con el mando.
     const withMenu = window.App.store.state.playing.channel.name;
     press(40);
     await wait(60);
@@ -468,29 +475,29 @@ async function run() {
         focused() ? focused().id : '(nada)');
     check('el menú no se esconde mientras está en foco',
         document.getElementById('playerOverlay').classList.contains('visible'));
-    press(40);
-    await wait(60);
-    check('y abajo pasa al botón de aspecto sin cambiar de canal',
-        !!focused() && focused().id === 'ovAspect'
-        && window.App.store.state.playing.channel.name === withMenu,
+    check('con el botón de favoritos enfocado',
+        !!focused() && focused().id === 'ovFav' && !!focused().closest('#ovActions'),
         focused() ? focused().id : '(nada)');
-    // Con OK el motor pulsa el botón enfocado (aqui no hay AVPlay, asi que el store
-    // avisa "Aspect: ..." sin aplicarlo; mas abajo, con el stub, se comprueba que
-    // ademas cambia de modo).
+    const savedBefore = window.App.store.isFavorite(
+        window.App.store.state.playing.listId, window.App.store.state.playing.channel.url);
     press(13);
-    await wait(90);
-    check('OK con el menú en foco pulsa el botón de aspecto',
-        !!window.App.store.state.toast && /^Aspect: /.test(window.App.store.state.toast.message),
-        window.App.store.state.toast ? window.App.store.state.toast.message : '(sin aviso)');
+    await wait(120);
+    check('OK con el menú en foco pulsa el botón enfocado (favoritos)',
+        window.App.store.isFavorite(window.App.store.state.playing.listId,
+            window.App.store.state.playing.channel.url) !== savedBefore);
     check('y no ha cambiado de canal', window.App.store.state.playing.channel.name === withMenu);
-    press(38);
-    await wait(60);
+    // Se deja el favorito como estaba: el resto de la sesion cuenta con ello.
+    window.App.store.state.playing && document.getElementById('ovFav').click();
+    await wait(80);
     press(38);
     await wait(60);
     check('arriba sale del menú', !window.App.store.state.menuFocus);
+    press(39);
+    await wait(150);
+    check('la derecha no abre nada', !document.getElementById('zapPanel'));
     press(37);
     await wait(150);
-    check('y sin menú, la izquierda despliega la lista de canales',
+    check('y la izquierda despliega la lista de canales',
         !!document.getElementById('zapPanel'));
     press(10009);
     await wait(120);
@@ -794,17 +801,19 @@ async function run() {
     await wait(200);
     check('con AVPlay abriendo se ve el aviso de arranque (es el punto)', !!document.getElementById('playerStatus'));
 
-    // Relacion de aspecto: cicla por los modos y el nombre en pantalla lo dice
-    const aspectStart = window.App.store.aspectLabel();
-    window.App.store.nextAspect();
-    await wait(60);
-    check('el botón de aspecto cambia de modo', window.App.store.aspectLabel() !== aspectStart,
-        aspectStart + ' -> ' + window.App.store.aspectLabel());
-    const modes = [];
-    for (let i = 0; i < 4; i++) { window.App.store.nextAspect(); await wait(30); modes.push(window.App.store.aspectLabel()); }
-    check('y da la vuelta por todos', modes.indexOf(aspectStart) !== -1, modes.join(' > '));
-    check('el modo que se aplica es el que se enseña',
-        /PLAYER_DISPLAY_MODE_/.test(window.App.store.aspectMode()), window.App.store.aspectMode());
+    // El modo de pantalla se quito a peticion: que no vuelva por la puerta de atras
+    // sin que nadie lo pida.
+    check('sin botón de modo de pantalla en el reproductor',
+        !document.getElementById('ovAspect') && !window.App.store.nextAspect
+        && !window.App.store.aspectLabel);
+    check('y el modo que se aplica al abrir es letterbox',
+        /LETTER_BOX/.test(fs.readFileSync(path.join(root, 'js/player.js'), 'utf8')));
+    // La leyenda de teclas: el mando de la TV no viene con la app.
+    check('el reproductor tiene leyenda de teclas', !!document.getElementById('ovKeys'));
+    const legend = (document.getElementById('ovKeys').textContent || '').replace(/\s+/g, ' ');
+    ['channel', 'LEFT or OK', 'favorites', 'exit', 'favorite', 'jump'].forEach(function (key) {
+        check('la leyenda explica "' + key + '"', legend.indexOf(key) !== -1, legend.slice(0, 80));
+    });
     await wait(4200);
     check('y se quita solo a los 4 s aunque AVPlay no diga nada',
         !document.getElementById('playerStatus'), 'sigue en pantalla');

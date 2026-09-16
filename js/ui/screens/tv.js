@@ -107,8 +107,8 @@ App.uiScreens = App.uiScreens || {};
             // Solo se deja el agujero si la mascara funciona: si no, el fondo se
             // quedaria tapando el video y es mejor la ficha.
             if (supportsHole()) document.body.classList.add('previewing');
-            player.play(state.preview.url, store.aspectMode(), videoRect());
-            function onResize() { setHole(); player.play(state.preview.url, store.aspectMode(), videoRect()); }
+            player.play(state.preview.url, videoRect());
+            function onResize() { setHole(); player.play(state.preview.url, videoRect()); }
             window.addEventListener('resize', onResize);
             return function () {
                 window.removeEventListener('resize', onResize);

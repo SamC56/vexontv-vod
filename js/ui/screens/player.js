@@ -32,7 +32,7 @@ App.uiScreens = App.uiScreens || {};
         }, []);
 
         useEffect(function () {
-            if (state.playing) player.play(state.playing.channel.url, store.aspectMode());
+            if (state.playing) player.play(state.playing.channel.url);
         }, [state.playing]);
 
         // Mientras se reproduce, la app entera deja de pintar: si el plano de video
@@ -109,16 +109,22 @@ App.uiScreens = App.uiScreens || {};
                         <span class="ov-next-tag">Next</span>${next.title}${next.start
                             ? html`<span class="ov-time">${clock(next.start)} – ${clock(next.end)}</span>` : null}
                     </p>` : null}
+                    <!-- La leyenda va la ultima: el nombre, la guia y lo que viene son
+                         una sola cosa y no se parten por el medio. -->
+                    <p class="ov-keys" id="ovKeys">
+                        <span class="ov-key">CH UP/DOWN</span><span>channel</span>
+                        <span class="ov-key">LEFT or OK</span><span>channel list</span>
+                        <span class="ov-key">DOWN</span><span>favorites</span>
+                        <span class="ov-key">BACK</span><span>exit</span>
+                        <span class="ov-key">RED</span><span>favorite</span>
+                        <span class="ov-key">NUMBERS</span><span>jump</span>
+                    </p>
                 </div>
                 <div class="ov-actions" id="ovActions">
                     <button class=${'btn' + (saved ? ' saved' : '')} id="ovFav" tabindex="-1" onClick=${function () {
                         store.toggleFavorite(channel, state.playing.listId);
                         show();
                     }}>${saved ? 'Remove from favorites' : 'Add to favorites'}</button>
-                    <button class="btn" id="ovAspect" tabindex="-1" onClick=${function () {
-                        store.nextAspect();
-                        show();
-                    }}>Aspect: ${store.aspectLabel()}</button>
                 </div>
             </div>
         </section>`;

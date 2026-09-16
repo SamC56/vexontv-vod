@@ -260,7 +260,39 @@ body.playing {
 
 .zap-cats { border-right: 1px solid var(--line); }
 
+/* Leyenda de teclas del reproductor: el mando de la TV no viene con esta app, asi
+   que aqui se dice que hace cada boton. Una linea, en voz baja. */
+.ov-keys {
+  margin-top: 14px;
+  font-size: 15px;
+  line-height: 2;
+  letter-spacing: 0.02em;
+  color: var(--text-3);
+}
+
+.ov-key {
+  display: inline-block;
+  margin-right: 8px;
+  padding: 2px 9px;
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  box-shadow: inset 0 0 0 1px var(--line);
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+
+/* Cada accion, separada de la siguiente. */
+.ov-keys > span:not(.ov-key) { margin-right: 22px; }
+
+/* Cabecera del panel: la categoria a la izquierda y, a la derecha, que hace OK
+   (antes el canal se abria solo con pasar por encima; ahora hay que pulsarlo). */
 .zap-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
   padding: 6px 20px 14px;
   font-size: 16px;
   font-weight: 700;
@@ -358,11 +390,18 @@ body.playing {
   background: var(--grad-bar);
 }
 
+.zap-hint {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--text-3);
+}
+
 .zap-now { flex: none; font-size: 16px; color: var(--ok); }
 
-/* Los dos botones del banner, en columna. En fila el motor de foco los agrupa por
-   posicion y depende de la maquetacion; en columna los navega igual en cualquier
-   maquetacion, y ademas no compiten con el titular cuando el nombre es largo. */
+/* Botones del banner, en columna: en fila el motor de foco los agrupa por posicion
+   y depende de la maquetacion, y en columna los navega igual en cualquier
+   maquetacion. Hoy es uno (favoritos); el modo de pantalla se quito a peticion. */
 .ov-actions {
   display: flex;
   flex-direction: column;

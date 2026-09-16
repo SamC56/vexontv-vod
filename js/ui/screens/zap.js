@@ -30,7 +30,8 @@ App.uiScreens = App.uiScreens || {};
                 })}
             </div>
             <div class="zap-list" id="zapChannels">
-                <p class="zap-head" id="zapHead">${state.zapCategory}</p>
+                <p class="zap-head" id="zapHead"><span>${state.zapCategory}</span>
+                    <span class="zap-hint">OK watch · BACK close</span></p>
                 ${channels.map(function (channel) {
                     var program = store.programOf(channel);
                     var progress = store.programProgress(program);
