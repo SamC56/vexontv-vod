@@ -12,7 +12,8 @@
     "icon": "python3 tools/make-icon.py",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "lint": "eslint js/ test/"
+    "lint": "eslint js/ test/ tools/",
+    "shots": "node tools/shots.js"
   },
   "devDependencies": {
     "eslint": "^10.10.0",

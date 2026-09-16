@@ -1,12 +1,12 @@
-"""Genera icon.png (512x512, el icono de la app) y brand.png (la marca del rail)
-a partir del logo de VexonTV. Sin dependencias: zlib y struct.
+"""Builds icon.png (512x512, the app icon) and brand.png (the rail mark) out of the
+VexonTV logo. No dependencies: zlib and struct.
 
-    python3 tools/make-icon.py /ruta/al/logo.png
+    python3 tools/make-icon.py /path/to/logo.png
 
-El logo trae el glifo de la TV y debajo el nombre escrito. A 48px en el rail el
-nombre no se lee, asi que brand.png es solo el glifo: se busca el hueco de filas
-vacias que separa el dibujo del texto y se recorta ahi. Los negros del fondo se
-vuelven transparentes para que la marca se apoye en el degradado de la app.
+The logo carries the TV glyph with the name written under it. At 48px in the rail the
+name cannot be read, so brand.png is the glyph alone: it looks for the band of empty
+rows that separates the drawing from the text and cuts there. The blacks in the
+background turn transparent so the mark sits on the app gradient.
 """
 import struct
 # Cuts the glyph out of the logo for icon.png and brand.png.
@@ -20,10 +20,10 @@ PAD = 10
 GAP_ROWS = 10
 
 def decode_png(path):
-    """PNG de 8 bits, sin entrelazar, RGB o RGBA -> (w, h, bytearray rgba)."""
+    """8-bit, non-interlaced PNG, RGB or RGBA -> (w, h, bytearray rgba)."""
     data = open(path, 'rb').read()
     if data[:8] != b'\x89PNG\r\n\x1a\n':
-        raise SystemExit('no es un PNG: ' + path)
+        raise SystemExit('not a PNG: ' + path)
 
     pos, idat, header = 8, [], None
     while pos < len(data):
@@ -38,7 +38,7 @@ def decode_png(path):
 
     width, height, depth, color, _, _, interlace = header
     if depth != 8 or interlace != 0 or color not in (2, 6):
-        raise SystemExit('se espera PNG de 8 bits sin entrelazar en RGB o RGBA')
+        raise SystemExit('expected an 8-bit non-interlaced PNG in RGB or RGBA')
 
     channels = 3 if color == 2 else 4
     stride = width * channels
@@ -72,7 +72,7 @@ def decode_png(path):
                 near = left if (pa <= pb and pa <= pc) else (up if pb <= pc else upleft)
                 line[i] = (line[i] + near) & 0xFF
         elif kind != 0:
-            raise SystemExit('filtro PNG desconocido: %d' % kind)
+            raise SystemExit('unknown PNG filter: %d' % kind)
 
         base = y * width * 4
         if channels == 4:
@@ -85,14 +85,14 @@ def decode_png(path):
     return width, height, out
 
 def background(rgba, i):
-    """Fondo: o transparente (el recorte del logo trae RGB basura debajo del
-    alfa 0) o negro. Todo lo demas es dibujo."""
+    """Background: either transparent (a logo cut-out carries junk RGB under alpha
+    0) or black. Everything else is drawing."""
     if rgba[i + 3] < 64:
         return True
     return rgba[i] < BLACK and rgba[i + 1] < BLACK and rgba[i + 2] < BLACK
 
 def glyph_box(width, height, rgba):
-    """Caja del dibujo (arriba), cortando en el hueco que deja el texto."""
+    """Box of the drawing (top), cutting at the gap the text leaves."""
     rows = []
     for y in range(height):
         count = 0
@@ -133,14 +133,14 @@ def crop(width, rgba, box):
     return w, h, out
 
 def keyed(width, height, rgba):
-    """Los negros del fondo pasan a transparentes: la marca va sobre el mesh."""
+    """The blacks in the background become transparent: the mark sits on the mesh."""
     out = bytearray(rgba)
     for i in range(0, len(out), 4):
         out[i + 3] = 0 if background(out, i) else 255
     return out
 
 def scale(width, height, rgba, dw, dh):
-    """Media de caja: al reducir es lo que evita que el texto salga con dientes."""
+    """Box average: when scaling down this is what keeps the text from coming out jagged."""
     out = bytearray(dw * dh * 4)
     for y in range(dh):
         y0 = y * height // dh
@@ -183,14 +183,16 @@ def write(path, width, height, rgba):
     print('%s %dx%d, %d KB' % (path, width, height, len(png) / 1024))
 
 def main():
-    path = sys.argv[1] if len(sys.argv) > 1 else '/mnt/c/Users/DvzZ/Downloads/3f2fa38f-4796-4834-90db-11a7ce859cac-Photoroom.png'
+    if len(sys.argv) < 2:
+        raise SystemExit('usage: python3 tools/make-icon.py /path/to/logo.png')
+    path = sys.argv[1]
     width, height, rgba = decode_png(path)
 
     write('icon.png', ICON, ICON, scale(width, height, rgba, ICON, ICON))
 
     box = glyph_box(width, height, rgba)
     top, left, bottom, right = box
-    print('glifo detectado: x %d..%d, y %d..%d' % (left, right, top, bottom))
+    print('glyph found: x %d..%d, y %d..%d' % (left, right, top, bottom))
     top = max(0, top - PAD)
     left = max(0, left - PAD)
     bottom = min(height - 1, bottom + PAD)

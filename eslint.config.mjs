@@ -1,6 +1,6 @@
 export default [
     {
-        files: ["js/**/*.js", "test/**/*.js", "tools/*.mjs"],
+        files: ["js/**/*.js", "test/**/*.js", "tools/*.js", "tools/*.mjs"],
         languageOptions: {
             ecmaVersion: 2022,
             sourceType: "script",
@@ -11,6 +11,7 @@ export default [
             "prefer-template": "error",
             "prefer-arrow-callback": "error",
             "object-shorthand": ["error", "properties"],
+            "no-unused-vars": ["error", { args: "none" }],
         },
     },
 ]

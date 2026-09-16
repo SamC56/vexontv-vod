@@ -10,7 +10,8 @@ pnpm install                           # once: jsdom + prettier + eslint
 pnpm test                              # style, lint, logic, the app in jsdom, layout in Chrome
 pnpm format                            # prettier: rewrite whatever it complains about
 pnpm lint                              # eslint: the ES6 rules prettier does not know about
-python3 tools/make-icon.py logo.png    # -> icon.png + brand.png
+pnpm shots                             # -> dist/shots/*.png, the captures in the README
+python3 tools/make-icon.py logo.png    # -> icon.png + brand.png (the logo is not versioned)
 python3 tools/build-wgt.py             # -> dist/VexonTV.wgt
 ```
 
@@ -24,6 +25,14 @@ pnpm is the only package manager here. `tools/only-pnpm.mjs` runs on `preinstall
 `dom.js` boots the whole app in jsdom and drives it with the remote, and `layout.js`
 measures a real browser — the only way to catch a broken grid; it skips itself if Chrome is
 missing. No build step for the app itself: the file you edit is the file that ships.
+
+`tools/shots.js` is what produced `docs/screens/`. A capture of the WebView cannot see the
+video plane the TV plays on, so the tool puts a real broadcast still (`mocPlayer.png`, a
+NatGeo frame) where the plane would be and drives the app to each screen first with the same
+remote the viewer uses. It needs no browser of its own: it borrows the one `layout.js` finds
+(`tools/chrome.js`) and writes the png, the html behind it and a normalised DOM golden into
+`dist/shots`, which is ignored by git. `pnpm shots tv` does one screen, `pnpm shots` all of
+them. None of it ships: the app has no idea this exists.
 
 ## Installing by hand
 
@@ -83,9 +92,8 @@ js/app.js           focus zones, remote keys, boot
 js/ui.js            root and mounting
 js/ui/kit.js        icons, rows, lists, search, bar
 js/ui/screens/      one file per screen
-tools/              brand generator, .wgt packager
-test/               the three suites and a sample playlist
-tools/only-pnpm.mjs the guard that keeps npm out
+tools/              brand generator, .wgt packager, README captures, pnpm guard
+test/               the three suites, the reporter and a sample playlist
 docs/               these notes, publishing, the banner and the screenshots
 ```
 
