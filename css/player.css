@@ -14,15 +14,28 @@
    que cubrir la pantalla y coincidir con el rect de setDisplayRect. */
 .av-surface {
   position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
+  left: 0;
+  top: 0;
+  /* En PIXELES, como el demo oficial de Samsung (1920px x 1080px), no en %: una
+     superficie de 0x0 reproduce el audio y no pinta nada, que es el fallo tipico
+     de AVPlay en la TV. */
+  width: 1920px;
+  height: 1080px;
   border: 0;
 }
 
 /* Con AVPlay disponible el <video> sobra, y si se queda tapa la superficie: es el
    fallo de "se oye pero no se ve". */
 .screen.player.hw #videoPlayer { display: none; }
+
+/* Reproduciendo, detras del reproductor no queda nada: ni rail, ni listas, ni el
+   fondo con las luces de la app. */
+.app.playing .rail { display: none; }
+.app.playing .main { padding: 0; }
+body.playing {
+  background-color: transparent;
+  background-image: none;
+}
 
 #videoPlayer {
   width: 100%;

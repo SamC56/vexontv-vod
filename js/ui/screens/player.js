@@ -35,6 +35,13 @@ App.uiScreens = App.uiScreens || {};
             if (state.playing) player.play(state.playing.channel.url);
         }, [state.playing]);
 
+        // Mientras se reproduce, la app entera deja de pintar: si el plano de video
+        // de AVPlay compone por detras del webview, cualquier capa opaca lo tapa.
+        useEffect(function () {
+            document.body.classList.add('playing');
+            return function () { document.body.classList.remove('playing'); };
+        }, []);
+
         useEffect(function () {
             function pulse() { show(); }
             document.addEventListener('keydown', pulse);

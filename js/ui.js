@@ -36,19 +36,20 @@ App.ui = (function () {
         });
 
         var state = store.state;
-        return html`<div class="app">
+        var playing = state.screen === 'player';
+        return html`<div class=${'app' + (playing ? ' playing' : '')}>
             <${Rail} screen=${state.screen} />
             <main class="main">
-                ${state.screen === 'home' ? html`<${Home} />` : null}
-                ${state.screen === 'tv' ? html`<${TvScreen} />` : null}
-                ${state.screen === 'tvcat' ? html`<${TvCategoryScreen} />` : null}
-                ${state.screen === 'recents' ? html`<${Recents} />` : null}
-                ${state.screen === 'favs' ? html`<${Favs} />` : null}
-                ${state.screen === 'cats' ? html`<${Categories} />` : null}
-                ${state.screen === 'add'
+                ${playing ? null : html`<${Home} />`}
+                ${!playing && state.screen === 'tv' ? html`<${TvScreen} />` : null}
+                ${!playing && state.screen === 'tvcat' ? html`<${TvCategoryScreen} />` : null}
+                ${!playing && state.screen === 'recents' ? html`<${Recents} />` : null}
+                ${!playing && state.screen === 'favs' ? html`<${Favs} />` : null}
+                ${!playing && state.screen === 'cats' ? html`<${Categories} />` : null}
+                ${!playing && state.screen === 'add'
                     ? (state.addType ? html`<${SourceForm} mode="add" />` : html`<${AddTypePicker} />`)
                     : null}
-                ${state.screen === 'edit' ? html`<${SourceForm} mode="edit" />` : null}
+                ${!playing && state.screen === 'edit' ? html`<${SourceForm} mode="edit" />` : null}
                 ${state.screen === 'player' ? html`<${Player} />` : null}
             </main>
             ${state.numBuffer ? html`<${NumBuffer} value=${state.numBuffer} />` : null}

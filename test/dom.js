@@ -284,6 +284,10 @@ async function run() {
         var surface = document.getElementById('avPlayer');
         return !!surface && surface.getAttribute('type') === 'application/avplayer';
     })());
+    check('reproduciendo, la pantalla de detrás no está en el DOM',
+        !document.getElementById('screen-tvcat') && !document.getElementById('screen-tv'));
+    check('y el fondo de la app deja de pintar (si no, tapa el plano de vídeo)',
+        document.body.classList.contains('playing'));
     check('y dice qué motor reproduce (sin consola en la TV no hay otra forma)',
         !!document.getElementById('ovEngine') && /AVPlay|HTML5/.test(document.getElementById('ovEngine').textContent),
         document.getElementById('ovEngine') ? document.getElementById('ovEngine').textContent : '(nada)');
@@ -541,6 +545,10 @@ async function run() {
     check('hay degradado de marca', code.indexOf('linear-gradient') !== -1 && code.indexOf('radial-gradient') !== -1);
     // Esta pantalla ya se rompio dos veces por partir texto en varias lineas
     // dentro de su tarjeta: las dos columnas van en una sola linea, siempre.
+    check('la superficie de AVPlay se mide en píxeles, no en porcentaje', (function () {
+        var rule = code.match(/\.av-surface\s*\{[^}]*\}/);
+        return !!rule && /width:\s*1920px/.test(rule[0]) && /height:\s*1080px/.test(rule[0]);
+    })());
     check('la fila de carga no puede partir en varias líneas', (function () {
         function rule(selector) {
             var match = code.match(new RegExp('\\' + selector + '\\s*\\{[^}]*\\}'));
