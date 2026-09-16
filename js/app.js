@@ -198,7 +198,20 @@ var App = App || {};
         // viene seleccionado, lo selecciona el usuario con abajo.
         tv.define('playerIdle', function () { return []; });
 
-        zone('overlay', '#ovFav');
+        zone('overlay', '#ovActions .btn');
+
+        // Panel de zapeo: categorias a la izquierda, canales a la derecha.
+        zone('zapCats', '#zapCats .zapcat', {
+            onEdge: function (dir) {
+                if (dir === 'right') tv.set('zapChannels', 0, 0);
+            }
+        });
+
+        zone('zapChannels', '#zapChannels .zapch', {
+            onEdge: function (dir) {
+                if (dir === 'left') tv.set('zapCats', 0, 0);
+            }
+        });
 
         // Con un canal caido, la zona del reproductor son los botones de la
         // tarjeta de error: reintentar o volver.
@@ -261,13 +274,20 @@ var App = App || {};
         if (code >= 96 && code <= 105) { store.pushDigit(String(code - 96)); return true; }
         if (code === tv.KEY.BACK || code === 27) return store.clearDigits() ? true : back();
         if (code === tv.KEY.RED) { red(); return true; }
-        if (code === tv.KEY.ENTER) return store.commitDigits();
+        if (code === tv.KEY.ENTER && store.commitDigits()) return true;
         if (store.state.screen !== 'player') return false;
 
         // Izquierda/derecha SIEMPRE cambian de canal, tambien con la tarjeta de
         // error abierta: un canal que falla no puede encerrarte.
         if (code === tv.KEY.LEFT) { store.zap(-1); return true; }
         if (code === tv.KEY.RIGHT) { store.zap(1); return true; }
+
+        // Con el panel de zapeo abierto: OK y Atras lo cierran (y siguen viendo).
+        if (store.state.zapOpen) {
+            if (code === tv.KEY.ENTER || code === tv.KEY.UP) { store.closeZap(); return true; }
+            return false;
+        }
+        if (code === tv.KEY.ENTER && !store.state.playError) { store.openZap(); return true; }
 
         var error = !!store.state.playError;
         if (error && (code === tv.KEY.UP || code === tv.KEY.DOWN)) {

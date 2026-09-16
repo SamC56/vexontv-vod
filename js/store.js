@@ -9,7 +9,8 @@ App.store = (function () {
         recent: 'ts.recent',
         filter: 'ts.filter',
         search: 'ts.search.',
-        seeded: 'ts.seeded'
+        seeded: 'ts.seeded',
+        aspect: 'ts.aspect'
     };
 
     // Fuente de fabrica: los canales publicos y gratuitos de iptv-org, agrupados
@@ -58,6 +59,10 @@ App.store = (function () {
         loadProgress: {},
         search: {},
         playing: null,
+        // Panel de zapeo sobre el video: se abre con OK mientras se ve algo.
+        zapOpen: false,
+        zapCategory: '',
+        aspect: 'fit',
         // 'idle' | 'opening' | 'playing' | 'error': lo que se ve en el reproductor
         // mientras un canal arranca, o cuando no arranca.
         playStatus: 'idle',
@@ -149,6 +154,7 @@ App.store = (function () {
         state.favorites = read(KEYS.favorites, []) || [];
         state.recent = read(KEYS.recent, []) || [];
         state.filter = read(KEYS.filter, 'all') || 'all';
+        state.aspect = read(KEYS.aspect, 'fit') || 'fit';
         seedDefault();
     }
 
@@ -839,7 +845,10 @@ App.store = (function () {
     function focusChanged(element) {
         if (!element || !element.dataset || !element.dataset.url) return;
         var channel = channelByUrl(element.dataset.url, element.dataset.list);
-        if (channel) loadProgramFor(channel);
+        if (!channel) return;
+        loadProgramFor(channel);
+        // En el panel de zapeo, el canal que se enfoca es el que se ve.
+        if (state.zapOpen && element.classList.contains('zapch')) zapTo(channel);
     }
 
     // ------------------------------------------------------------------ reproducción
@@ -902,6 +911,111 @@ App.store = (function () {
         emit();
     }
 
+    // ------------------------------------------------------------------ panel de zapeo
+    // La lista encima del video, como en cualquier IPTV: a la izquierda las
+    // categorias, a la derecha los canales, y el canal cambia al moverse.
+    var zapTimer = null;
+
+    // Freno al zapeo: cambiar de canal es abrir y preparar un stream, y pasando
+    // por encima de diez filas no tiene sentido abrir diez. Se espera a que el foco
+    // se pare.
+    var ZAP_MS = 450;
+
+    function openZap() {
+        var rows = tvCategories().rows;
+        // La categoria del canal que se esta viendo: es donde el usuario espera
+        // encontrarse, y donde esta marcado el que suena.
+        var playing = state.playing && state.playing.channel ? state.playing.channel.group : '';
+        var current = playing || state.zapCategory || state.catName;
+        var exists = false;
+        for (var i = 0; i < rows.length; i++) if (rows[i].name === current) exists = true;
+        state.zapCategory = exists ? current : (rows[0] ? rows[0].name : '');
+        set({ zapOpen: true });
+        focus('zapChannels', zapChannelIndex(), 0);
+    }
+
+    function closeZap() {
+        if (zapTimer) clearTimeout(zapTimer);
+        set({ zapOpen: false });
+        focus('playerIdle');
+    }
+
+    function zapCategories() {
+        var playing = state.playing && state.playing.channel ? state.playing.channel.group || 'Otros' : '';
+        var count = {};
+        allChannels().forEach(function (channel) {
+            var group = channel.group || 'Otros';
+            count[group] = (count[group] || 0) + 1;
+        });
+        return tvCategories().rows.map(function (row) {
+            return { name: row.name, count: row.count, selected: row.name === state.zapCategory, playing: row.name === playing };
+        });
+    }
+
+    function zapChannels() {
+        return allChannels().filter(function (channel) {
+            return (channel.group || 'Otros') === state.zapCategory;
+        });
+    }
+
+    // Indice del canal que se esta viendo dentro de la lista del panel (para abrir
+    // el foco donde toca).
+    function zapChannelIndex() {
+        var list = zapChannels();
+        var url = state.playing && state.playing.channel ? state.playing.channel.url : null;
+        for (var i = 0; i < list.length; i++) if (list[i].url === url) return i;
+        return 0;
+    }
+
+    function setZapCategory(name) {
+        state.zapCategory = name;
+        emit();
+        focus('zapChannels', 0, 0);
+    }
+
+    // El canal que el panel tiene enfocado pasa a ser el que se ve, con el freno.
+    function zapTo(channel) {
+        if (!channel || !channel.url) return;
+        if (state.playing && state.playing.channel.url === channel.url) return;
+        if (zapTimer) clearTimeout(zapTimer);
+        zapTimer = setTimeout(function () {
+            zapTimer = null;
+            if (!state.zapOpen || state.screen !== 'player') return;
+            play(channel, channel.listId || state.playing.listId, zapChannels());
+        }, ZAP_MS);
+    }
+
+    // Relacion de aspecto. 'fit' y 'cover' son los que se piden en una TV: encajar
+    // el video entero o llenar la pantalla recortando. 'cover' usa un modo que no
+    // esta en la lista de la documentacion, asi que va protegido: si la TV lo
+    // rechaza, se queda como estaba y el nombre en pantalla lo dice.
+    var ASPECTS = [
+        { id: 'fit', label: 'Fit', mode: 'PLAYER_DISPLAY_MODE_LETTER_BOX' },
+        { id: 'cover', label: 'Cover', mode: 'PLAYER_DISPLAY_MODE_CROPPED_FULL' },
+        { id: 'fill', label: 'Fill', mode: 'PLAYER_DISPLAY_MODE_FULL_SCREEN' },
+        { id: 'auto', label: 'Auto', mode: 'PLAYER_DISPLAY_MODE_AUTO_ASPECT_RATIO' }
+    ];
+
+    function aspectMode(id) {
+        for (var i = 0; i < ASPECTS.length; i++) if (ASPECTS[i].id === id) return ASPECTS[i];
+        return ASPECTS[0];
+    }
+
+    function setAspect(id) {
+        var aspect = aspectMode(id);
+        var applied = App.player.setAspect ? App.player.setAspect(aspect.mode) : false;
+        state.aspect = applied === false ? state.aspect : aspect.id;
+        write(KEYS.aspect, state.aspect);
+        emit();
+        notify('Aspecto: ' + aspectMode(state.aspect).label);
+    }
+
+    function nextAspect() {
+        var index = 0;
+        for (var i = 0; i < ASPECTS.length; i++) if (ASPECTS[i].id === state.aspect) index = i;
+        setAspect(ASPECTS[(index + 1) % ASPECTS.length].id);
+    }
+
     function zap(delta) {
         if (!state.playing || state.zapping.length < 2) return;
         state.zapIndex = (state.zapIndex + delta + state.zapping.length) % state.zapping.length;
@@ -917,6 +1031,7 @@ App.store = (function () {
         state.nextProgram = null;
         state.playStatus = 'idle';
         state.playError = null;
+        state.zapOpen = false;
         if (origin && origin.screen) { set({ screen: origin.screen }); focus(origin.zone); return; }
         goHome();
     }
@@ -1106,6 +1221,15 @@ App.store = (function () {
         loadProgramFor: loadProgramFor,
         play: play,
         zap: zap,
+        openZap: openZap,
+        closeZap: closeZap,
+        zapCategories: zapCategories,
+        zapChannels: zapChannels,
+        setZapCategory: setZapCategory,
+        zapTo: zapTo,
+        nextAspect: nextAspect,
+        aspectLabel: function () { return aspectMode(state.aspect).label; },
+        aspectMode: function () { return aspectMode(state.aspect).mode; },
         exitPlayer: exitPlayer,
         notify: notify,
         setLoading: setLoading,

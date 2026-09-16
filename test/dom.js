@@ -249,6 +249,43 @@ async function run() {
 
     document.querySelector('#sourceList .edit').click();
     await wait(80);
+    // el foco del DOM se queda en el ultimo input que se uso: el motor se come las
+    // teclas mientras hay un campo enfocado, asi que se parte de un estado limpio
+    if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+    const zapChannels = (function () {
+        const lists = window.App.store.state.channels;
+        return lists[Object.keys(lists)[0]] || [];
+    })();
+    const zapChannel = zapChannels.filter(function (channel) { return channel.group === 'Deportes'; })[0];
+    window.App.store.play(zapChannel, zapChannel.listId, zapChannels);
+    await wait(120);
+    press(13);
+    await wait(150);
+    check('OK mientras se ve abre el panel de zapeo', !!document.getElementById('zapPanel'));
+    check('con las categorías y los canales',
+        document.querySelectorAll('#zapCats .zapcat').length > 0
+        && document.querySelectorAll('#zapChannels .zapch').length > 0,
+        document.querySelectorAll('#zapCats .zapcat').length + ' categorías, '
+        + document.querySelectorAll('#zapChannels .zapch').length + ' canales');
+    checkClasses('el panel usa las clases que estiliza el CSS', [
+        ['#zapCats .zapcat', 'categoría'], ['#zapChannels .zapch', 'canal'],
+        ['.zap-bar', 'barra'], ['.zap-info', 'info']
+    ]);
+    check('con un canal marcado como el que se ve',
+        !!document.querySelector('#zapChannels .zapch.playing'));
+    const beforeZap = window.App.store.state.playing.channel.name;
+    press(40);
+    press(40);
+    await wait(700);
+    check('moverse por los canales cambia el canal que se ve',
+        window.App.store.state.playing.channel.name !== beforeZap,
+        beforeZap + ' -> ' + window.App.store.state.playing.channel.name);
+    press(13);
+    await wait(120);
+    check('y OK lo cierra', !document.getElementById('zapPanel'));
+    window.App.store.exitPlayer();
+    await wait(80);
+
     check('el botón de editar abre la edición sin entrar en la fuente', !!document.getElementById('screen-edit'));
     document.getElementById('formCancel').click();
     await wait(80);
@@ -660,6 +697,18 @@ async function run() {
     avStore.play({ name: 'Sin eventos', group: 'X', url: 'https://x/live/u/p/1.ts' }, 'l1', []);
     await wait(200);
     check('con AVPlay abriendo se ve el aviso de arranque (es el punto)', !!document.getElementById('playerStatus'));
+
+    // Relacion de aspecto: cicla por los modos y el nombre en pantalla lo dice
+    const aspectStart = window.App.store.aspectLabel();
+    window.App.store.nextAspect();
+    await wait(60);
+    check('el botón de aspecto cambia de modo', window.App.store.aspectLabel() !== aspectStart,
+        aspectStart + ' -> ' + window.App.store.aspectLabel());
+    const modes = [];
+    for (let i = 0; i < 4; i++) { window.App.store.nextAspect(); await wait(30); modes.push(window.App.store.aspectLabel()); }
+    check('y da la vuelta por todos', modes.indexOf(aspectStart) !== -1, modes.join(' > '));
+    check('el modo que se aplica es el que se enseña',
+        /PLAYER_DISPLAY_MODE_/.test(window.App.store.aspectMode()), window.App.store.aspectMode());
     await wait(4200);
     check('y se quita solo a los 4 s aunque AVPlay no diga nada',
         !document.getElementById('playerStatus'), 'sigue en pantalla');

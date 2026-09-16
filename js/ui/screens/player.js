@@ -32,7 +32,7 @@ App.uiScreens = App.uiScreens || {};
         }, []);
 
         useEffect(function () {
-            if (state.playing) player.play(state.playing.channel.url);
+            if (state.playing) player.play(state.playing.channel.url, store.aspectMode());
         }, [state.playing]);
 
         // Mientras se reproduce, la app entera deja de pintar: si el plano de video
@@ -90,7 +90,8 @@ App.uiScreens = App.uiScreens || {};
                     </div>
                 </div>
             </div>` : null}
-            <div class=${'overlay' + (overlay && !state.playError ? ' visible' : '')} id="playerOverlay">
+            ${state.zapOpen ? html`<${App.uiScreens.zap} />` : null}
+            <div class=${'overlay' + (overlay && !state.playError && !state.zapOpen ? ' visible' : '')} id="playerOverlay">
                 <div class="ov-info">
                     <p class="ov-live" id="ovLive"><span class="dot"></span>Live<span
                         class="ov-engine" id="ovEngine">${player.hardware() ? 'AVPlay' : 'HTML5'}</span></p>
@@ -108,10 +109,16 @@ App.uiScreens = App.uiScreens || {};
                             ? html`<span class="ov-time">${clock(next.start)} – ${clock(next.end)}</span>` : null}
                     </p>` : null}
                 </div>
-                <button class=${'btn' + (saved ? ' saved' : '')} id="ovFav" tabindex="-1" onClick=${function () {
-                    store.toggleFavorite(channel, state.playing.listId);
-                    show();
-                }}>${saved ? 'Remove from favorites' : 'Add to favorites'}</button>
+                <div class="ov-actions" id="ovActions">
+                    <button class=${'btn' + (saved ? ' saved' : '')} id="ovFav" tabindex="-1" onClick=${function () {
+                        store.toggleFavorite(channel, state.playing.listId);
+                        show();
+                    }}>${saved ? 'Remove from favorites' : 'Add to favorites'}</button>
+                    <button class="btn" id="ovAspect" tabindex="-1" onClick=${function () {
+                        store.nextAspect();
+                        show();
+                    }}>Aspect: ${store.aspectLabel()}</button>
+                </div>
             </div>
         </section>`;
     };
