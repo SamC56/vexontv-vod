@@ -23,16 +23,30 @@
 
 ## 📑 What's in here
 
+- [🖼 Screenshots](#-screenshots)
 - [📺 Install on your TV](#-install-on-your-tv)
 - [✨ Why this exists](#-why-this-exists)
 - [📡 What it plays](#-what-it-plays)
-- [🖼 Screenshots](#-screenshots)
 - [🎮 The remote](#-the-remote)
 - [📝 Notes](#-notes)
 - [📄 License](#-license)
 - [🛠 For developers](#-for-developers)
 
 ---
+
+## 🖼 Screenshots
+
+| Live TV                                                                | Player                                           |
+| ---------------------------------------------------------------------- | ------------------------------------------------ |
+| ![Browsing channels with the inline preview](docs/screens/browser.png) | ![Full screen playback](docs/screens/player.png) |
+
+| Sources                              | Player channel list                                                   |
+| ------------------------------------ | -------------------------------------------------------------- |
+| ![Sources](docs/screens/sources.png) | ![Channel list over the stream](docs/screens/channel-list.png) |
+
+> [!NOTE]
+> Captures of the interface itself, with demo channels: no provider of anyone's behind them.
+> This is how the app looks before you add your own list.
 
 ## 📺 Install on your TV
 
@@ -128,19 +142,6 @@ _I started looking for an IPTV player for my own TV and just could not find anyt
 > Stalker is implemented but not yet verified against a live portal: it needs a MAC from a
 > provider.
 
-## 🖼 Screenshots
-
-| Live TV                                                                | Player                                           |
-| ---------------------------------------------------------------------- | ------------------------------------------------ |
-| ![Browsing channels with the inline preview](docs/screens/browser.png) | ![Full screen playback](docs/screens/player.png) |
-
-| Sources                              | Player channel list                                                   |
-| ------------------------------------ | -------------------------------------------------------------- |
-| ![Sources](docs/screens/sources.png) | ![Channel list over the stream](docs/screens/channel-list.png) |
-
-> [!NOTE]
-> Captures of the interface itself, with demo channels: no provider of anyone's behind them.
-> This is how the app looks before you add your own list.
 
 ## 🎮 The remote
 
