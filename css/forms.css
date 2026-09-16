@@ -77,7 +77,7 @@
 /* Fila de categoria en TV: es la unica fila que lleva a otro sitio, asi que va
    un punto mas grande que una fila normal. */
 .row.tvcat .row-name {
-  font-size: 24px;
+  font-size: 18px;
   font-weight: 600;
 }
 

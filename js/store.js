@@ -859,8 +859,8 @@ App.store = (function () {
         loadProgramFor(channel);
         // En el panel de zapeo, el canal que se enfoca es el que se ve.
         if (state.zapOpen && element.classList.contains('zapch')) zapTo(channel);
-        // En el navegador de la TV, el canal enfocado es el que enseña el preview.
-        if (state.screen === 'tv' && element.classList.contains('channel')) selectPreview(channel);
+        // En el navegador de la TV NO: ahi el preview se abre al pulsar OK en el
+        // canal, no al pasar por encima.
     }
 
     // ------------------------------------------------------------------ reproducción

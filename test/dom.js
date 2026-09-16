@@ -336,12 +336,10 @@ async function run() {
         ['.browse .browse-preview', 'columna del preview'], ['#tvChannels .channel', 'fila de canal'],
         ['#tvChannels .num', 'número'], ['#tvChannels .thumb', 'miniatura']
     ]);
-    check('al elegir categoría, el preview enseña el canal enfocado',
-        !!document.querySelector('#tvPreview #previewCard'),
-        document.querySelector('#tvPreview .preview-name') ? document.querySelector('#tvPreview .preview-name').textContent : '(vacío)');
-    check('con su nombre y su guía',
-        !!document.querySelector('#tvPreview .preview-guide')
-        && document.querySelector('#tvPreview .preview-open').textContent.length > 0);
+    // El preview NO se abre al enfocar: hay que pulsar OK en un canal.
+    check('elegir categoría no abre el preview por sí sola',
+        !document.querySelector('#tvPreview #previewCard'),
+        document.querySelector('#tvPreview .preview-name') ? 'abrió ' + document.querySelector('#tvPreview .preview-name').textContent : 'vacío');
 
     press(40);
     await wait(90);

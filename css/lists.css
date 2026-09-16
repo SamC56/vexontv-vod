@@ -43,7 +43,7 @@
 }
 
 .row-name {
-  font-size: 22px;
+  font-size: 18px;
   font-weight: 550;
   line-height: 1.25;
   letter-spacing: -0.015em;
@@ -370,6 +370,12 @@
   background: rgba(0, 0, 0, 0.35);
   overflow: hidden;
 }
+
+/* Con el video dentro (agujero activo) la ficha y el estado vacio se apagan: se
+   pintarian encima del video. Se hace con opacidad y no con display para no mover
+   nada: el rectangulo del preview es el que mide el agujero. */
+body.previewing .preview-card,
+body.previewing .preview-empty { opacity: 0; }
 
 .preview-empty {
   display: grid;
