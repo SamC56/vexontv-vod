@@ -10,16 +10,17 @@ body {
   overflow: hidden;
 }
 
-/* El fondo es la grilla de un monitor de video: lineas de 1px cada 64px y una luz
-   cenital. Estatico (el WebView lo pinta una vez), compartido con el aviso de carga
-   para que no sea un bloque negro sin identidad. */
+/* El fondo es la grilla de un monitor de video: lineas de 1px cada 64px, y encima
+   el degradado de la casa en version de sala (--grad-bg, con alfa). Estatico (el
+   WebView lo pinta una vez), compartido con el aviso de carga para que no sea un
+   bloque negro sin identidad. */
 body,
 .loading {
   background-color: var(--black);
   background-image:
     linear-gradient(var(--grid-line) 1px, transparent 1px),
     linear-gradient(90deg, var(--grid-line) 1px, transparent 1px),
-    var(--sheen);
+    var(--grad-bg);
   background-size: var(--grid) var(--grid), var(--grid) var(--grid), 100% 100%;
   background-repeat: repeat, repeat, no-repeat;
 }

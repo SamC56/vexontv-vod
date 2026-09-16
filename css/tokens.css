@@ -91,10 +91,14 @@
 
   --grid: 64px;
   --grid-line: rgba(255, 255, 255, 0.022);
-  --sheen: linear-gradient(
-    180deg,
-    rgba(253, 226, 2, 0.07),
-    rgba(255, 255, 255, 0) 42%
+  /* El degradado de la casa como FONDO. Los mismos tres colores y el mismo 48% que
+     --grad-line, pero con alfa: solido, blanco sobre el ambar da 1.6:1 y no hay
+     quien lea una lista encima. Aqui es una luz de sala, no un relleno. */
+  --grad-bg: linear-gradient(
+    90deg,
+    rgba(254, 188, 6, 0.16),
+    rgba(204, 66, 7, 0.12) 48%,
+    rgba(21, 233, 164, 0.16)
   );
   --focus: #fff;
   /* Anillo de foco: duro, de 1px. Con el fondo de grilla, un halo difuminado

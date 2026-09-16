@@ -201,7 +201,7 @@ body.previewing .backdrop {
   background-image:
     linear-gradient(var(--grid-line) 1px, transparent 1px),
     linear-gradient(90deg, var(--grid-line) 1px, transparent 1px),
-    var(--sheen);
+    var(--grad-bg);
   background-size: var(--grid) var(--grid), var(--grid) var(--grid), 100% 100%;
   background-repeat: repeat, repeat, no-repeat;
   /* Detras de todo. Es un elemento posicionado (fixed) y el rail es un item de grid

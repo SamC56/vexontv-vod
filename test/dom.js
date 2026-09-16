@@ -738,6 +738,16 @@ async function run() {
         ['#febc06', '#cc4207', '#15e9a4'].every(function (hex) { return code.indexOf(hex) !== -1; }));
     check('el degradado de marca lleva los colores de la casa',
         /linear-gradient\([^)]*var\(--(amber|ember|mint)\)/.test(code));
+    // El fondo es el degradado de la casa, en alfa (solido dejaria el texto blanco
+    // sobre el ambar en 1.6:1). Los tres colores, y el brasa en el 48% como el filo.
+    check('el fondo lleva el degradado de marca con los tres colores', (function () {
+        var rule = code.match(/--grad-bg:\s*linear-gradient\([^;]*;/);
+        if (!rule) return false;
+        // el brasa, con su alfa, y en el 48% como en el filo
+        return /rgba\(254,\s*188,\s*6,/.test(rule[0])
+            && /rgba\(204,\s*66,\s*7,[^)]*\)\s*48%/.test(rule[0])
+            && /rgba\(21,\s*233,\s*164,/.test(rule[0]);
+    })());
     // Esta pantalla ya se rompio dos veces por partir texto en varias lineas
     // dentro de su tarjeta: las dos columnas van en una sola linea, siempre.
     check('la superficie de AVPlay se mide en píxeles, no en porcentaje', (function () {
