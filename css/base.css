@@ -39,9 +39,21 @@ body {
 }
 
 /* ---------------------------------------------------------------- estructura */
+/* El punto de montaje tiene que tener altura: si no, su hijo .app{height:100%}
+   es "100% de nada", el grid mide lo que mida su contenido, y una lista de 200
+   canales hace que TODO crezca y no haya scroll en ninguna parte. */
+#app {
+  height: 100%;
+}
+
 .app {
   display: grid;
   grid-template-columns: 104px 1fr;
+  /* minmax(0, 1fr) y no 'auto': con una fila auto, la fila crece con el contenido
+     (una lista de 200 canales son 14.400 px), .main y .screen crecen con ella y
+     NADA scrollea: la fila enfocada se va fuera de la pantalla. Con la fila
+     clavada a la altura disponible, el scroll se queda dentro de .rows. */
+  grid-template-rows: minmax(0, 1fr);
   height: 100%;
 }
 

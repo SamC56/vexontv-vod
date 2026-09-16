@@ -430,7 +430,10 @@ check('los elementos vacíos van autocerrados (htm lo exige)',
 const manifest = source('config.xml');
 check('el id de paquete tiene 10 caracteres (Tizen lo exige)',
     /package="[A-Za-z0-9]{10}"/.test(manifest), (manifest.match(/package="([^"]*)"/) || [])[1]);
-check('config.xml declara avplay', manifest.indexOf('privilege/avplay') !== -1);
+// Desde 2015 ese privilegio no se usa en apps web de TV: pedirlo hace que el
+// instalador rechace el paquete y obliga a la variante Public, que no tiene AVPlay.
+check('config.xml no pide el privilegio avplay (no se usa desde 2015)',
+    manifest.indexOf('privilege/avplay') === -1);
 check('config.xml apunta a index.html', manifest.indexOf('<content src="index.html" />') !== -1);
 check('config.xml usa el perfil de TV', manifest.indexOf('tv-samsung') !== -1);
 check('hay icono', fs.existsSync(path.join(root, 'icon.png')));

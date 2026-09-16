@@ -20,11 +20,11 @@ var App = App || {};
                 if (dir !== 'right') return;
                 var screen = store.state.screen;
                 if (screen === 'home') tv.set('types', 0, 0);
-                else if (screen === 'tv') tv.set('tvSearch', 0, 0);
-                else if (screen === 'tvcat') tv.set('tvcatSearch', 0, 0);
+                else if (screen === 'tv') tv.set('tvActions', 0, 0);
+                else if (screen === 'tvcat') tv.set('tvcatActions', 0, 0);
                 else if (screen === 'recents') tv.set('recentsSearch', 0, 0);
                 else if (screen === 'favs') tv.set('favsSearch', 0, 0);
-                else if (screen === 'cats') tv.set('catSearch', 0, 0);
+                else if (screen === 'cats') tv.set('catActions', 0, 0);
                 else if (screen === 'add') tv.set(store.state.addType ? 'fields' : 'addTypes', 0, 0);
                 else if (screen === 'edit') tv.set('fields', 0, 0);
                 else if (screen === 'player') tv.set(store.state.playError ? 'playError' : 'overlay', 0, 0);
@@ -47,12 +47,45 @@ var App = App || {};
             }
         });
 
-        zone('sources', '#sourceList .row, #sourceList .edit', {
+        zone('sources', '#sourceList .row', {
             onEdge: function (dir) {
                 if (dir === 'left') tv.set('types', 0, 0);
                 else if (dir === 'up') tv.set('homeActions', 0, 0);
+                // La derecha entra en el boton de editar DE ESA fila. No puede ser
+                // parte de la misma zona: el boton vive dentro de la fila, y su
+                // offsetTop es relativo a ella, asi que el motor no puede agruparlos
+                // en la misma fila por posicion. Se resuelve por indice.
+                else if (dir === 'right') enterEditFromRow();
             }
         });
+
+        // Zona de un solo elemento: el boton de la fila que se este editando. Asi
+        // arriba/abajo pasan de una fila a otra (con el indice) y la izquierda vuelve
+        // a la lista, sin depender de posiciones.
+        var editRow = 0;
+
+        function enterEditFromRow() {
+            var rows = ui.qsa('#sourceList .row.source');
+            var fromRow = rows.indexOf(document.querySelector('.focused'));
+            // la fila de añadir no tiene boton de editar: ahi la derecha no hace nada
+            if (fromRow !== -1) showEdit(fromRow);
+        }
+
+        function showEdit(index) { editRow = index; tv.set('sourceEdit', 0, 0); }
+        tv.define('sourceEdit', function () {
+            var buttons = ui.qsa('#sourceList .edit');
+            return buttons[editRow] ? [[buttons[editRow]]] : [];
+        }, {
+            onEdge: function (dir) {
+                var buttons = ui.qsa('#sourceList .edit');
+                if (dir === 'left') tv.set('sources', editRow, 0);
+                else if (dir === 'up') showEdit(Math.max(0, editRow - 1));
+                else if (dir === 'down') showEdit(Math.min(buttons.length - 1, editRow + 1));
+                else if (dir === 'right') tv.set('rail', 0, 0);
+            }
+        });
+
+
 
         zone('tvActions', '#tvActions .btn', {
             onEdge: function (dir) {
@@ -79,8 +112,7 @@ var App = App || {};
 
         zone('tvcatSearch', '#tvcatSearch', {
             onEdge: function (dir) {
-                if (dir === 'up') tv.set('rail', 0, 0);
-                else if (dir === 'left') tv.set('rail', 0, 0);
+                if (dir === 'up' || dir === 'left') tv.set('tvcatActions', 0, 0);
                 else if (dir === 'down') tv.set('tvChannels', 0, 0);
             }
         });
@@ -130,7 +162,7 @@ var App = App || {};
 
         zone('catSearch', '#catSearch', {
             onEdge: function (dir) {
-                if (dir === 'up') tv.set('rail', 0, 0);
+                if (dir === 'up') tv.set('catActions', 0, 0);
                 else if (dir === 'left') tv.set('catActions', 0, 0);
                 else if (dir === 'down') tv.set('cats', 0, 0);
             }

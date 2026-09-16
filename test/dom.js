@@ -209,6 +209,20 @@ async function run() {
     // La fila de cada fuente lleva su botón de editar a la derecha, y la fila en
     // sí lleva a la TV de esa fuente: Fuentes es solo para gestionar.
     check('cada fuente tiene su botón de editar', document.querySelectorAll('#sourceList .edit').length === 1);
+    window.App.tv.set('sources', 0, 0);
+    press(40);
+    await wait(60);
+    check('bajar en fuentes NO entra en el botón de editar',
+        !!focused() && focused().classList.contains('add'), focused() ? focused().className : '(nada)');
+    window.App.tv.set('sources', 0, 0);
+    press(39);
+    await wait(60);
+    check('la derecha sí entra en el botón de editar de esa fila',
+        !!focused() && focused().classList.contains('edit'), focused() ? focused().className : '(nada)');
+    press(37);
+    await wait(60);
+    check('y la izquierda vuelve a la fuente',
+        !!focused() && focused().classList.contains('source'), focused() ? focused().className : '(nada)');
     check('la fila de fuente es un div (dentro va un botón)',
         document.querySelector('#sourceList .row.source').tagName === 'DIV');
     checkClasses('el botón de editar usa las clases que estiliza el CSS', [
@@ -308,6 +322,18 @@ async function run() {
     document.getElementById('navTv').click();
     await wait(120);
     check('la sección TV existe', !!document.getElementById('screen-tv'));
+    window.App.tv.set('rail', 1, 0);
+    press(39);
+    await wait(60);
+    check('desde el rail la derecha entra por el botón, no por el buscador',
+        !!focused() && focused().id === 'catsBtn', focused() ? focused().id : '(nada)');
+    press(39);
+    await wait(60);
+    check('y del botón se pasa al buscador', !!focused() && focused().id === 'tvSearch',
+        focused() ? focused().id : '(nada)');
+    press(37);
+    await wait(60);
+    check('y con la izquierda se vuelve al botón', !!focused() && focused().id === 'catsBtn');
     check('la TV lista categorías, no canales sueltos',
         document.querySelectorAll('#tvCats .tvcat').length === 4 && document.querySelectorAll('#screen-tv .channel').length === 0,
         document.querySelectorAll('#tvCats .tvcat').length + ' categorías');

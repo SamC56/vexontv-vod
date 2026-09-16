@@ -4,7 +4,7 @@
   "private": true,
   "description": "App de TV para Samsung Tizen: listas M3U y portales Xtream",
   "scripts": {
-    "test": "node test/check.js && node test/dom.js",
+    "test": "node test/check.js && node test/dom.js && node test/layout.js",
     "build": "python3 tools/build-wgt.py",
     "icon": "python3 tools/make-icon.py"
   },

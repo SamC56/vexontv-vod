@@ -61,7 +61,7 @@ Sin build step: HTML, CSS y JS a pelo. Un `.wgt` es un zip.
 
 ```
 index.html          las 16 etiquetas de script y las 7 hojas, en orden de carga
-config.xml          manifiesto Tizen (los dos privilegios y el id de 10 letras)
+config.xml          manifiesto Tizen (red e inputdevice, y el id de 10 letras)
 icon.png brand.png  icono de app y marca del rail (tools/make-icon.py)
 css/tokens.css      colores, radios, curvas y el mesh: la identidad
 css/base.css        reset, marco de la app (rail, main) y tipografía
@@ -79,7 +79,7 @@ js/ui/screens/*.js  una pantalla por fichero
 js/ui.js            raíz y montaje: junta el kit con las pantallas
 js/app.js           zonas de foco, teclas del mando y arranque
 tools/              generador de marca y empaquetador .wgt
-test/               check.js (lógica) y dom.js (la app en jsdom)
+test/               check.js (lógica), dom.js (la app en jsdom) y layout.js (maquetación)
 ```
 
 Nada de esto se lista a mano en los tests: `test/*.js` y el capturador de
@@ -91,10 +91,15 @@ módulo no obliga a tocar los tests. Hay un check que exige que index.html cargu
 
 ```bash
 npm install               # una vez: jsdom, solo para los tests
-npm test                  # 98 checks de lógica + 103 de DOM (201)
+npm test                  # lógica + DOM (jsdom) + maquetación (Chrome headless)
 python3 tools/make-icon.py /ruta/al/logo.png   # -> icon.png + brand.png
 python3 tools/build-wgt.py   # -> dist/VexonTV.wgt
 ```
+
+`test/layout.js` monta la app en Chrome headless con una categoría de 200 canales y
+mide lo que jsdom no puede ver: que el armazón mida la pantalla, que la lista
+scrollee de verdad y que el documento no se mueva. Existe por un fallo que solo
+apareció en la TV (sin altura en el punto de montaje, nada scrolleaba).
 
 `test/check.js` carga los módulos reales y valida parseo M3U/Xtream, el alta de
 listas, la búsqueda, las categorías, los favoritos, los ids/selectores de la UI y
