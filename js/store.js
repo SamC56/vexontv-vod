@@ -107,7 +107,7 @@ App.store = (function () {
         try {
             const raw = localStorage.getItem(key)
             return raw ? JSON.parse(raw) : fallback
-        } catch (error) {
+        } catch {
             return fallback
         }
     }
@@ -115,7 +115,7 @@ App.store = (function () {
     function write(key, value) {
         try {
             localStorage.setItem(key, JSON.stringify(value))
-        } catch (error) {}
+        } catch {}
     }
 
     function formatCount(value) {
@@ -264,8 +264,8 @@ App.store = (function () {
         }
     }
 
-    // Una lista que ya se importo antes no se vuelve a descargar: se resincroniza, y
-    // el aviso lo dice asi. La primera vez si es una descarga.
+    // A list that was imported before is not downloaded again: it resyncs, and the
+    // notice says so. The first time it really is a download.
     function progressOf(listId, update, list) {
         if (list && list.imported && update.label === "Downloading") update.label = "Syncing"
         return progressOfEntry(listId, update)
@@ -1066,7 +1066,6 @@ App.store = (function () {
 
     function exitPlayer() {
         const origin = state.playing ? state.playing.origin : null
-        const listId = state.playing ? state.playing.listId : null
         state.playing = null
         state.nowProgram = null
         state.nextProgram = null

@@ -5,7 +5,7 @@ App.player = (function () {
     function avplay() {
         try {
             return typeof webapis !== "undefined" && webapis.avplay ? webapis.avplay : null
-        } catch (error) {
+        } catch {
             return null
         }
     }
@@ -81,7 +81,7 @@ App.player = (function () {
         if (AV) {
             try {
                 return AV.getState()
-            } catch (error) {
+            } catch {
                 return "IDLE"
             }
         }
@@ -131,7 +131,7 @@ App.player = (function () {
         video.removeAttribute("src")
         try {
             video.load()
-        } catch (error) {}
+        } catch {}
     }
 
     function stop() {
@@ -140,10 +140,10 @@ App.player = (function () {
         if (AV) {
             try {
                 if (state() === "PLAYING" || state() === "PAUSED") AV.stop()
-            } catch (error) {}
+            } catch {}
             try {
                 AV.close()
-            } catch (error) {}
+            } catch {}
         }
         clearVideo()
     }

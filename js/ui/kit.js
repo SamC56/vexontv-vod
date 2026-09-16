@@ -249,8 +249,8 @@ App.uiKit = (function () {
         return program.title + span
     }
 
-    // Reloj del rail: la hora del sistema, refrescada al minuto (un reloj que
-    // parpadea cada segundo distrae en una tele).
+    // Rail clock: the system time, refreshed by the minute. A clock that ticks every
+    // second is a distraction on a TV.
     function timeText() {
         const now = new Date()
         return `${`0${now.getHours()}`.slice(-2)}:${`0${now.getMinutes()}`.slice(-2)}`
@@ -270,8 +270,8 @@ App.uiKit = (function () {
         return state[0]
     }
 
-    // Barra lateral: marca, las cuatro secciones, atajo a cada fuente y, abajo, la
-    // hora y el recuento. Anclada a la rejilla: secciones de 64 y fuentes de 56.
+    // Sidebar: the brand, the four sections, a shortcut to each source and, at the
+    // bottom, the clock and the count. Anchored to the grid: 64px sections, 56px sources.
     function Rail(props) {
         const items = [
             {
@@ -328,7 +328,7 @@ App.uiKit = (function () {
                     ? `${element.offsetTop + Math.round((element.offsetHeight - height) / 2)}px`
                     : "0px",
             )
-            // Mientras viaja la marca se estira: se ve el trayecto, no un salto.
+            // The marker stretches as it travels: you see the trip, not a jump.
             rail.classList.add("moving")
             const timer = setTimeout(() => {
                 rail.classList.remove("moving")

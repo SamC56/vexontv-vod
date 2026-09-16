@@ -247,7 +247,7 @@ var App = App || {} // eslint-disable-line no-var -- shared namespace, no module
         }
         try {
             tizen.application.getCurrentApplication().exit()
-        } catch (error) {}
+        } catch {}
         return true
     }
 

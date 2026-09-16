@@ -85,8 +85,9 @@ App.uiScreens = App.uiScreens || {}
             id="screen-player"
         >
             <video id="videoPlayer" ref=${videoRef} playsinline></video>
-            <!-- AVPlay no dibuja en el <video>: pinta en un object de este tipo, y sin el
-                 se oye el canal pero no se ve. Va despues del video y encima. -->
+            <!-- AVPlay does not draw into <video>: it paints in an object like this one,
+                 and without it the channel is heard but not seen. It goes after the
+                 video, on top. -->
             <object
                 class="av-surface"
                 id="avPlayer"
@@ -192,8 +193,8 @@ App.uiScreens = App.uiScreens || {}
                               </p>`
                             : null
                     }
-                    <!-- La leyenda va la ultima: el nombre, la guia y lo que viene son
-                         una sola cosa y no se parten por el medio. -->
+                    <!-- The legend goes last: the name, the guide and what comes next
+                         are one thing and do not split down the middle. -->
                     <p class="ov-keys" id="ovKeys">
                         <span class="ov-key">CH UP/DOWN</span><span>channel</span>
                         <span class="ov-key">LEFT or OK</span><span>channel list</span>

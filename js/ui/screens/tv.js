@@ -47,8 +47,8 @@ App.uiScreens = App.uiScreens || {}
         const stage = document.getElementById("previewStage")
         if (!box || !layer) return
         const rootStyle = document.documentElement.style
-        // Un pixel por lado: el filo de foco vive en el borde de la tarjeta y a sangre se
-        // lo comia la mascara justo a la altura del video (el borde se cortaba ahi).
+        // One pixel per side: the focus edge lives on the card border, and flush to the
+        // edge the mask ate it right where the video is (the border was cut there).
         const inset = 1
         rootStyle.setProperty("--hole-x", `${Math.round(box.left + inset)}px`)
         rootStyle.setProperty("--hole-y", `${Math.round(box.top + inset)}px`)

@@ -337,12 +337,11 @@
     display: grid;
     place-items: center;
     min-height: 0;
-    /* Un poco translucida: deja pasar la grilla del fondo. El escenario no se toca,
-     que ahi detras va el video y cualquier capa lo lavaria. */
+    /* A little translucent: it lets the background grid through. The stage is left alone,
+     because the video goes behind it and any layer would wash it out. */
     background: rgba(0, 0, 0, 0.7);
 }
 
-/* The card cuts the stage rectangle out of itself so the video plane shows through. */
 /* The card cuts the stage rectangle out of itself so the video plane shows through. */
 body.previewing .browse-preview {
     -webkit-mask-image: linear-gradient(#000 0 0), linear-gradient(#000 0 0);

@@ -6,7 +6,6 @@ App.uiScreens = App.uiScreens || {}
     const kit = App.uiKit
     const store = App.store
     const html = kit.html
-    const useState = kit.useState
 
     App.uiScreens.loader = function Loader() {
         const state = store.state

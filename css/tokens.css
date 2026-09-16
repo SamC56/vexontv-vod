@@ -35,8 +35,8 @@
     --rail-mark-h: 0px;
     --rail-mark-y: 0px;
 
-    /* Ancho del rail. La grilla se ancla a esta medida para que una linea caiga justo
-     en el borde del sidebar (184 no es multiplo de 64). */
+    /* Rail width. The grid anchors to this measurement so one line falls right on the
+     sidebar edge (184 is not a multiple of 64). */
     --rail: 192px;
     --grid: 64px;
     --grid-line: rgba(255, 255, 255, 0.05);

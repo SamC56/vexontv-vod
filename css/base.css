@@ -23,8 +23,8 @@ body,
         100% 100%,
         100% 100%;
     background-repeat: repeat, repeat, no-repeat, no-repeat;
-    /* La grilla arranca en el borde del rail: asi una linea cae justo ahi y las demas
-     siguen cada 64px. En vertical se centra, que 1080 tampoco es multiplo. */
+    /* The grid starts at the rail edge: that way one line falls right there and the rest
+     follow every 64px. Vertically it centres, since 1080 is not a multiple either. */
     background-position:
         var(--rail) center,
         var(--rail) center,
@@ -112,8 +112,8 @@ body {
     border-right: 1px solid var(--line-2);
 }
 
-/* Brillo ambiental que sube muy despacio. Anima transform y no background-position:
-   en TV solo transform y opacity van por la GPU sin repintar. */
+/* Ambient glow that drifts up very slowly. It animates transform, not background-position:
+   on a TV only transform and opacity stay on the GPU without a repaint. */
 .rail-glow {
     position: absolute;
     left: 0;
@@ -221,12 +221,12 @@ body {
     color: var(--text-3);
 }
 
-/* Mientras viaja, la marca se estira (la clase .moving dura 300ms). */
+/* The marker stretches while it travels (the .moving class lasts 300ms). */
 .rail.moving::after {
     transform: translateY(var(--rail-mark-y, 0px)) scaleY(1.35);
 }
 
-/* El icono entra con muelle al pasar a activa, y crece con el foco. */
+/* The icon springs in when it becomes active, and grows with the focus. */
 .rail-btn svg {
     transition:
         transform var(--dur) var(--ease-out),
@@ -259,7 +259,7 @@ body {
     }
 }
 
-/* La marca respira: opacidad y escala, las dos compuestas. */
+/* The mark breathes: opacity and scale, both composited. */
 .brand-img {
     animation: brand-breathe 6s var(--ease) infinite alternate;
     display: block;
@@ -361,7 +361,7 @@ body {
 .main {
     position: relative;
     min-height: 0;
-    /* 48/64/40: medidas de la rejilla de 8 (el viewport de la TV es siempre 1920x1080) */
+    /* 48/64/40: measurements of the 8 grid (the TV viewport is always 1920x1080) */
     padding: 48px 64px 40px;
 }
 

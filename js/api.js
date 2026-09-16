@@ -245,7 +245,7 @@ App.api = (function () {
         if (!value) return ""
         try {
             return decodeURIComponent(escape(atob(value)))
-        } catch (error) {
+        } catch {
             return ""
         }
     }

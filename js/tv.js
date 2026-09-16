@@ -198,7 +198,7 @@ App.tv = (function () {
                     "MediaPlayPause",
                 ])
             }
-        } catch (error) {}
+        } catch {}
     }
 
     return {
