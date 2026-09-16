@@ -1062,7 +1062,7 @@ async function run() {
     styleEl.textContent = css
     document.head.appendChild(styleEl)
     const rules = document.styleSheets[document.styleSheets.length - 1].cssRules.length
-    check("the stylesheet parses fully", rules >= 120, `${rules} reglas`)
+    check("the stylesheet parses fully", rules >= 120, `${rules} rules`)
     check(
         "the identity trio is in the sheet",
         ["#febc06", "#cc4207", "#15e9a4"].every((hex) => {
@@ -1278,10 +1278,6 @@ async function run() {
     check("without errors after the whole session", errors.length === 0, errors.join(" | "))
 
     report.done()
-
-    function storeGoHome() {
-        window.App.store.goHome()
-    }
 }
 
 run().catch((error) => {

@@ -3,38 +3,11 @@ const fs = require("fs")
 const os = require("os")
 const path = require("path")
 const { execFileSync } = require("child_process")
+const chrome = require("../tools/chrome.js")
 
 const root = path.join(__dirname, "..")
 const report = require("./report")("layout — the 64px grid, the rail and the preview, in a browser")
 const check = report.check
-
-function chrome() {
-    if (process.env.CHROME_BIN && fs.existsSync(process.env.CHROME_BIN))
-        return process.env.CHROME_BIN
-    const cache = path.join(os.homedir(), ".cache/ms-playwright")
-    if (fs.existsSync(cache)) {
-        const found = fs
-            .readdirSync(cache)
-            .filter((name) => {
-                return name.indexOf("chromium") === 0
-            })
-            .map((name) => {
-                return path.join(cache, name, "chrome-headless-shell-linux64/chrome-headless-shell")
-            })
-            .filter((file) => {
-                return fs.existsSync(file)
-            })
-        if (found.length) return found[0]
-    }
-    const paths = (process.env.PATH || "").split(":")
-    for (const name of ["chromium", "chromium-browser", "google-chrome", "google-chrome-stable"]) {
-        for (const dir of paths) {
-            const file = path.join(dir, name)
-            if (fs.existsSync(file)) return file
-        }
-    }
-    return null
-}
 
 const VISIBLE_ROWS = 40
 const TOTAL_ROWS = 200
