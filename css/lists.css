@@ -466,8 +466,9 @@ body.previewing .preview-stage > * { opacity: 0; }
   color: var(--text-3);
 }
 
+/* El foco se marca con el filo y nada mas: si el fondo cambiara, el video se veria a
+   traves de una capa translucida y pareceria apagado justo al enfocar la columna. */
 .browse-preview:focus,
 .browse-preview.focused {
   box-shadow: inset 0 0 0 1px var(--ring);
-  background: rgba(0, 0, 0, 0.5);
 }

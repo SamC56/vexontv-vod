@@ -51,16 +51,20 @@ App.uiScreens = App.uiScreens || {};
         var layer = document.getElementById('backdrop');
         var stage = document.getElementById('previewStage');
         if (!box || !layer) return;
-        layer.style.setProperty('--hole-x', Math.round(box.left) + 'px');
-        layer.style.setProperty('--hole-y', Math.round(box.top) + 'px');
-        layer.style.setProperty('--hole-w', Math.round(box.width) + 'px');
-        layer.style.setProperty('--hole-h', Math.round(box.height) + 'px');
+        // En la raiz, no en la capa: la mascara de la tarjeta lee estas mismas
+        // variables, y si solo estuvieran en la capa su agujero mediria 0x0 y la
+        // tarjeta taparia el video (solo se veia al enfocar, por el fondo del foco).
+        var rootStyle = document.documentElement.style;
+        rootStyle.setProperty('--hole-x', Math.round(box.left) + 'px');
+        rootStyle.setProperty('--hole-y', Math.round(box.top) + 'px');
+        rootStyle.setProperty('--hole-w', Math.round(box.width) + 'px');
+        rootStyle.setProperty('--hole-h', Math.round(box.height) + 'px');
         // Y el mismo rectangulo, pero dentro de la tarjeta: el marco negro del
         // preview es la tarjeta entera menos el escenario, o sea una mascara con el
         // agujero en las coordenadas locales de la tarjeta.
         if (stage && stage.offsetParent) {
-            layer.style.setProperty('--stage-x', Math.round(stage.offsetLeft) + 'px');
-            layer.style.setProperty('--stage-y', Math.round(stage.offsetTop) + 'px');
+            rootStyle.setProperty('--stage-x', Math.round(stage.offsetLeft) + 'px');
+            rootStyle.setProperty('--stage-y', Math.round(stage.offsetTop) + 'px');
         }
     }
 

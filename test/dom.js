@@ -376,6 +376,17 @@ async function run() {
     check('OK en un canal previsualiza sin salir de la TV',
         !!document.getElementById('screen-tv') && !document.getElementById('screen-player'),
         screens().join(', '));
+    // Las medidas del agujero van en la raiz: la mascara de la tarjeta lee las mismas
+    // variables. En la capa del agujero a secas, la tarjeta media 0x0, tapaba el video
+    // y solo se veia al enfocarla (por el fondo translucido del foco).
+    check('las medidas del agujero las puede leer la tarjeta', (function () {
+        var root = document.documentElement.style.getPropertyValue('--hole-w');
+        var layer = document.getElementById('backdrop').style.getPropertyValue('--hole-w');
+        // En la raiz si y en la capa no: la mascara de la tarjeta lee de arriba.
+        return !!root && !layer;
+    })(), 'raiz=' + document.documentElement.style.getPropertyValue('--hole-w')
+        + ' capa=' + document.getElementById('backdrop').style.getPropertyValue('--hole-w'));
+
     check('y el preview es ese canal', (function () {
         var preview = window.App.store.state.preview;
         var focusedChannel = focused();
@@ -788,6 +799,19 @@ async function run() {
         const missing = Object.keys(used).filter(function (name) { return !defined[name]; });
         return missing.length === 0 ? true : missing.join(', ');
     })() === true, 'variables sin definir');
+    // Una declaracion colgada (propiedad sin valor y el valor en la linea siguiente)
+    // invalida la regla entera: se cayo asi el anillo de foco de los campos, del
+    // buscador y del interruptor, y nadie se entero porque no rompe nada mas.
+    check('sin declaraciones colgadas en la hoja', (function () {
+        var dangling = code.match(/\b(box-shadow|background|border|color):\s*\n\s*\1:/g);
+        return !dangling;
+    })());
+    check('los campos del formulario enseñan el foco', (function () {
+        var rules = code.match(/\.panel (input|textarea)\.focused[^{]*\{[^}]*\}/g) || [];
+        return rules.length >= 2 && rules.every(function (rule) {
+            return rule.indexOf('inset 0 0 0 2px var(--ring)') !== -1;
+        });
+    })());
     check('nada de blur de fondo (en TV repinta por software)',
         !/backdrop-filter\s*:/.test(code));
     // El fondo del elemento raiz se propaga al lienzo y es opaco: con el preview en
@@ -844,6 +868,31 @@ async function run() {
         !document.getElementById('playerStatus'), 'sigue en pantalla');
     avStore.exitPlayer();
     window.webapis = undefined;
+
+    // El alta por "Detect" es un <textarea>. Si el motor no lo trata como campo, se
+    // come las teclas (Atras te saca de la pantalla, los numeros van al buffer de
+    // canal) y no hay forma de escribir ni de pegar.
+    window.App.store.openAdd();
+    await wait(60);
+    document.querySelector('#addTypes .typecard[data-type="auto"]').click();
+    await wait(120);
+    const area = document.getElementById('field-text');
+    check('la alta por Detect trae un área de texto', !!area && area.tagName === 'TEXTAREA');
+    area.focus();
+    await wait(60);
+    press(10009);
+    await wait(80);
+    check('Atrás con el área de texto enfocada no se sale del alta',
+        window.App.store.state.screen === 'add' && !!document.getElementById('field-text'),
+        window.App.store.state.screen);
+    area.focus();
+    await wait(40);
+    press(53);
+    await wait(60);
+    check('y un número escrito en el área de texto no salta de canal',
+        !window.App.store.state.numBuffer, window.App.store.state.numBuffer);
+    document.getElementById('formCancel').click();
+    await wait(80);
 
     // Al final, que no dependa del estado en el que acabe la sesion.
     var rail = document.querySelector('.rail');

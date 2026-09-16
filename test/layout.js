@@ -74,6 +74,9 @@ window.addEventListener('load', function () {
                 .then(function () {
                     store.openTv();
                     store.openTvCategory('Deportes');
+                    // Un canal elegido: es lo que enciende el agujero del preview.
+                    var view = store.visibleTvCategory();
+                    store.selectPreview(view.items[0]);
                     setTimeout(function () {
                         window.App.tv.set('tvChannels', 0, 0);
                         for (var i = 0; i < ${VISIBLE_ROWS}; i++) {
@@ -81,6 +84,7 @@ window.addEventListener('load', function () {
                             Object.defineProperty(event, 'keyCode', { value: 40 });
                             document.dispatchEvent(event);
                         }
+                        var card = document.querySelector('.browse-preview');
                         var stage = document.getElementById('previewStage');
                         var stageBox = stage.getBoundingClientRect();
                         // El agujero y el filo de arriba solo se ven con el preview en
@@ -107,6 +111,8 @@ window.addEventListener('load', function () {
                             stageRatio: stageBox.height ? stageBox.width / stageBox.height : 0,
                             backdropZ: backdrop.zIndex,
                             cardBackground: card.backgroundColor,
+                            holeWidth: document.documentElement.style.getPropertyValue('--hole-w'),
+                            cardMaskPosition: card.maskPosition || '',
                             cardMask: card.maskComposite || '',
                             cardMaskImage: (card.maskImage || '').indexOf('gradient') !== -1,
                             backdropPosition: backdrop.position,
@@ -163,6 +169,14 @@ function main() {
         check('el escenario del preview es 16:9 (el video no se ve encajado)',
             Math.abs(data.stageRatio - 16 / 9) < 0.02,
             data.stage.join('x') + ' = ' + data.stageRatio.toFixed(3));
+        // El agujero de la tarjeta tiene que estar donde esta el escenario. Con las
+        // medidas puestas solo en la capa del agujero, la tarjeta media 0x0 y su
+        // mascara no recortaba nada: el video quedaba detras de un fondo opaco y solo
+        // se veia al enfocar la columna, por el fondo translucido del foco.
+        check('la tarjeta recorta el video donde está el escenario',
+            parseFloat(data.holeWidth) > 0
+            && data.cardMaskPosition.replace(/0px/g, '').replace(/[\s,]/g, '') !== '',
+            'agujero ' + data.holeWidth + ', máscara de la tarjeta ' + data.cardMaskPosition);
         check('el preview es una sala negra, no la grilla de la app',
             data.cardBackground === 'rgb(0, 0, 0)', data.cardBackground);
         check('y con el canal en marcha se recorta el rectángulo del vídeo (si no, lo taparía)',

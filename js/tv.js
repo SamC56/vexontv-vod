@@ -124,13 +124,23 @@ App.tv = (function () {
         if (!element) return;
         // Un input de fichero se abre; enfocarlo no haría nada.
         if (element.tagName === 'INPUT' && element.type === 'file') element.click();
-        else if (element.tagName === 'INPUT') element.focus();
+        // En un campo, enfocarlo es lo que abre el teclado de la TV y lo que deja
+        // pegar. En un boton, pulsarlo es todo lo que hay que hacer.
+        else if (field(element)) element.focus();
         else element.click();
     }
 
+    // Campo de texto: el <input> y TAMBIEN el <textarea>. Sin el textarea, el motor
+    // seguia comiendose las teclas encima de el y no habia forma de escribir ni de
+    // pegar nada (el alta por "Detect" es justo un textarea).
+    function field(element) {
+        if (!element) return false;
+        return element.tagName === 'TEXTAREA'
+            || (element.tagName === 'INPUT' && element.type !== 'file');
+    }
+
     function typing() {
-        var active = document.activeElement;
-        return !!active && active.tagName === 'INPUT';
+        return field(document.activeElement) && document.activeElement.type !== 'file';
     }
 
     function handle(event) {
