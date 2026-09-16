@@ -1,7 +1,7 @@
 /* ---------------------------------------------------------------- avisos */
 /* El aviso de carga dice que se esta cargando, en que fase esta cada fuente y
    cuanto lleva. Antes era un giro y "Cargando…", que es lo mismo que no decir
-   nada. Lleva el mesh de la casa para no ser un bloque negro. */
+   nada. Lleva el mismo fondo que la app para no ser un bloque negro. */
 .loading {
 	position: fixed;
 	inset: 0;
@@ -9,9 +9,6 @@
 	place-content: center;
 	justify-items: center;
 	gap: 20px;
-	background-color: var(--black);
-	background-image: var(--mesh);
-	background-repeat: no-repeat;
 	z-index: 40;
 }
 

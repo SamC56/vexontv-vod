@@ -601,7 +601,8 @@ async function run() {
     check('la hoja de estilos parsea entera', rules >= 120, rules + ' reglas');
     check('el trio de la identidad está en la hoja',
         ['#febc06', '#cc4207', '#15e9a4'].every(function (hex) { return code.indexOf(hex) !== -1; }));
-    check('hay degradado de marca', code.indexOf('linear-gradient') !== -1 && code.indexOf('radial-gradient') !== -1);
+    check('el degradado de marca lleva los colores de la casa',
+        /linear-gradient\([^)]*var\(--(amber|ember|mint)\)/.test(code));
     // Esta pantalla ya se rompio dos veces por partir texto en varias lineas
     // dentro de su tarjeta: las dos columnas van en una sola linea, siempre.
     check('la superficie de AVPlay se mide en píxeles, no en porcentaje', (function () {

@@ -10,12 +10,38 @@ body {
   overflow: hidden;
 }
 
-/* El fondo ES la identidad: negro OLED y tres luces. Radiales estaticos (nada
-   animado, nada de blur): el WebView lo pinta una vez y no lo vuelve a tocar. */
-body {
+/* El fondo es la grilla de un monitor de video: lineas de 1px cada 64px y una luz
+   cenital. Estatico (el WebView lo pinta una vez), compartido con el aviso de carga
+   para que no sea un bloque negro sin identidad. */
+body,
+.loading {
   background-color: var(--black);
-  background-image: var(--mesh);
-  background-repeat: no-repeat;
+  background-image:
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px),
+    var(--sheen);
+  background-size: var(--grid) var(--grid), var(--grid) var(--grid), 100% 100%;
+  background-repeat: repeat, repeat, no-repeat;
+}
+
+/* Filo de marca: la misma linea de degradado que marca el foco, en el borde de
+   arriba. Identidad en 2px, no en media pantalla de color. */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--grad-line);
+  opacity: 0.55;
+  z-index: 30;
+  pointer-events: none;
+}
+
+body.playing::before { opacity: 0; }
+
+body {
   color: var(--text);
   font-family:
     "SamsungOne",

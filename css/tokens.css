@@ -1,10 +1,11 @@
 /* VexonTV — hoja de estilos
    Punto de vista: software de television de noche, en una sala a oscuras.
 
-   Identidad: cristal sobre OLED. Fondo #050505 con un mesh radial de los tres
-   colores de la casa (ambar → brasa → menta) que se lee como la luz de la
-   habitacion, superficies vantablack con doble bisel (concha + nucleo) y
-   hairlines alfa en lugar de bordes grises. El degradado es la marca; los tres
+   Identidad: cristal sobre OLED. Fondo #050505 con la grilla de un monitor de
+   video y una luz cenital, superficies vantablack con doble bisel (concha +
+   nucleo) y hairlines alfa en lugar de bordes grises. El degradado de la casa
+   (ambar → brasa → menta) no se gasta en manchas de fondo: va en el filo de
+   arriba, en las barras de foco y en las aristas de lo que interrumpe. El degradado es la marca; los tres
    colores siguen teniendo significado estricto cuando son solidos:
      - brasa #cc4207  = EN DIRECTO (luz de tally, convencion broadcast)
      - ambar #febc06  = guardado (favoritos)
@@ -72,25 +73,13 @@
   );
   --on-accent: #080807;
 
-  /* Las tres luces del fondo, en un solo sitio: las lleva el body y tambien el
-	   aviso de carga, que asi no es un bloque negro sin identidad. */
-  --mesh:
-    radial-gradient(
-      58% 44% at 10% 112%,
-      rgba(204, 66, 7, 0.26),
-      transparent 70%
-    ),
-    radial-gradient(
-      44% 34% at 94% -8%,
-      rgba(254, 188, 6, 0.15),
-      transparent 68%
-    ),
-    radial-gradient(
-      38% 32% at 82% 104%,
-      rgba(21, 233, 164, 0.13),
-      transparent 72%
-    );
-
+	/* Fondo: la grilla de un monitor de video, no una nube de colores. El sujeto de
+	   esta app es una tele, asi que el fondo habla de senal: lineas de 1px cada 64px,
+	   una luz cenital muy suave y nada mas. Los colores de la casa no se gastan en
+	   manchas de fondo, se gastan en lo unico que informa: el foco y el estado. */
+	--grid: 64px;
+	--grid-line: rgba(255, 255, 255, .028);
+	--sheen: linear-gradient(180deg, rgba(255, 255, 255, .05), rgba(255, 255, 255, 0) 42%);
   --focus: #fff;
   --glow-mint: rgba(21, 233, 164, 0.3);
   --glow-amber: rgba(254, 188, 6, 0.26);
