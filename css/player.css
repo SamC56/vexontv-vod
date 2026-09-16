@@ -4,7 +4,10 @@
   inset: 0;
   z-index: 10;
   display: block;
-  background: var(--black);
+  /* Sin fondo a proposito: el plano de video de AVPlay puede ir por detras del
+     webview, y una capa opaca aqui lo tapa (se oiria y no se veria). El negro lo
+     pone el body. */
+  background: transparent;
 }
 
 /* Superficie de AVPlay: la TV pinta el video AQUI (no en el <video>), asi que tiene
@@ -24,7 +27,7 @@
 #videoPlayer {
   width: 100%;
   height: 100%;
-  background: var(--black);
+  background: transparent;
 }
 
 /* Mientras el canal arranca: en vez de negro, que se esta abriendo. */
@@ -135,6 +138,14 @@
 }
 
 /* Lo único del reproductor que se permite el degradado: es el titular. */
+/* Motor de reproduccion, discreto: sin consola en la TV, este dato es la unica
+   forma de saber si esta tirando de AVPlay o del <video>. */
+.ov-engine {
+  padding-left: 12px;
+  letter-spacing: 0.1em;
+  color: var(--text-3);
+}
+
 .overlay h1 {
   font-size: clamp(40px, 3.3vw, 60px);
   line-height: 1.03;

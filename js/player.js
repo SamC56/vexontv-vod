@@ -7,11 +7,15 @@ App.player = (function () {
     // Reading webapis.avplay can throw when the privilege was not granted (the
     // package then installs as Public but still calls nothing): a throw here
     // would take the whole app down, so it is probed defensively.
-    var AVPLAY = null;
-    try {
-        if (typeof webapis !== 'undefined' && webapis.avplay) AVPLAY = webapis.avplay;
-    } catch (error) {
-        AVPLAY = null;
+    // Se pregunta a la TV cada vez, no una sola vez al cargar: si webapis.avplay
+    // aparece despues (o el privilegio tarda), capturarlo al principio nos dejaba
+    // sin AVPlay para siempre y todo caia al <video>.
+    function avplay() {
+        try {
+            return (typeof webapis !== 'undefined' && webapis.avplay) ? webapis.avplay : null;
+        } catch (error) {
+            return null;
+        }
     }
     var video = null;
     var surface = null;
@@ -52,10 +56,10 @@ App.player = (function () {
         }
     }
 
-    function hardware() { return !!AVPLAY; }
+    function hardware() { return !!avplay(); }
 
     function resize() {
-        if (AVPLAY) setRect();
+        if (avplay()) setRect();
     }
 
     // La doc de AVPlay es explicita: el rect se mide SIEMPRE en la rejilla de
@@ -64,12 +68,13 @@ App.player = (function () {
     // completa por CSS).
     function setRect() {
         if (!surface) surface = document.getElementById('avPlayer');
-        AVPLAY.setDisplayRect(0, 0, 1920, 1080);
+        avplay().setDisplayRect(0, 0, 1920, 1080);
     }
 
     function state() {
-        if (AVPLAY) {
-            try { return AVPLAY.getState(); } catch (error) { return 'IDLE'; }
+        var AV = avplay();
+        if (AV) {
+            try { return AV.getState(); } catch (error) { return 'IDLE'; }
         }
         if (!video || !video.src) return 'IDLE';
         return video.paused ? 'PAUSED' : 'PLAYING';
@@ -83,7 +88,7 @@ App.player = (function () {
     }
 
     function checkSurface() {
-        if (!AVPLAY) return true;
+        if (!avplay()) return true;
         if (!surface) surface = document.getElementById('avPlayer');
         if (!surface) console.error('AVPlay sin <object type="application/avplayer">: se oira pero no se vera');
         return !!surface;
@@ -118,11 +123,12 @@ App.player = (function () {
 
     function stop() {
         clearStart();
-        if (AVPLAY) {
+        var AV = avplay();
+        if (AV) {
             try {
-                if (state() === 'PLAYING' || state() === 'PAUSED') AVPLAY.stop();
+                if (state() === 'PLAYING' || state() === 'PAUSED') AV.stop();
             } catch (error) { /* nothing playing */ }
-            try { AVPLAY.close(); } catch (error) { /* already closed */ }
+            try { AV.close(); } catch (error) { /* already closed */ }
         }
         clearVideo();
     }
@@ -142,20 +148,30 @@ App.player = (function () {
         stop();
         if (!url) return;
 
-        if (AVPLAY) {
+        // Red de seguridad: si a los 4 s no ha llegado ningun evento, se quita el
+        // aviso de "abriendo" igual. Un aviso pegado encima del video (un circulo
+        // en medio de la pantalla) es peor que no avisar.
+        setTimeout(started, 4000);
+
+        var AV = avplay();
+        if (AV) {
             checkSurface();
             try {
-                AVPLAY.open(url);
+                AV.open(url);
                 setRect();
                 // Letterbox: 4:3 channels keep their shape instead of stretching.
-                AVPLAY.setDisplayMethod('PLAYER_DISPLAY_MODE_LETTER_BOX');
-                AVPLAY.setListener({
+                AV.setDisplayMethod('PLAYER_DISPLAY_MODE_LETTER_BOX');
+                AV.setListener({
                     onerror: function (error) { fail(error); },
+                    // En directo, 'started' tambien por buffering: prepareAsync puede
+                    // tardar o no llegar nunca y dejaba el aviso de "abriendo" fijo.
+                    onbufferingcomplete: function () { started(); },
+                    oncurrentplaytime: function () { started(); },
                     onstreamcompleted: function () { if (handlers.onEnd) handlers.onEnd(); }
                 });
                 waitForStart();
-                AVPLAY.prepareAsync(function () {
-                    AVPLAY.play();
+                AV.prepareAsync(function () {
+                    AV.play();
                     started();
                 }, function (error) { fail(error); });
                 return;
@@ -170,10 +186,11 @@ App.player = (function () {
     }
 
     function toggle() {
-        if (AVPLAY) {
+        var AV = avplay();
+        if (AV) {
             var current = state();
-            if (current === 'PLAYING') { AVPLAY.pause(); return 'PAUSED'; }
-            if (current === 'PAUSED') { AVPLAY.play(); return 'PLAYING'; }
+            if (current === 'PLAYING') { AV.pause(); return 'PAUSED'; }
+            if (current === 'PAUSED') { AV.play(); return 'PLAYING'; }
             return current;
         }
         if (!video || !video.src) return 'IDLE';

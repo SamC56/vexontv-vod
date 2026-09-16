@@ -56,7 +56,7 @@ App.uiScreens = App.uiScreens || {};
             <video id="videoPlayer" ref=${videoRef} playsinline></video>
             <!-- AVPlay no dibuja en el <video>: pinta en un object de este tipo, y sin el
                  se oye el canal pero no se ve. Va despues del video y encima. -->
-            <object class="av-surface" id="avPlayer" type="application/avplayer"></object>
+            <object class="av-surface" id="avPlayer" type="application/avplayer" width="1920" height="1080"></object>
             ${state.playStatus === 'opening' ? html`<div class="player-status" id="playerStatus">
                 <div class="spinner"></div>
                 <p class="player-status-text">Opening “${channel.name}”…</p>
@@ -76,7 +76,8 @@ App.uiScreens = App.uiScreens || {};
             </div>` : null}
             <div class=${'overlay' + (overlay && !state.playError ? ' visible' : '')} id="playerOverlay">
                 <div class="ov-info">
-                    <p class="ov-live" id="ovLive"><span class="dot"></span>Live</p>
+                    <p class="ov-live" id="ovLive"><span class="dot"></span>Live<span
+                        class="ov-engine" id="ovEngine">${player.hardware() ? 'AVPlay' : 'HTML5'}</span></p>
                     <h1 id="ovName">${channel.name}</h1>
                     <p class="ov-group" id="ovGroup">${channel.group || ''}</p>
                     ${program ? html`<p class="ov-program" id="ovProgram">

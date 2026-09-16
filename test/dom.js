@@ -284,6 +284,9 @@ async function run() {
         var surface = document.getElementById('avPlayer');
         return !!surface && surface.getAttribute('type') === 'application/avplayer';
     })());
+    check('y dice qué motor reproduce (sin consola en la TV no hay otra forma)',
+        !!document.getElementById('ovEngine') && /AVPlay|HTML5/.test(document.getElementById('ovEngine').textContent),
+        document.getElementById('ovEngine') ? document.getElementById('ovEngine').textContent : '(nada)');
     check('sale el programa de ahora', !!document.getElementById('ovProgram')
         && document.getElementById('ovProgram').textContent.indexOf('Programa de prueba') !== -1);
     press(403);
