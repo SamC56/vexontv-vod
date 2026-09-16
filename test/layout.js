@@ -72,6 +72,7 @@ window.addEventListener('load', function () {
             store.state.lists.slice().forEach(function (list) { store.removeList(list.id); });
             store.addList({ id: 'layout', name: 'Layout', kind: 'm3u', source: 'text', text: '${m3u().replace(/\n/g, '\\n')}' })
                 .then(function () {
+                    store.openTv();
                     store.openTvCategory('Deportes');
                     setTimeout(function () {
                         window.App.tv.set('tvChannels', 0, 0);

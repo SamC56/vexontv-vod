@@ -279,15 +279,12 @@ check('la TV de una fuente solo ofrece sus categorías', (function () {
     return store.state.tvSource === 'l1' && view.rows.length === 1 && view.rows[0].name === 'España'
         && view.rows[0].count === 2 && /^panel · /.test(view.label);
 })(), JSON.stringify(store.tvCategories().rows));
-check('y dentro solo sus canales', (function () {
+check('elegir una categoría llena la columna de canales, sin cambiar de pantalla', (function () {
     store.openTvCategory('España');
     var view = store.visibleTvCategory();
-    return view.total === 2 && view.zone === 'tvChannels';
-})(), JSON.stringify(store.visibleTvCategory()));
-check('volver de la categoría no pierde la fuente', (function () {
-    store.backToTv();
-    return store.state.screen === 'tv' && store.state.tvSource === 'l1';
-})());
+    return store.state.screen === 'tv' && store.state.catName === 'España'
+        && view.total === 2 && view.zone === 'tvChannels';
+})(), store.state.screen + ' / ' + JSON.stringify(store.visibleTvCategory()));
 check('la TV de todas las fuentes vuelve a juntarlas', (function () {
     store.openTv();
     return store.state.tvSource === null && store.tvCategories().rows.length === 2;
@@ -304,21 +301,20 @@ store.play(store.state.channels.l1[0], 'l1', store.state.channels.l1);
 check('recientes guarda lo último visto sin repetir', store.state.recent.length === 2 && store.state.recent[0].url === 'u1');
 store.exitPlayer();
 
-check('la categoría tiene su propia pantalla con sus canales', (function () {
+check('elegir categoría llena la columna de canales sin salir de la TV', (function () {
     store.openTvCategory('España');
     var view = store.visibleTvCategory();
-    return store.state.screen === 'tvcat' && store.state.catName === 'España'
+    return store.state.screen === 'tv' && store.state.catName === 'España'
         && view.total === 2 && view.zone === 'tvChannels';
-})(), JSON.stringify(store.visibleTvCategory()));
-check('el salto por número no existe en la pantalla de categorías', (function () {
-    store.openTv();
-    store.takeFocus();                      // el foco que pide la propia pantalla
+})(), store.state.screen + ' ' + JSON.stringify(store.visibleTvCategory()));
+check('el salto por número funciona en la TV: los canales están en la columna del medio', (function () {
+    store.openTvCategory('España');
+    store.takeFocus();
     store.pushDigit('2');
     store.commitDigits();
     var request = store.takeFocus();
-    var message = store.state.toast && store.state.toast.message;
-    return request === null && /No channel 2/.test(message || '');
-})());
+    return !!request && request.zone === 'tvChannels' && request.row === 1;
+})(), JSON.stringify(store.takeFocus()));
 store.openTvCategory('España');
 store.pushDigit('2');
 check('el buffer de canal se va formando', store.state.numBuffer === '2');

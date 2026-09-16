@@ -302,11 +302,21 @@ async function run() {
         document.getElementById('tvMeta').textContent.indexOf('sample') === 0,
         document.getElementById('tvMeta').textContent);
 
-    // Dentro de una categoría: canales con número, "ahora" y reproductor.
+    // Tres columnas: categorias, canales y preview. Todo en la misma pantalla.
+    // Estado vacio del preview: sin canal elegido. Se limpia y se repinta sin tocar
+    // el foco (cualquier canal enfocado pondria ya uno).
+    window.App.store.state.preview = null;
+    window.App.store.setSearch('tv', '');
+    await wait(120);
+    check('sin canal elegido, el preview es el estado vacío',
+        !!document.querySelector('#tvPreview #previewEmpty'));
+    check('las columnas de canales y preview son la misma pantalla',
+        onlyScreen('screen-tv'), screens().join(', '));
+
     document.querySelector('#tvCats .tvcat[data-group="Deportes"]').click();
     await wait(150);
-    check('la categoría abre su pantalla', !!document.getElementById('screen-tvcat'));
-    check('y es la única montada', onlyScreen('screen-tvcat'), screens().join(', '));
+    check('elegir categoría llena la columna del medio, sin cambiar de pantalla',
+        !!document.getElementById('screen-tv') && !document.getElementById('screen-tvcat'));
     check('con sus canales', document.querySelectorAll('#tvChannels .channel').length === 2,
         document.querySelectorAll('#tvChannels .channel').length + ' canales');
     check('el canal con logo pone su imagen de fondo en la miniatura',
@@ -321,17 +331,23 @@ async function run() {
         !!document.querySelector('#tvChannels .thumb-letter'));
     check('las filas llevan número de canal',
         document.querySelector('#tvChannels .num').textContent === '1');
-    checkClasses('la pantalla de categoría usa las clases que estiliza el CSS', [
-        ['#tvcatSearch', 'buscador'], ['#tvChannels .channel', 'fila de canal'],
+    checkClasses('las tres columnas usan las clases que estiliza el CSS', [
+        ['.browse .browse-cats', 'columna de categorías'], ['.browse .browse-channels', 'columna de canales'],
+        ['.browse .browse-preview', 'columna del preview'], ['#tvChannels .channel', 'fila de canal'],
         ['#tvChannels .num', 'número'], ['#tvChannels .thumb', 'miniatura']
     ]);
+    check('al elegir categoría, el preview enseña el canal enfocado',
+        !!document.querySelector('#tvPreview #previewCard'),
+        document.querySelector('#tvPreview .preview-name') ? document.querySelector('#tvPreview .preview-name').textContent : '(vacío)');
+    check('con su nombre y su guía',
+        !!document.querySelector('#tvPreview .preview-guide')
+        && document.querySelector('#tvPreview .preview-open').textContent.length > 0);
 
     press(40);
     await wait(90);
-    check('la fila enfocada pide su programa',
-        !!document.querySelector('#tvChannels .row-now')
-        && document.querySelector('#tvChannels .row-now').textContent.indexOf('Programa de prueba') !== -1,
-        document.querySelector('#tvChannels .row-now') ? document.querySelector('#tvChannels .row-now').textContent : '(sin EPG)');
+    check('la fila enfocada pide su programa (y sale debajo del nombre)',
+        !!focused() && focused().textContent.indexOf('Programa de prueba') !== -1,
+        focused() ? focused().textContent.slice(0, 60) : '(nada)');
 
     press(50);
     await wait(20);
@@ -343,16 +359,20 @@ async function run() {
         focused() ? focused().className : '(nada)');
     check('al saltar se limpia el número', !document.getElementById('numBuffer'));
 
-    focused().click();
-    await wait(90);
-    check('el canal abre el reproductor', !!document.getElementById('screen-player'));
+    // OK encima del preview abre a pantalla completa
+    window.App.tv.set('tvPreview', 0, 0);
+    await wait(60);
+    press(13);
+    await wait(120);
+    check('OK encima del preview abre a pantalla completa',
+        !!document.getElementById('screen-player'), screens().join(', '));
     check('y es la única montada', onlyScreen('screen-player'), screens().join(', '));
     check('el reproductor tiene la superficie donde AVPlay pinta el vídeo', (function () {
         var surface = document.getElementById('avPlayer');
         return !!surface && surface.getAttribute('type') === 'application/avplayer';
     })());
     check('reproduciendo, la pantalla de detrás no está en el DOM',
-        !document.getElementById('screen-tvcat') && !document.getElementById('screen-tv'));
+        !document.getElementById('screen-tv'));
     check('y el fondo de la app deja de pintar (si no, tapa el plano de vídeo)',
         document.body.classList.contains('playing'));
     check('y dice qué motor reproduce (sin consola en la TV no hay otra forma)',
@@ -423,11 +443,12 @@ async function run() {
 
     press(10009);
     await wait(80);
-    check('volver sale del reproductor', !!document.getElementById('screen-tvcat'));
+    check('volver sale del reproductor, a la TV con las tres columnas',
+        !!document.getElementById('screen-tv') && !!document.querySelector('.browse-preview'));
     press(10009);
     await wait(80);
-    check('y otra vez vuelve a la TV de la fuente', window.App.store.state.tvSource !== null
-        && !!document.getElementById('screen-tv'));
+    check('y otro Atrás vuelve a fuentes', window.App.store.state.screen === 'home',
+        'screen=' + window.App.store.state.screen);
 
     // TV: primero las categorías filtradas, y dentro de una, sus canales.
     document.getElementById('navTv').click();
@@ -446,8 +467,9 @@ async function run() {
     press(37);
     await wait(60);
     check('y con la izquierda se vuelve al botón', !!focused() && focused().id === 'catsBtn');
-    check('la TV lista categorías, no canales sueltos',
-        document.querySelectorAll('#tvCats .tvcat').length === 4 && document.querySelectorAll('#screen-tv .channel').length === 0,
+    check('la TV son tres columnas: categorías, canales y preview',
+        document.querySelectorAll('#tvCats .tvcat').length === 4
+        && !!document.querySelector('.browse-channels') && !!document.querySelector('.browse-preview'),
         document.querySelectorAll('#tvCats .tvcat').length + ' categorías');
     check('hay botón de categorías', !!document.getElementById('catsBtn'));
     checkClasses('la TV usa las clases que estiliza el CSS', [
@@ -476,10 +498,9 @@ async function run() {
 
     document.querySelector('#tvCats .tvcat[data-group="España"]').click();
     await wait(120);
-    check('dentro de la categoría está su pantalla', !!document.getElementById('screen-tvcat'));
-    check('el título es la categoría', document.getElementById('tvcatTitle').textContent === 'España',
-        document.getElementById('tvcatTitle').textContent);
-    check('y lista sus canales', document.querySelectorAll('#tvChannels .channel').length === 3,
+    check('elegir categoría llena la columna del medio', document.querySelectorAll('#tvChannels .channel').length > 0,
+        document.querySelectorAll('#tvChannels .channel').length + ' canales');
+    check('y lista los canales de esa categoría', document.querySelectorAll('#tvChannels .channel').length === 3,
         document.querySelectorAll('#tvChannels .channel').length + ' canales');
     check('no son todos los canales, solo los de la categoría',
         document.querySelectorAll('#tvChannels .channel').length < 9);
@@ -487,24 +508,18 @@ async function run() {
     press(40);
     await wait(80);
     check('la fila enfocada de la categoría pide su programa',
-        !!document.querySelector('#tvChannels .row-now'), 'sin EPG');
+        !!focused() && focused().textContent.indexOf('Programa de prueba') !== -1,
+        focused() ? focused().textContent.slice(0, 60) : '(nada)');
 
-    // La izquierda sube de nivel: de los canales a las categorias, en la misma
-    // categoria de la que venimos (antes se iba al rail y no habia vuelta).
+    // La izquierda va de los canales a las categorias (las columnas de al lado).
     press(37);
     await wait(100);
-    check('la izquierda dentro de la categoría vuelve a las categorías', !!document.getElementById('screen-tv'));
-    check('y deja el foco en la categoría de la que veníamos',
-        !!focused() && focused().dataset.group === 'España',
-        focused() ? (focused().dataset.group || focused().id) : '(nada)');
+    check('la izquierda, de los canales a las categorías',
+        !!focused() && focused().classList.contains('tvcat'),
+        focused() ? focused().className : '(nada)');
 
     document.querySelector('#tvCats .tvcat[data-group="España"]').click();
     await wait(150);
-    press(10009);
-    await wait(100);
-    check('Atrás vuelve a las categorías', !!document.getElementById('screen-tv'));
-    check('sin perder la lista de categorías', document.querySelectorAll('#tvCats .tvcat').length === 4);
-
     // El panel de categorías: se silencia una y se guarda.
     document.getElementById('catsBtn').click();
     await wait(100);

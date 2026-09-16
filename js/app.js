@@ -21,7 +21,6 @@ var App = App || {};
                 var screen = store.state.screen;
                 if (screen === 'home') tv.set('types', 0, 0);
                 else if (screen === 'tv') tv.set('tvActions', 0, 0);
-                else if (screen === 'tvcat') tv.set('tvcatActions', 0, 0);
                 else if (screen === 'recents') tv.set('recentsSearch', 0, 0);
                 else if (screen === 'favs') tv.set('favsSearch', 0, 0);
                 else if (screen === 'cats') tv.set('catActions', 0, 0);
@@ -106,23 +105,22 @@ var App = App || {};
         zone('tvCats', '#tvCats .tvcat', {
             onEdge: function (dir) {
                 if (dir === 'up') tv.set('tvSearch', 0, 0);
+                else if (dir === 'right') tv.set('tvChannels', 0, 0);
                 else if (dir === 'left') tv.set('rail', 0, 0);
-            }
-        });
-
-        zone('tvcatSearch', '#tvcatSearch', {
-            onEdge: function (dir) {
-                if (dir === 'up' || dir === 'left') tv.set('tvcatActions', 0, 0);
-                else if (dir === 'down') tv.set('tvChannels', 0, 0);
             }
         });
 
         zone('tvChannels', '#tvChannels .channel', {
             onEdge: function (dir) {
-                // Izquierda sube de nivel (vuelve a las categorias), como en
-                // cualquier TV. Antes saltaba al rail y no habia forma de volver.
-                if (dir === 'left') store.backToTv();
-                else if (dir === 'up') tv.set('tvcatSearch', 0, 0);
+                if (dir === 'left') tv.set('tvCats', 0, 0);
+                else if (dir === 'right') tv.set('tvPreview', 0, 0);
+                else if (dir === 'up') tv.set('tvSearch', 0, 0);
+            }
+        });
+
+        zone('tvPreview', '#tvPreview', {
+            onEdge: function (dir) {
+                if (dir === 'left') tv.set('tvChannels', 0, 0);
             }
         });
 
@@ -228,7 +226,6 @@ var App = App || {};
         if (store.state.confirm) { store.closeConfirm(); return true; }
         if (store.state.screen === 'player') { store.exitPlayer(); return true; }
         if (store.state.screen === 'edit') { store.goHome(); return true; }
-        if (store.state.screen === 'tvcat') { store.backToTv(); return true; }
         if (store.state.screen !== 'home') { store.goHome(); return true; }
         try { tizen.application.getCurrentApplication().exit(); } catch (error) { /* no es Tizen */ }
         return true;

@@ -14,7 +14,6 @@ App.ui = (function () {
     var Rail = kit.Rail;
     var Home = screens.home;
     var TvScreen = screens.tv;
-    var TvCategoryScreen = screens.tvcat;
     var Recents = screens.recents;
     var Favs = screens.favs;
     var Categories = screens.cats;
@@ -42,7 +41,6 @@ App.ui = (function () {
             <main class="main">
                 ${!playing && state.screen === 'home' ? html`<${Home} />` : null}
                 ${!playing && state.screen === 'tv' ? html`<${TvScreen} />` : null}
-                ${!playing && state.screen === 'tvcat' ? html`<${TvCategoryScreen} />` : null}
                 ${!playing && state.screen === 'recents' ? html`<${Recents} />` : null}
                 ${!playing && state.screen === 'favs' ? html`<${Favs} />` : null}
                 ${!playing && state.screen === 'cats' ? html`<${Categories} />` : null}

@@ -73,13 +73,17 @@
   );
   --on-accent: #080807;
 
-	/* Fondo: la grilla de un monitor de video, no una nube de colores. El sujeto de
+  /* Fondo: la grilla de un monitor de video, no una nube de colores. El sujeto de
 	   esta app es una tele, asi que el fondo habla de senal: lineas de 1px cada 64px,
 	   una luz cenital muy suave y nada mas. Los colores de la casa no se gastan en
 	   manchas de fondo, se gastan en lo unico que informa: el foco y el estado. */
-	--grid: 64px;
-	--grid-line: rgba(255, 255, 255, .022);
-	--sheen: linear-gradient(180deg, rgba(253, 226, 2, .05), rgba(255, 255, 255, 0) 42%);
+  --grid: 64px;
+  --grid-line: rgba(255, 255, 255, 0.022);
+  --sheen: linear-gradient(
+    180deg,
+    rgba(253, 226, 2, 0.07),
+    rgba(255, 255, 255, 0) 42%
+  );
   --focus: #fff;
   /* Anillo de foco: duro, de 1px. Con el fondo de grilla, un halo difuminado
      desentona; el foco se marca con linea y superficie, como el resto del sistema. */

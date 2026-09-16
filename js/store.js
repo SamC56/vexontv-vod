@@ -61,6 +61,8 @@ App.store = (function () {
         playing: null,
         // Panel de zapeo sobre el video: se abre con OK mientras se ve algo.
         zapOpen: false,
+        // Canal seleccionado en el navegador de la TV: es lo que enseña el preview.
+        preview: null,
         zapCategory: '',
         aspect: 'fit',
         // 'idle' | 'opening' | 'playing' | 'error': lo que se ve en el reproductor
@@ -160,7 +162,6 @@ App.store = (function () {
 
     function zoneFor(screen) {
         if (screen === 'tv') return 'tvCats';
-        if (screen === 'tvcat') return 'tvChannels';
         if (screen === 'recents') return 'recentsList';
         if (screen === 'favs') return 'favsList';
         if (screen === 'home') return 'sources';
@@ -666,10 +667,19 @@ App.store = (function () {
     }
 
     // Una categoria de TV: los canales de esa categoria, de todas las fuentes.
+    // En el layout de tres columnas, elegir categoria no cambia de pantalla: mueve
+    // la columna de canales y lleva el foco alli.
     function openTvCategory(name) {
-        state.search.tvcat = '';
-        set({ screen: 'tvcat', catName: name });
-        focus('tvcatSearch');
+        set({ catName: name });
+        focus('tvChannels', 0, 0);
+    }
+
+    // El canal que se esta mirando en la lista (el preview). No reproduce nada: la
+    // ficha se pinta con su logo y su guia, y OK la abre a pantalla completa.
+    function selectPreview(channel) {
+        if (!channel || !channel.url) return;
+        if (state.preview && state.preview.url === channel.url) return;
+        set({ preview: channel });
     }
 
     function openRecents() {
@@ -849,6 +859,8 @@ App.store = (function () {
         loadProgramFor(channel);
         // En el panel de zapeo, el canal que se enfoca es el que se ve.
         if (state.zapOpen && element.classList.contains('zapch')) zapTo(channel);
+        // En el navegador de la TV, el canal enfocado es el que enseña el preview.
+        if (state.screen === 'tv' && element.classList.contains('channel')) selectPreview(channel);
     }
 
     // ------------------------------------------------------------------ reproducción
@@ -866,6 +878,9 @@ App.store = (function () {
         state.zapIndex = Math.max(0, state.zapping.indexOf(channel));
         state.nowProgram = programOf(channel);
         state.nextProgram = nextOf(channel);
+        // al abrir a pantalla completa, el preview pasa a ser ese canal: al volver
+        // con Atras la ficha es la del que estabas viendo
+        state.preview = channel;
         pushRecent(channel, listId);
 
         // Stalker no trae la URL en el catálogo: se pide al vuelo y se guarda en
@@ -1132,7 +1147,7 @@ App.store = (function () {
             if (scope && channel.listId !== scope) return false;
             return (channel.group || 'Otros') === state.catName;
         });
-        var result = view(channels, 'tvcat', { zone: 'tvChannels', empty: 'This category has no channels left.' });
+        var result = view(channels, 'tvchannels', { zone: 'tvChannels', empty: 'This category has no channels left.' });
         result.label = formatCount(result.total) + (result.total === 1 ? ' channel' : ' channels') + ' in ' + state.catName;
         if (result.total > MAX_TILES) result.label += ' · ' + formatCount(MAX_TILES) + ' shown, refine your search';
         return result;
@@ -1159,7 +1174,9 @@ App.store = (function () {
     function currentView() {
         // La pantalla TV ya no tiene canales sueltos: el salto por numero solo
         // tiene sentido en las pantallas que si los listan.
-        if (state.screen === 'tvcat') return visibleTvCategory();
+        // El salto por numero funciona en el navegador de la TV: los canales estan
+        // en la columna del medio.
+        if (state.screen === 'tv') return visibleTvCategory();
         if (state.screen === 'recents') return visibleRecents();
         if (state.screen === 'favs') return visibleFavorites();
         return null;
@@ -1246,6 +1263,7 @@ App.store = (function () {
         tvCategories: tvCategories,
         visibleTvCategory: visibleTvCategory,
         openTvCategory: openTvCategory,
+        selectPreview: selectPreview,
         openSource: openSource,
         backToTv: backToTv,
         loadingRows: loadingRows,

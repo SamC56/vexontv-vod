@@ -13,7 +13,7 @@ https://panel.example/live/user/pass/2.ts
 https://panel.example/live/user/pass/3.ts
 #EXTINF:-1 tvg-logo="" group-title="Deportes",DAZN 1
 https://panel.example/live/user/pass/4.ts
-#EXTINF:-1 tvg-logo="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27300%27 height=%27100%27%3E%3Crect width=%27300%27 height=%27100%27 fill=%27%23febc06%27/%3E%3C/svg%3E" group-title="Deportes",Movistar Deportes
+#EXTINF:-1 tvg-logo="https://example.com/dazn.png" group-title="Deportes",Movistar Deportes
 https://panel.example/live/user/pass/5.ts
 #EXTINF:-1 tvg-logo="" group-title="Noticias",24h
 https://panel.example/live/user/pass/6.ts

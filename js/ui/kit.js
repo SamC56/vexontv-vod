@@ -88,7 +88,7 @@ App.uiKit = (function () {
     function Rail(props) {
         var items = [
             { id: 'navHome', label: 'Sources', icon: iconList, screens: ['home'], action: function () { store.goHome(); } },
-            { id: 'navTv', label: 'TV', icon: iconTv, screens: ['tv', 'tvcat', 'cats'], action: function () { store.openTv(); } },
+            { id: 'navTv', label: 'TV', icon: iconTv, screens: ['tv', 'cats'], action: function () { store.openTv(); } },
             { id: 'navRecents', label: 'Recent', icon: iconClock, screens: ['recents'], action: function () { store.openRecents(); } },
             { id: 'navFavs', label: 'Favorites', icon: iconStar, screens: ['favs'], action: function () { store.openFavorites(); } }
         ];
@@ -119,9 +119,10 @@ App.uiKit = (function () {
             </span>
             <span class="row-main">
                 <span class="row-name">${channel.name}</span>
-                ${props.showGroup ? html`<span class="row-sub">${channel.group || ''}</span>` : null}
+                ${props.detail && now ? html`<span class="row-sub">${now}</span>`
+                    : (props.showGroup ? html`<span class="row-sub">${channel.group || ''}</span>` : null)}
             </span>
-            ${now ? html`<span class="row-now">${now}</span>` : null}
+            ${!props.detail && now ? html`<span class="row-now">${now}</span>` : null}
             ${props.saved ? html`<span class="saved">\u2605</span>` : null}
         </button>`;
     }
@@ -136,6 +137,7 @@ App.uiKit = (function () {
             ${view.items.map(function (channel, index) {
                 return html`<${ChannelRow} key=${channel.url || channel.cmd || index} channel=${channel}
                     listId=${listOf(channel)} number=${index + 1} source=${view.items} showGroup=${view.showGroup}
+                    detail=${props.detail}
                     saved=${store.isFavorite(listOf(channel), channel.url)} />`;
             })}
         </div>`;
@@ -216,6 +218,7 @@ App.uiKit = (function () {
         ADD_TYPES: ADD_TYPES,
         FIELD_SETS: FIELD_SETS,
         clock: clock,
+        svg: svg,
         initial: initial,
         logoStyle: logoStyle,
         programText: programText,

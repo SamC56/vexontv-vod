@@ -325,3 +325,102 @@
     transform: scale(0.94);
   }
 }
+
+/* ---------------------------------------------------------------- navegador TV
+   Tres columnas, como un reproductor de escritorio: categorias, canales de la
+   categoria elegida y preview. El preview no reproduce (eso es OK, a pantalla
+   completa): enseña el logo, la guia y el siguiente. */
+.browse {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  /* minmax(0, 1fr) en la fila, igual que en .app: con una fila auto, la columna de
+     canales crece con su contenido y no scrollea nunca. */
+  grid-template-columns: minmax(220px, 19%) minmax(380px, 34%) 1fr;
+  grid-template-rows: minmax(0, 1fr);
+  gap: 22px;
+}
+
+/* Las categorias scrollean ellas mismas; la columna de canales es un flex para que
+   scrollee la lista de dentro (.rows), que es quien sabe hacerlo. */
+.browse-cats {
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.browse-channels {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.row.tvcat.selected .row-name { color: var(--text); }
+.row.tvcat.selected {
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.browse-preview {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 0;
+  border-radius: var(--r-xl);
+  box-shadow: inset 0 0 0 1px var(--line);
+  background: rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+}
+
+.preview-empty {
+  display: grid;
+  justify-items: center;
+  gap: 18px;
+  padding: 30px;
+  text-align: center;
+}
+
+.preview-icon { color: var(--text-3); opacity: 0.6; }
+.preview-hint { font-size: 19px; color: var(--text-3); }
+
+.preview-card {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 30px;
+  text-align: center;
+}
+
+.preview-logo {
+  display: grid;
+  place-items: center;
+  width: 240px;
+  height: 140px;
+  margin-bottom: 8px;
+  border-radius: var(--r-md);
+  background-color: rgba(0, 0, 0, 0.5);
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.preview-letter { font-size: 56px; font-weight: 650; color: var(--text-3); }
+.preview-name { font-size: 30px; font-weight: 650; letter-spacing: -0.02em; max-width: 24ch; }
+.preview-group { font-size: 18px; color: var(--text-3); }
+.preview-guide { width: min(46ch, 100%); margin-top: 10px; text-align: left; }
+.preview-program { font-size: 19px; color: var(--text); }
+.preview-next { font-size: 17px; color: var(--text-2); max-width: 46ch; }
+
+.preview-open {
+  margin-top: 18px;
+  font-size: 16px;
+  letter-spacing: 0.04em;
+  color: var(--text-3);
+}
+
+.browse-preview:focus,
+.browse-preview.focused {
+  box-shadow: inset 0 0 0 1px var(--ring);
+  background: rgba(0, 0, 0, 0.5);
+}
