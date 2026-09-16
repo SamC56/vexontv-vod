@@ -67,10 +67,10 @@ App.uiKit = (function () {
     }
 
 
-    // Un logo que no carga se quita y deja ver la letra que hay debajo: son logos
-    // de proveedor y caen a diario.
-    function dropLogo(event) {
-        event.target.remove();
+    // La miniatura va como fondo y no como <img>: asi es como se veia bien. La letra
+    // del canal va de hijo, asi que un logo que no carga la deja ver igual.
+    function logoStyle(url) {
+        return url ? { backgroundImage: 'url(' + JSON.stringify(url) + ')' } : null;
     }
 
     function clock(value) {
@@ -114,9 +114,8 @@ App.uiKit = (function () {
         function open() { store.play(channel, listId, props.source); }
         return html`<button class="row channel" data-url=${channel.url} data-list=${listId} tabindex="-1" onClick=${open}>
             <span class="num">${props.number}</span>
-            <span class="thumb">
-                ${channel.logo ? html`<img class="thumb-img" src=${channel.logo} alt=""
-                    onError=${dropLogo} />` : html`<span class="thumb-letter">${initial(channel.name)}</span>`}
+            <span class="thumb" style=${logoStyle(channel.logo)}>
+                ${channel.logo ? null : html`<span class="thumb-letter">${initial(channel.name)}</span>`}
             </span>
             <span class="row-main">
                 <span class="row-name">${channel.name}</span>
@@ -218,6 +217,7 @@ App.uiKit = (function () {
         FIELD_SETS: FIELD_SETS,
         clock: clock,
         initial: initial,
+        logoStyle: logoStyle,
         programText: programText,
         iconCheck: iconCheck,
         Rail: Rail,

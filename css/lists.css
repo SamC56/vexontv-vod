@@ -108,15 +108,6 @@
   overflow: hidden;
 }
 
-/* El logo se pinta como imagen con contain, igual que antes con el fondo: llena la
-   caja sin deformar, que es como mas se ven. (Con scale-down no se ampliaban los
-   pequenos, pero quedaban mas apagados; se probo y se volvio a esto.) */
-.thumb-img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
-
 .thumb-letter {
   font-size: 19px;
   font-weight: 650;

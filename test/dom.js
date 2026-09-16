@@ -309,9 +309,14 @@ async function run() {
     check('y es la única montada', onlyScreen('screen-tvcat'), screens().join(', '));
     check('con sus canales', document.querySelectorAll('#tvChannels .channel').length === 2,
         document.querySelectorAll('#tvChannels .channel').length + ' canales');
-    check('el canal con logo pinta su miniatura como imagen (y no revienta al pintar)',
-        !!document.querySelector('#tvChannels .thumb-img'),
-        'sin .thumb-img');
+    check('el canal con logo pone su imagen de fondo en la miniatura',
+        (function () {
+            var thumbs = document.querySelectorAll('#tvChannels .thumb');
+            for (var i = 0; i < thumbs.length; i++) {
+                if (/background-image/.test(thumbs[i].getAttribute('style') || '')) return true;
+            }
+            return false;
+        })(), 'ninguno con fondo');
     check('y el que no tiene logo deja la letra',
         !!document.querySelector('#tvChannels .thumb-letter'));
     check('las filas llevan número de canal',

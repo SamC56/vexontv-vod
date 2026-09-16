@@ -38,9 +38,8 @@ App.uiScreens = App.uiScreens || {};
                     return html`<button class=${'row zapch' + (channel.url === playing ? ' playing' : '')}
                         tabindex="-1" data-url=${channel.url} data-list=${channel.listId}
                         onClick=${function () { store.zapTo(channel); }}>
-                        <span class="thumb">
-                            ${channel.logo ? html`<img class="thumb-img" src=${channel.logo} alt=""
-                                onError=${kit.dropLogo} />` : html`<span class="thumb-letter">${kit.initial(channel.name)}</span>`}
+                        <span class="thumb" style=${kit.logoStyle(channel.logo)}>
+                            ${channel.logo ? null : html`<span class="thumb-letter">${kit.initial(channel.name)}</span>`}
                         </span>
                         <span class="zap-info">
                             <span class="zap-top">
