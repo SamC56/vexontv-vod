@@ -2,13 +2,14 @@
    Menos movimiento es movimiento distinto, no ninguno: fuera desplazamientos,
    se queda el fundido. */
 @media (prefers-reduced-motion: reduce) {
-  .screen > .bar,
-  .screen > .columns,
-  .screen > .rows,
-  .screen > .types,
-  .screen > .panel,
+  .screen,
   .numbuffer {
     animation: none;
+  }
+
+  /* La marca del rail viaja: con menos movimiento, salta. */
+  .rail::after {
+    transition: none;
   }
 
   .overlay,

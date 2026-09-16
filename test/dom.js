@@ -740,6 +740,12 @@ async function run() {
         /linear-gradient\([^)]*var\(--(amber|ember|mint)\)/.test(code));
     // El fondo es el degradado de la casa, en alfa (solido dejaria el texto blanco
     // sobre el ambar en 1.6:1). Los tres colores, y el brasa en el 48% como el filo.
+    // La entrada de pantalla no puede llevar transform: el agujero del preview se mide
+    // con el rectangulo del escenario y lo mediria a medio animar.
+    check('la entrada de pantalla es un fundido, sin desplazamiento', (function () {
+        var rule = code.match(/@keyframes screen-in\s*\{[^@]*?\}\s*\}/);
+        return !!rule && rule[0].indexOf('transform') === -1 && /opacity/.test(rule[0]);
+    })());
     check('y el multicolor solo asoma por la cabecera (apagón encima)', (function () {
         var rule = code.match(/--grad-fade:[^;]*;/);
         return !!rule && /rgba\(5,\s*5,\s*5,\s*0\)/.test(rule[0]) && /var\(--black\)/.test(rule[0]);
@@ -806,6 +812,7 @@ async function run() {
     });
     check('toda clase del markup tiene regla en la hoja', unstyled.length === 0, unstyled.join(', '));
 
+
     // El punto en medio de la pantalla: es el anillo de "abriendo" del reproductor.
     // Con AVPlay, si no llega ningun evento (pasa en directo), tiene que quitarse
     // solo. Se prueba con un AVPlay de mentira que no llama a nadie.
@@ -837,6 +844,17 @@ async function run() {
         !document.getElementById('playerStatus'), 'sigue en pantalla');
     avStore.exitPlayer();
     window.webapis = undefined;
+
+    // Al final, que no dependa del estado en el que acabe la sesion.
+    var rail = document.querySelector('.rail');
+    document.getElementById('navHome').click();
+    await wait(80);
+    var markHome = rail.style.getPropertyValue('--rail-mark-y');
+    document.getElementById('navTv').click();
+    await wait(80);
+    var markTv = rail.style.getPropertyValue('--rail-mark-y');
+    check('la marca del rail sigue a la sección activa',
+        markHome !== '' && markTv !== '' && markHome !== markTv, markHome + ' -> ' + markTv);
 
     check('sin errores tras toda la sesión', errors.length === 0, errors.join(' | '));
 

@@ -85,6 +85,8 @@ App.uiKit = (function () {
     }
 
     // ------------------------------------------------------------------ piezas
+    // Barra lateral: marca arriba y las cuatro secciones debajo, con la marca de
+    // degradado (una sola, en .rail::after) viajando hasta la activa.
     function Rail(props) {
         var items = [
             { id: 'navHome', label: 'Sources', icon: iconList, screens: ['home'], action: function () { store.goHome(); } },
@@ -92,11 +94,29 @@ App.uiKit = (function () {
             { id: 'navRecents', label: 'Recent', icon: iconClock, screens: ['recents'], action: function () { store.openRecents(); } },
             { id: 'navFavs', label: 'Favorites', icon: iconStar, screens: ['favs'], action: function () { store.openFavorites(); } }
         ];
-        return html`<nav class="rail">
+        var nav = useRef(null);
+
+        // Se mide el boton activo y se le pasan al CSS la posicion y el alto de la
+        // marca: el viaje lo hace la transicion de la hoja, no el JS.
+        useEffect(function () {
+            var rail = nav.current;
+            if (!rail) return;
+            var element = rail.querySelector('.rail-btn.active');
+            var height = element ? Math.round(element.offsetHeight * 0.62) : 0;
+            rail.style.setProperty('--rail-mark-h', height + 'px');
+            rail.style.setProperty('--rail-mark-y', element
+                ? (element.offsetTop + Math.round((element.offsetHeight - height) / 2)) + 'px'
+                : '0px');
+        }, [props.screen]);
+
+        return html`<nav class="rail" ref=${nav}>
             <div class="brand" aria-hidden="true">
                 <img class="brand-img" src="brand.png" alt="" />
+                <span class="wordmark">
+                    <span class="wordmark-name">VexonTV</span>
+                    <span class="wordmark-tag">IPTV Player</span>
+                </span>
             </div>
-            <p class="wordmark"><span class="wordmark-name">VexonTV</span><span class="wordmark-tag">IPTV Player</span></p>
             ${items.map(function (item) {
                 var active = item.screens.indexOf(props.screen) !== -1;
                 return html`<button id=${item.id} class=${'rail-btn' + (active ? ' active' : '')} tabindex="-1"

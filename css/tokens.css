@@ -89,6 +89,11 @@
 	--stage-x: 0px;
 	--stage-y: 0px;
 
+	/* Marca del rail: alto y posicion del boton activo. Las pone el rail midiendo;
+	   aqui van declaradas para que la hoja se sostenga sola. */
+	--rail-mark-h: 0px;
+	--rail-mark-y: 0px;
+
   --grid: 64px;
   --grid-line: rgba(255, 255, 255, 0.022);
   /* El degradado de la casa como FONDO. Los mismos tres colores y el mismo 48% que
