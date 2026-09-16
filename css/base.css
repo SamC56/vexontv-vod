@@ -89,8 +89,11 @@ body {
   align-items: center;
   gap: 6px;
   padding: 4.5vh 12px;
-  border-right: 1px solid var(--line);
-  height: 100vh;
+  /* Panel solido (no alfa): con el fondo de grilla, un rail translucido se
+     confundia con ella y no se veia donde acaba la barra. La altura la pone la
+     fila del grid, asi que no hace falta un 100vh. */
+  background: #0a0a0a;
+  border-right: 1px solid var(--line-2);
 }
 
 .brand {
@@ -249,15 +252,18 @@ h1 {
   letter-spacing: -0.03em;
 }
 
+/* El titular ocupa el espacio libre y los controles (boton + buscador) van
+   juntos a la derecha. Con space-between y tres hijos, el del medio flotaba solo
+   en mitad de la barra. */
 .bar {
   display: flex;
   align-items: flex-start;
-  justify-content: space-between;
-  gap: 32px;
+  gap: 20px;
   padding-bottom: 26px;
 }
 
 .bar-text {
+  flex: 1;
   min-width: 0;
 }
 
