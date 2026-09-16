@@ -10,9 +10,43 @@ App.uiScreens = App.uiScreens || {};
     var store = App.store;
     var html = kit.html;
     var clock = kit.clock;
+    var useEffect = kit.useEffect;
     var Bar = kit.Bar;
     var Search = kit.Search;
     var ChannelList = kit.ChannelList;
+
+    var player = App.player;
+
+    // El video de AVPlay va DETRAS del webview, asi que para verlo dentro del preview
+    // hay que dejar un agujero: se pinta el fondo de la app (negro + grilla) en una
+    // capa enmascarada y se recorta justo el rectangulo del preview. Si el firmware no
+    // soporta la mascara no se activa y queda la ficha, nunca un hueco negro.
+    function supportsHole() {
+        return !!(window.CSS && window.CSS.supports && window.CSS.supports('-webkit-mask-composite', 'xor'));
+    }
+
+    function previewBox() {
+        var element = document.getElementById('tvPreview');
+        return element && element.getBoundingClientRect ? element.getBoundingClientRect() : null;
+    }
+
+    // Rect del video: la TV lo mide en su rejilla de 1920x1080, sea cual sea el viewport.
+    function videoRect() {
+        var box = previewBox();
+        if (!box || box.width < 2) return null;
+        var scale = 1920 / (window.innerWidth || 1920);
+        return { x: box.left * scale, y: box.top * scale, w: box.width * scale, h: box.height * scale };
+    }
+
+    function setHole() {
+        var box = previewBox();
+        var layer = document.getElementById('backdrop');
+        if (!box || !layer) return;
+        layer.style.setProperty('--hole-x', Math.round(box.left) + 'px');
+        layer.style.setProperty('--hole-y', Math.round(box.top) + 'px');
+        layer.style.setProperty('--hole-w', Math.round(box.width) + 'px');
+        layer.style.setProperty('--hole-h', Math.round(box.height) + 'px');
+    }
 
     var iconTvBig = kit.svg(html`<rect x="2.5" y="5" width="19" height="13" rx="2" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M8.5 21h7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>`, 64);
 
@@ -51,6 +85,25 @@ App.uiScreens = App.uiScreens || {};
 
     function TvScreen() {
         var state = store.state;
+
+        // El canal elegido se ve aqui mismo, en el agujero del preview. A pantalla
+        // completa se pasa pulsando encima del preview.
+        useEffect(function () {
+            if (!state.preview || !state.preview.url) { player.stop(); return; }
+            setHole();
+            // Solo se deja el agujero si la mascara funciona: si no, el fondo se
+            // quedaria tapando el video y es mejor la ficha.
+            if (supportsHole()) document.body.classList.add('previewing');
+            player.play(state.preview.url, store.aspectMode(), videoRect());
+            function onResize() { setHole(); player.play(state.preview.url, store.aspectMode(), videoRect()); }
+            window.addEventListener('resize', onResize);
+            return function () {
+                window.removeEventListener('resize', onResize);
+                document.body.classList.remove('previewing');
+                player.stop();
+            };
+        }, [state.preview]);
+
         var view = store.tvCategories();
         var channels = store.visibleTvCategory();
         var pending = store.loadingRows();
@@ -66,7 +119,7 @@ App.uiScreens = App.uiScreens || {};
                     placeholder="Search categories" count=${view.count}
                     onInput=${function (value) { store.setSearch('tv', value); }} />`} />
             ${state.lists.length ? null : html`<p class="empty">Every source's channels meet here. Add one to start.</p>`}
-            <div class="browse">
+            <div class="browse" id="browse">
                 <div class="browse-cats" id="tvCats">
                     ${pending.map(function (row) {
                         return html`<div class="row pending" key=${'load-' + row.key}>

@@ -111,7 +111,12 @@ App.uiKit = (function () {
         var channel = props.channel;
         var listId = props.listId || channel.listId;
         var now = programText(store.programOf(channel));
-        function open() { store.play(channel, listId, props.source); }
+        // En el navegador (variante detail) OK selecciona el canal y se ve en el
+        // preview; a pantalla completa se pasa pulsando encima del preview.
+        function open() {
+            if (props.detail) store.selectPreview(channel);
+            else store.play(channel, listId, props.source);
+        }
         return html`<button class="row channel" data-url=${channel.url} data-list=${listId} tabindex="-1" onClick=${open}>
             <span class="num">${props.number}</span>
             <span class="thumb" style=${logoStyle(channel.logo)}>

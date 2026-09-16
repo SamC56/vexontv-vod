@@ -77,6 +77,14 @@
 	   esta app es una tele, asi que el fondo habla de senal: lineas de 1px cada 64px,
 	   una luz cenital muy suave y nada mas. Los colores de la casa no se gastan en
 	   manchas de fondo, se gastan en lo unico que informa: el foco y el estado. */
+
+	/* Agujero del preview: la posicion y el tamano los pone el JS con el rect del
+	   preview. Aqui van declarados para que la hoja se sostenga sola. */
+	--hole-x: 0px;
+	--hole-y: 0px;
+	--hole-w: 0px;
+	--hole-h: 0px;
+
   --grid: 64px;
   --grid-line: rgba(255, 255, 255, 0.022);
   --sheen: linear-gradient(

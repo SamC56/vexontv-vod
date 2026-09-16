@@ -62,13 +62,25 @@ App.player = (function () {
         if (avplay()) setRect();
     }
 
+
     // La doc de AVPlay es explicita: el rect se mide SIEMPRE en la rejilla de
     // 1920x1080 de la TV, sea cual sea la resolucion o el viewport de la app.
     // Y el style del object tiene que coincidir con este rect (va a pantalla
     // completa por CSS).
-    function setRect() {
+    // El rect se mide SIEMPRE en la rejilla de 1920x1080 de la TV, sea cual sea el
+    // viewport. Si viene uno degenerado (el preview a medio maquetar), se usa la
+    // pantalla entera: una superficie de 0x0 deja solo audio.
+    var lastRect = null;
+
+    function clearRect() { lastRect = null; }
+
+    function setRect(rect) {
+        if (rect) lastRect = rect;
         if (!surface) surface = document.getElementById('avPlayer');
-        avplay().setDisplayRect(0, 0, 1920, 1080);
+        var area = lastRect && lastRect.w > 2 && lastRect.h > 2
+            ? lastRect
+            : { x: 0, y: 0, w: 1920, h: 1080 };
+        avplay().setDisplayRect(Math.round(area.x), Math.round(area.y), Math.round(area.w), Math.round(area.h));
     }
 
     function state() {
@@ -158,9 +170,11 @@ App.player = (function () {
         video.play().then(started).catch(fail);
     }
 
-    function play(url, mode) {
+    function play(url, mode, rect) {
         stop();
         if (!url) return;
+        lastRect = rect || null;
+        if (!rect) clearRect();
 
         // Red de seguridad: si a los 4 s no ha llegado ningun evento, se quita el
         // aviso de "abriendo" igual. Un aviso pegado encima del video (un circulo
@@ -220,6 +234,7 @@ App.player = (function () {
         toggle: toggle,
         state: state,
         setAspect: setAspect,
+        clearRect: clearRect,
         resize: resize,
         describe: describe,
         hardware: hardware

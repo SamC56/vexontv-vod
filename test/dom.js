@@ -359,7 +359,21 @@ async function run() {
         focused() ? focused().className : '(nada)');
     check('al saltar se limpia el número', !document.getElementById('numBuffer'));
 
-    // OK encima del preview abre a pantalla completa
+    // OK en un canal: se previsualiza, NO se va a pantalla completa
+    window.App.tv.set('tvChannels', 0, 0);
+    await wait(80);
+    press(13);
+    await wait(150);
+    check('OK en un canal previsualiza sin salir de la TV',
+        !!document.getElementById('screen-tv') && !document.getElementById('screen-player'),
+        screens().join(', '));
+    check('y el preview es ese canal', (function () {
+        var preview = window.App.store.state.preview;
+        var focusedChannel = focused();
+        return !!preview && !!focusedChannel && focusedChannel.textContent.indexOf(preview.name) !== -1;
+    })(), window.App.store.state.preview ? window.App.store.state.preview.name : '(sin preview)');
+
+    // OK encima del preview SÍ abre a pantalla completa
     window.App.tv.set('tvPreview', 0, 0);
     await wait(60);
     press(13);

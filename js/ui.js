@@ -37,6 +37,7 @@ App.ui = (function () {
         var state = store.state;
         var playing = state.screen === 'player';
         return html`<div class=${'app' + (playing ? ' playing' : '')}>
+            <div class="backdrop" id="backdrop" aria-hidden="true"></div>
             <${Rail} screen=${state.screen} />
             <main class="main">
                 ${!playing && state.screen === 'home' ? html`<${Home} />` : null}

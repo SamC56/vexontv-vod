@@ -336,7 +336,7 @@
   display: grid;
   /* minmax(0, 1fr) en la fila, igual que en .app: con una fila auto, la columna de
      canales crece con su contenido y no scrollea nunca. */
-  grid-template-columns: minmax(220px, 19%) minmax(380px, 34%) 1fr;
+  grid-template-columns: minmax(260px, 24%) minmax(360px, 32%) 1fr;
   grid-template-rows: minmax(0, 1fr);
   gap: 22px;
 }

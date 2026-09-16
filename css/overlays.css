@@ -156,3 +156,43 @@
     transform: translate(-50%, 100%);
   }
 }
+
+/* ---------------------------------------------------------------- hueco del preview
+   El video de AVPlay va detras del webview: para verlo dentro del preview hay que
+   dejar un agujero en el fondo. Esta capa pinta el fondo de la app (negro + grilla) y
+   se recorta el rectangulo del preview con una mascara. Solo se enseña mientras hay
+   preview (body.previewing), y solo si la mascara funciona; si no, no se activa y se
+   queda la ficha del preview, nunca un hueco negro. */
+.backdrop { display: none; }
+
+body.previewing .backdrop {
+  display: block;
+  position: fixed;
+  inset: 0;
+  background-color: var(--black);
+  background-image:
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px),
+    var(--sheen);
+  background-size: var(--grid) var(--grid), var(--grid) var(--grid), 100% 100%;
+  background-repeat: repeat, repeat, no-repeat;
+  /* El agujero: dos mascaras opacas que se restan (la de dentro es el preview). */
+  -webkit-mask-image: linear-gradient(#000 0 0), linear-gradient(#000 0 0);
+  -webkit-mask-repeat: no-repeat, no-repeat;
+  -webkit-mask-size: 100% 100%, var(--hole-w, 0) var(--hole-h, 0);
+  -webkit-mask-position: 0 0, var(--hole-x, 0) var(--hole-y, 0);
+  -webkit-mask-composite: xor;
+  mask-image: linear-gradient(#000 0 0), linear-gradient(#000 0 0);
+  mask-repeat: no-repeat, no-repeat;
+  mask-size: 100% 100%, var(--hole-w, 0) var(--hole-h, 0);
+  mask-position: 0 0, var(--hole-x, 0) var(--hole-y, 0);
+  mask-composite: exclude;
+}
+
+/* Con el agujero, el fondo se lo lleva la capa: el body no pinta. */
+body.previewing {
+  background-color: transparent;
+  background-image: none;
+}
+
+body.previewing::before { opacity: 0; }
