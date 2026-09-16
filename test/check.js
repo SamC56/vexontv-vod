@@ -126,8 +126,8 @@ check(
 
 const xtreamCases = [
     [
-        "https://operator2.barfik.org/get.php?username=abc&password=def&type=m3u_plus",
-        { origin: "https://operator2.barfik.org", user: "abc", pass: "def" },
+        "https://panel.example/get.php?username=abc&password=def&type=m3u_plus",
+        { origin: "https://panel.example", user: "abc", pass: "def" },
     ],
     [
         "http://host.ddns.net:8080/player_api.php?username=a&password=b",
