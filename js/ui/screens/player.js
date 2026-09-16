@@ -42,6 +42,13 @@ App.uiScreens = App.uiScreens || {};
             return function () { document.body.classList.remove('playing'); };
         }, []);
 
+        // La guia avanza con el reloj: sin esto la barra se queda congelada y el
+        // programa "de ahora" se queda pegado al cambiar de programa.
+        useEffect(function () {
+            var tick = setInterval(function () { store.refreshProgram(); }, 30000);
+            return function () { clearInterval(tick); };
+        }, []);
+
         useEffect(function () {
             function pulse() { show(); }
             document.addEventListener('keydown', pulse);
@@ -58,6 +65,8 @@ App.uiScreens = App.uiScreens || {};
         if (!channel) return null;
         var saved = store.isFavorite(state.playing.listId, channel.url);
         var program = state.nowProgram;
+        var next = state.nextProgram;
+        var progress = store.programProgress(program);
 
         return html`<section class=${"screen player" + (player.hardware() ? " hw" : "")} id="screen-player">
             <video id="videoPlayer" ref=${videoRef} playsinline></video>
@@ -87,8 +96,16 @@ App.uiScreens = App.uiScreens || {};
                         class="ov-engine" id="ovEngine">${player.hardware() ? 'AVPlay' : 'HTML5'}</span></p>
                     <h1 id="ovName">${channel.name}</h1>
                     <p class="ov-group" id="ovGroup">${channel.group || ''}</p>
-                    ${program ? html`<p class="ov-program" id="ovProgram">
-                        ${program.title}${program.start ? html`<span class="ov-time">${clock(program.start)} – ${clock(program.end)}</span>` : null}
+                    ${program ? html`<div class="ov-guide" id="ovProgram">
+                        <p class="ov-program">${program.title}${program.start
+                            ? html`<span class="ov-time">${clock(program.start)} – ${clock(program.end)}</span>` : null}</p>
+                        ${progress !== null ? html`<div class="ov-progress">
+                            <span class="ov-progress-fill" id="ovProgress" style=${'width:' + progress + '%'}></span>
+                        </div>` : null}
+                    </div>` : null}
+                    ${next ? html`<p class="ov-next" id="ovNext">
+                        <span class="ov-next-tag">Next</span>${next.title}${next.start
+                            ? html`<span class="ov-time">${clock(next.start)} – ${clock(next.end)}</span>` : null}
                     </p>` : null}
                 </div>
                 <button class=${'btn' + (saved ? ' saved' : '')} id="ovFav" tabindex="-1" onClick=${function () {

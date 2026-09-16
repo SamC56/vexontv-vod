@@ -65,6 +65,7 @@ App.store = (function () {
         zapping: [],
         zapIndex: 0,
         nowProgram: null,
+        nextProgram: null,
         numBuffer: '',
         confirm: null,
         loading: null,
@@ -787,7 +788,13 @@ App.store = (function () {
     // pedir 200 programas de golpe) y se guarda 10 minutos.
     function programOf(channel) {
         var entry = channel && channel.url ? state.programs[channel.url] : null;
-        return entry ? entry.program : null;
+        return entry && entry.list && entry.list.length ? entry.list[0] : null;
+    }
+
+    // El siguiente programa, para la guia del banner como en cualquier reproductor.
+    function nextOf(channel) {
+        var entry = channel && channel.url ? state.programs[channel.url] : null;
+        return entry && entry.list && entry.list.length > 1 ? entry.list[1] : null;
     }
 
     function loadProgramFor(channel) {
@@ -797,12 +804,36 @@ App.store = (function () {
         var cached = state.programs[channel.url];
         if (cached && Date.now() - cached.at < PROGRAM_MS) return;
 
-        state.programs[channel.url] = { program: null, at: Date.now() };
-        App.api.loadNowPlaying(channel.url).then(function (program) {
-            state.programs[channel.url] = { program: program, at: Date.now() };
-            if (state.playing && state.playing.channel.url === channel.url) state.nowProgram = program;
+        state.programs[channel.url] = { list: [], at: Date.now() };
+        App.api.loadNowPlaying(channel.url).then(function (list) {
+            state.programs[channel.url] = { list: list || [], at: Date.now() };
+            if (state.playing && state.playing.channel.url === channel.url) {
+                state.nowProgram = programOf(channel);
+                state.nextProgram = nextOf(channel);
+            }
             emit();
         }).catch(function () { /* el EPG es opcional */ });
+    }
+
+    // Porcentaje del programa que ya ha pasado, para la barra del banner. Devuelve
+    // null si el panel no dio horas (o no se pueden leer).
+    function programProgress(program) {
+        if (!program || !program.start || !program.end) return null;
+        var start = Date.parse(String(program.start).replace(' ', 'T'));
+        var end = Date.parse(String(program.end).replace(' ', 'T'));
+        if (isNaN(start) || isNaN(end) || end <= start) return null;
+        var ratio = (Date.now() - start) / (end - start);
+        return Math.max(0, Math.min(100, Math.round(ratio * 100)));
+    }
+
+    // Cada 30 s: recalcula el "ahora" (por si ha cambiado el programa) y repinta.
+    function refreshProgram() {
+        if (!state.playing) return;
+        state.nowProgram = programOf(state.playing.channel);
+        state.nextProgram = nextOf(state.playing.channel);
+        var cached = state.programs[state.playing.channel.url];
+        if (!cached || Date.now() - cached.at > PROGRAM_MS) loadProgramFor(state.playing.channel);
+        emit();
     }
 
     function focusChanged(element) {
@@ -825,13 +856,14 @@ App.store = (function () {
         state.zapping = list && list.length ? list : [channel];
         state.zapIndex = Math.max(0, state.zapping.indexOf(channel));
         state.nowProgram = programOf(channel);
+        state.nextProgram = nextOf(channel);
         pushRecent(channel, listId);
 
         // Stalker no trae la URL en el catálogo: se pide al vuelo y se guarda en
         // el propio canal, así el siguiente zap es instantáneo.
         if (!channel.url && channel.cmd && listKind(list_) === 'stalker') {
             set({ screen: 'player' });
-            focus('overlay');
+            focus('playerIdle');
             App.api.resolveStalkerUrl(list_, channel).then(function (url) {
                 channel.url = url;
                 play(channel, listId, list);
@@ -842,7 +874,7 @@ App.store = (function () {
         }
 
         set({ screen: 'player' });
-        focus('overlay');
+        focus('playerIdle');
         loadProgramFor(channel);
     }
 
@@ -863,7 +895,7 @@ App.store = (function () {
         if (!state.playing) return;
         var playing = state.playing;
         set({ playStatus: 'opening', playError: null });
-        focus('overlay');
+        focus('playerIdle');
         // Un objeto nuevo: el efecto del reproductor depende de state.playing, y
         // asi vuelve a intentarlo sin ninguna via extra.
         state.playing = { channel: playing.channel, listId: playing.listId, origin: playing.origin };
@@ -882,6 +914,7 @@ App.store = (function () {
         var listId = state.playing ? state.playing.listId : null;
         state.playing = null;
         state.nowProgram = null;
+        state.nextProgram = null;
         state.playStatus = 'idle';
         state.playError = null;
         if (origin && origin.screen) { set({ screen: origin.screen }); focus(origin.zone); return; }
@@ -1067,6 +1100,9 @@ App.store = (function () {
         isFavorite: isFavorite,
         toggleFavorite: toggleFavorite,
         programOf: programOf,
+        programProgress: programProgress,
+        refreshProgram: refreshProgram,
+        nextOf: nextOf,
         loadProgramFor: loadProgramFor,
         play: play,
         zap: zap,

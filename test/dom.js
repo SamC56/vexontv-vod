@@ -75,11 +75,18 @@ window.fetch = function () {
         text: function () { return Promise.resolve(sampleM3u); },
         json: function () {
             return Promise.resolve({
-                epg_listings: [{
-                    title: b64('Programa de prueba'),
-                    start: b64('2026-09-16 21:00:00'),
-                    end: b64('2026-09-16 22:00:00')
-                }]
+                epg_listings: [
+                    {
+                        title: b64('Programa de prueba'),
+                        start: b64('2026-09-16 21:00:00'),
+                        end: b64('2026-09-16 22:00:00')
+                    },
+                    {
+                        title: b64('El siguiente'),
+                        start: b64('2026-09-16 22:00:00'),
+                        end: b64('2026-09-16 23:30:00')
+                    }
+                ]
             });
         }
     });
@@ -306,6 +313,26 @@ async function run() {
         document.getElementById('ovEngine') ? document.getElementById('ovEngine').textContent : '(nada)');
     check('sale el programa de ahora', !!document.getElementById('ovProgram')
         && document.getElementById('ovProgram').textContent.indexOf('Programa de prueba') !== -1);
+    check('con su barra de progreso', (function () {
+        var fill = document.getElementById('ovProgress');
+        return !!fill && /width:\s*\d+%/.test(fill.getAttribute('style') || '');
+    })(), document.getElementById('ovProgress') ? document.getElementById('ovProgress').getAttribute('style') : '(sin barra)');
+    check('y el programa siguiente, como en cualquier reproductor', !!document.getElementById('ovNext')
+        && document.getElementById('ovNext').textContent.indexOf('El siguiente') !== -1,
+        document.getElementById('ovNext') ? document.getElementById('ovNext').textContent : '(sin siguiente)');
+    // El boton de favoritos no viene seleccionado: se baja a el a proposito.
+    check('al abrir un canal no hay botón seleccionado',
+        !document.querySelector('.focused'), focused() ? focused().className : '(nada)');
+    press(40);
+    await wait(60);
+    check('abajo selecciona el botón de favoritos',
+        !!focused() && focused().id === 'ovFav', focused() ? focused().id : '(nada)');
+    press(38);
+    await wait(60);
+    check('y arriba lo suelta', !document.querySelector('.focused'));
+
+    press(40);
+    await wait(50);
     press(403);
     await wait(50);
     check('la tecla roja guarda el favorito', window.App.store.state.favorites.length === 1);
@@ -326,6 +353,23 @@ async function run() {
     ]);
     check('el foco se va a los botones de la tarjeta',
         !!focused() && focused().id === 'playRetry', focused() ? focused().id : '(nada)');
+    const before = window.App.store.state.playing.channel.name;
+    press(39);
+    await wait(120);
+    check('con la tarjeta de error abierta, la derecha cambia de canal',
+        !document.getElementById('playError') && window.App.store.state.playing.channel.name !== before,
+        document.getElementById('playError') ? 'sigue la tarjeta' : '(sin tarjeta)');
+
+    window.App.store.playFailed('El canal no responde');
+    await wait(90);
+    press(40);
+    await wait(60);
+    check('y arriba/abajo mueven entre Reintentar y Volver',
+        !!focused() && focused().id === 'playClose', focused() ? focused().id : '(nada)');
+    press(38);
+    await wait(60);
+    check('volviendo a Reintentar', !!focused() && focused().id === 'playRetry');
+
     document.getElementById('playRetry').click();
     await wait(90);
     check('reintentar quita la tarjeta y vuelve a abrir', !document.getElementById('playError'));
@@ -467,7 +511,8 @@ async function run() {
     // Recientes y favoritos.
     document.getElementById('navRecents').click();
     await wait(60);
-    check('recientes lista lo último visto', document.querySelectorAll('#recentsList .channel').length === 1);
+    check('recientes lista lo último visto', document.querySelectorAll('#recentsList .channel').length >= 1,
+        document.querySelectorAll('#recentsList .channel').length + ' filas');
     document.getElementById('navFavs').click();
     await wait(60);
     check('los favoritos se listan', document.querySelectorAll('#favList .channel').length === 1);
@@ -601,6 +646,24 @@ async function run() {
         return code.indexOf('.' + name) === -1;
     });
     check('toda clase del markup tiene regla en la hoja', unstyled.length === 0, unstyled.join(', '));
+
+    // El punto en medio de la pantalla: es el anillo de "abriendo" del reproductor.
+    // Con AVPlay, si no llega ningun evento (pasa en directo), tiene que quitarse
+    // solo. Se prueba con un AVPlay de mentira que no llama a nadie.
+    window.webapis = { avplay: {
+        open: function () {}, setDisplayRect: function () {}, setDisplayMethod: function () {},
+        setListener: function () {}, prepareAsync: function () {}, play: function () {},
+        getState: function () { return 'PLAYING'; }, stop: function () {}, close: function () {}
+    } };
+    const avStore = window.App.store;
+    avStore.play({ name: 'Sin eventos', group: 'X', url: 'https://x/live/u/p/1.ts' }, 'l1', []);
+    await wait(200);
+    check('con AVPlay abriendo se ve el aviso de arranque (es el punto)', !!document.getElementById('playerStatus'));
+    await wait(4200);
+    check('y se quita solo a los 4 s aunque AVPlay no diga nada',
+        !document.getElementById('playerStatus'), 'sigue en pantalla');
+    avStore.exitPlayer();
+    window.webapis = undefined;
 
     check('sin errores tras toda la sesión', errors.length === 0, errors.join(' | '));
 

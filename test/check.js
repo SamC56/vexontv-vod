@@ -359,6 +359,20 @@ store.exitPlayer();
 check('salir del reproductor deja el estado limpio',
     store.state.playStatus === 'idle' && store.state.playError === null);
 
+// --- la barra de progreso del banner ------------------------------------------
+check('el progreso de un programa a medias ronda la mitad', (function () {
+    var start = new Date(Date.now() - 30 * 60000);
+    var end = new Date(Date.now() + 30 * 60000);
+    function stamp(date) {
+        return date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0') + '-' + String(date.getDate()).padStart(2, '0') +
+            ' ' + String(date.getHours()).padStart(2, '0') + ':' + String(date.getMinutes()).padStart(2, '0') + ':00';
+    }
+    var value = store.programProgress({ start: stamp(start), end: stamp(end) });
+    return value >= 45 && value <= 55;
+})(), String(store.programProgress({ start: '2026-09-16 21:00:00', end: '2026-09-16 22:00:00' })));
+check('sin horas no hay progreso', store.programProgress({ title: 'x' }) === null);
+check('y con horas imposibles tampoco', store.programProgress({ start: '2026-09-16 22:00:00', end: '2026-09-16 21:00:00' }) === null);
+
 // --- favoritos ----------------------------------------------------------------
 check('favorito nuevo', store.toggleFavorite(store.state.channels.l1[0], 'l1') === true);
 check('no se duplica', store.state.favorites.length === 1);

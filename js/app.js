@@ -194,12 +194,11 @@ var App = App || {};
             onEdge: function (dir) { if (dir === 'up') tv.set('fields', 9, 0); }
         });
 
-        zone('overlay', '#ovFav', {
-            onEdge: function (dir) {
-                if (dir === 'left') store.zap(-1);
-                else if (dir === 'right') store.zap(1);
-            }
-        });
+        // El reproductor empieza SIN foco (zona vacia): el boton de favoritos no
+        // viene seleccionado, lo selecciona el usuario con abajo.
+        tv.define('playerIdle', function () { return []; });
+
+        zone('overlay', '#ovFav');
 
         // Con un canal caido, la zona del reproductor son los botones de la
         // tarjeta de error: reintentar o volver.
@@ -264,6 +263,24 @@ var App = App || {};
         if (code === tv.KEY.RED) { red(); return true; }
         if (code === tv.KEY.ENTER) return store.commitDigits();
         if (store.state.screen !== 'player') return false;
+
+        // Izquierda/derecha SIEMPRE cambian de canal, tambien con la tarjeta de
+        // error abierta: un canal que falla no puede encerrarte.
+        if (code === tv.KEY.LEFT) { store.zap(-1); return true; }
+        if (code === tv.KEY.RIGHT) { store.zap(1); return true; }
+
+        var error = !!store.state.playError;
+        if (error && (code === tv.KEY.UP || code === tv.KEY.DOWN)) {
+            var buttons = ui.qsa('#playError .btn');
+            var index = buttons.indexOf(document.querySelector('.focused'));
+            // por fila: los botones van en columna
+            tv.set('playError', index === 0 ? 1 : 0, 0);
+            return true;
+        }
+        // Reproduciendo: abajo selecciona el boton de favoritos, arriba lo suelta.
+        if (!error && code === tv.KEY.DOWN) { tv.set('overlay', 0, 0); return true; }
+        if (!error && code === tv.KEY.UP) { tv.set('playerIdle', 0, 0); return true; }
+
         if (code === tv.KEY.CH_UP) { store.zap(1); return true; }
         if (code === tv.KEY.CH_DOWN) { store.zap(-1); return true; }
         if (code === tv.KEY.PLAY_PAUSE) { player.toggle(); return true; }

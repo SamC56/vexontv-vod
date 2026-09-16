@@ -206,19 +206,22 @@ App.api = (function () {
     function loadNowPlaying(url) {
         var live = parseLiveUrl(url);
         if (!live) return Promise.resolve(null);
+        // 3 programas: el de ahora y los siguientes, que es lo que enseña la guia
+        // de un reproductor de IPTV normal.
         var api = live.origin + '/player_api.php?username=' + enc(live.user) + '&password=' + enc(live.pass) +
-            '&action=get_short_epg&stream_id=' + enc(live.id) + '&limit=1';
+            '&action=get_short_epg&stream_id=' + enc(live.id) + '&limit=3';
         return Promise.resolve().then(function () { return fetchJson(api); }).then(function (data) {
             var list = data && data.epg_listings;
-            if (!list || !list.length) return null;
-            var item = list[0];
-            return {
-                title: decodeBase64(item.title) || item.title || '',
-                description: decodeBase64(item.description) || '',
-                start: decodeBase64(item.start) || '',
-                end: decodeBase64(item.end) || ''
-            };
-        }).catch(function () { return null; });
+            if (!list || !list.length) return [];
+            return list.map(function (item) {
+                return {
+                    title: decodeBase64(item.title) || item.title || '',
+                    description: decodeBase64(item.description) || '',
+                    start: decodeBase64(item.start) || '',
+                    end: decodeBase64(item.end) || ''
+                };
+            });
+        }).catch(function () { return []; });
     }
 
     function decodeBase64(value) {

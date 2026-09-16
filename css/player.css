@@ -12,7 +12,14 @@
 
 /* Superficie de AVPlay: la TV pinta el video AQUI (no en el <video>), asi que tiene
    que cubrir la pantalla y coincidir con el rect de setDisplayRect. */
+/* La caja es el "hueco" por donde la TV pinta el video, pero si el plugin no se
+   engancha a ella, pinta SU aviso ("Couldn't load plugin" en el navegador, y en la
+   TV eso es el punto que se veia sobre el video). Con opacidad 0 la caja sigue
+   existiendo y colocada igual -que es lo que necesita setDisplayRect- pero no pinta
+   nada: el video va a su plano, por detras del webview. Si en alguna TV el video se
+   pintase DENTRO de la caja, habria que quitar esta linea. */
 .av-surface {
+  opacity: 0;
   position: absolute;
   left: 0;
   top: 0;
@@ -43,18 +50,23 @@ body.playing {
   background: transparent;
 }
 
-/* Mientras el canal arranca: en vez de negro, que se esta abriendo. */
+/* Mientras el canal arranca. En la esquina y no en el centro: centrado tapa el
+   video justo cuando lo estas mirando, y un circulo en medio parece un punto. */
 .player-status {
 	position: absolute;
-	inset: 0;
-	display: grid;
-	place-content: center;
-	justify-items: center;
-	gap: 20px;
+	top: 5%;
+	right: 5%;
+	display: flex;
+	align-items: center;
+	gap: 14px;
+	padding: 12px 20px;
+	border-radius: 999px;
+	background: rgba(5, 5, 5, .72);
 	pointer-events: none;
 }
 
-.player-status-text { font-size: 20px; color: var(--text-2); }
+.player-status .spinner { width: 30px; height: 30px; }
+.player-status-text { font-size: 18px; color: var(--text-2); }
 
 /* Un canal que no arranca: el motivo, el canal y reintentar. Nunca negro mudo. */
 .player-error {
@@ -92,7 +104,13 @@ body.playing {
 }
 
 .play-hint { margin-top: 14px; font-size: 18px; color: var(--text-2); }
-.play-actions { display: flex; justify-content: center; gap: 14px; margin-top: 28px; }
+.play-actions {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 12px;
+	margin-top: 28px;
+}
 
 /* Entra desde abajo, que es donde vive. */
 .overlay {
@@ -172,6 +190,39 @@ body.playing {
 }
 
 /* Lo que están dando ahora, si el panel lo sabe. */
+/* Guia en el banner: ahora con su barra, y el siguiente programa. */
+.ov-guide { margin-top: 16px; max-width: 60ch; }
+
+.ov-progress {
+  margin-top: 8px;
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.18);
+  overflow: hidden;
+}
+
+.ov-progress-fill {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+  background: var(--grad-bar);
+}
+
+.ov-next {
+  margin-top: 10px;
+  font-size: 18px;
+  color: var(--text-2);
+}
+
+.ov-next-tag {
+  margin-right: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
 .ov-program {
   margin-top: 16px;
   font-size: 21px;
