@@ -525,6 +525,24 @@ async function run() {
     await wait(80);
     check('volver sale del reproductor, a la TV con las tres columnas',
         !!document.getElementById('screen-tv') && !!document.querySelector('.browse-preview'));
+    // El preview es de la lista que se mira: si se cambia de categoria, se suelta. Si
+    // no, el canal se queda reproduciendose fuera de su lista.
+    // (la clase del agujero no se pone en jsdom: ahi no hay window.CSS con el que
+    // preguntar si el motor sabe restar mascaras)
+    check('volviendo, el canal sigue previsualizándose',
+        !!window.App.store.state.preview,
+        window.App.store.state.preview ? window.App.store.state.preview.name : '(sin preview)');
+    const previewedGroup = window.App.store.state.preview.group;
+    const otherCategory = window.App.store.tvCategories().rows.filter(function (row) {
+        return row.name !== previewedGroup;
+    })[0];
+    document.querySelector('#tvCats .tvcat[data-group="' + otherCategory.name + '"]').click();
+    await wait(120);
+    check('cambiar de categoría suelta el preview',
+        !window.App.store.state.preview,
+        window.App.store.state.preview ? 'sigue ' + window.App.store.state.preview.name : '(suelto)');
+    check('y la ficha vuelve al estado vacío', !!document.querySelector('#tvPreview #previewEmpty'));
+
     press(10009);
     await wait(80);
     check('y otro Atrás vuelve a fuentes', window.App.store.state.screen === 'home',

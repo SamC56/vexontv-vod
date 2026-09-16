@@ -631,7 +631,8 @@ App.store = (function () {
     }
 
     function openTv() {
-        set({ screen: 'tv', tvSource: null });
+        // Se entra en la TV de cero: sin el preview de la vez anterior.
+        set({ screen: 'tv', tvSource: null, preview: null });
         focus('tvSearch');
         var todo = state.lists.filter(function (list) {
             return !state.channels[list.id] && !state.pending[list.id];
@@ -645,7 +646,7 @@ App.store = (function () {
     // para gestionar; para ver canales se viene aqui.
     function openSource(listId) {
         if (!listById(listId)) return;
-        set({ screen: 'tv', tvSource: listId });
+        set({ screen: 'tv', tvSource: listId, preview: null });
         focus('tvSearch');
         if (!state.channels[listId] && !state.pending[listId]) {
             loadWithNotice([listId], listById(listId).name);
@@ -668,12 +669,17 @@ App.store = (function () {
     // En el layout de tres columnas, elegir categoria no cambia de pantalla: mueve
     // la columna de canales y lleva el foco alli.
     function openTvCategory(name) {
-        set({ catName: name });
+        var patch = { catName: name };
+        // El preview pertenece a la lista que se esta mirando: al cambiar de categoria
+        // se suelta, o el canal seguiria reproduciendose fuera de su lista.
+        if (state.preview && state.catName !== name) patch.preview = null;
+        set(patch);
         focus('tvChannels', 0, 0);
     }
 
-    // El canal que se esta mirando en la lista (el preview). No reproduce nada: la
-    // ficha se pinta con su logo y su guia, y OK la abre a pantalla completa.
+    // El canal que se esta mirando en la lista (el preview): se reproduce ahi mismo,
+    // en el escenario de la columna, con su ficha debajo. OK encima lo abre a pantalla
+    // completa.
     function selectPreview(channel) {
         if (!channel || !channel.url) return;
         if (state.preview && state.preview.url === channel.url) return;
