@@ -377,6 +377,17 @@ async function run() {
     check('la fila enfocada de la categoría pide su programa',
         !!document.querySelector('#tvChannels .row-now'), 'sin EPG');
 
+    // La izquierda sube de nivel: de los canales a las categorias, en la misma
+    // categoria de la que venimos (antes se iba al rail y no habia vuelta).
+    press(37);
+    await wait(100);
+    check('la izquierda dentro de la categoría vuelve a las categorías', !!document.getElementById('screen-tv'));
+    check('y deja el foco en la categoría de la que veníamos',
+        !!focused() && focused().dataset.group === 'España',
+        focused() ? (focused().dataset.group || focused().id) : '(nada)');
+
+    document.querySelector('#tvCats .tvcat[data-group="España"]').click();
+    await wait(150);
     press(10009);
     await wait(100);
     check('Atrás vuelve a las categorías', !!document.getElementById('screen-tv'));

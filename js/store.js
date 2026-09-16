@@ -646,10 +646,16 @@ App.store = (function () {
         }
     }
 
-    // Volver de una categoria sin perder de que fuente era la TV.
+    // Volver de una categoria sin perder de que fuente era la TV, y con el foco
+    // puesto en esa misma categoria: si entraste en Espana, vuelves a Espana.
     function backToTv() {
+        var index = 0;
+        var rows = tvCategories().rows;
+        for (var i = 0; i < rows.length; i++) {
+            if (rows[i].name === state.catName) { index = i; break; }
+        }
         set({ screen: 'tv' });
-        focus('tvSearch');
+        focus('tvCats', index);
     }
 
     // Una categoria de TV: los canales de esa categoria, de todas las fuentes.

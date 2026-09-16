@@ -119,8 +119,10 @@ var App = App || {};
 
         zone('tvChannels', '#tvChannels .channel', {
             onEdge: function (dir) {
-                if (dir === 'up') tv.set('tvcatSearch', 0, 0);
-                else if (dir === 'left') tv.set('rail', 0, 0);
+                // Izquierda sube de nivel (vuelve a las categorias), como en
+                // cualquier TV. Antes saltaba al rail y no habia forma de volver.
+                if (dir === 'left') store.backToTv();
+                else if (dir === 'up') tv.set('tvcatSearch', 0, 0);
             }
         });
 
