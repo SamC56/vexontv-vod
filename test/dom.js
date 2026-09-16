@@ -98,6 +98,16 @@ function focused() {
     return document.querySelector('.focused');
 }
 
+// Solo puede haber una pantalla montada: dos a la vez se ven apiladas.
+function screens() {
+    return Array.prototype.map.call(document.querySelectorAll('[id^="screen-"]'), function (el) { return el.id; });
+}
+
+function onlyScreen(id) {
+    const mounted = screens();
+    return mounted.length === 1 && mounted[0] === id;
+}
+
 function typeInto(selector, value) {
     const input = document.querySelector(selector);
     input.value = value;
@@ -120,6 +130,7 @@ async function run() {
     check('la app pinta algo', document.getElementById('app').innerHTML.length > 100);
     check('sin errores de runtime', errors.length === 0, errors.join(' | '));
     check('pantalla de inicio montada', !!document.getElementById('screen-home'));
+    check('y es la única pantalla montada', onlyScreen('screen-home'), screens().join(', '));
     check('el rail tiene sus cuatro secciones', document.querySelectorAll('.rail .rail-btn').length === 4);
     // Una instalación nueva trae la fuente pública de fábrica, y el foco empieza
     // en ella (no en la fila de añadir).
@@ -251,6 +262,7 @@ async function run() {
     document.querySelector('#tvCats .tvcat[data-group="Deportes"]').click();
     await wait(150);
     check('la categoría abre su pantalla', !!document.getElementById('screen-tvcat'));
+    check('y es la única montada', onlyScreen('screen-tvcat'), screens().join(', '));
     check('con sus canales', document.querySelectorAll('#tvChannels .channel').length === 2,
         document.querySelectorAll('#tvChannels .channel').length + ' canales');
     check('las filas llevan número de canal',
@@ -280,6 +292,7 @@ async function run() {
     focused().click();
     await wait(90);
     check('el canal abre el reproductor', !!document.getElementById('screen-player'));
+    check('y es la única montada', onlyScreen('screen-player'), screens().join(', '));
     check('el reproductor tiene la superficie donde AVPlay pinta el vídeo', (function () {
         var surface = document.getElementById('avPlayer');
         return !!surface && surface.getAttribute('type') === 'application/avplayer';
@@ -329,6 +342,7 @@ async function run() {
     document.getElementById('navTv').click();
     await wait(120);
     check('la sección TV existe', !!document.getElementById('screen-tv'));
+    check('y la de fuentes ya no está montada', onlyScreen('screen-tv'), screens().join(', '));
     window.App.tv.set('rail', 1, 0);
     press(39);
     await wait(60);

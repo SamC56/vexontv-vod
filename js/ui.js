@@ -40,7 +40,7 @@ App.ui = (function () {
         return html`<div class=${'app' + (playing ? ' playing' : '')}>
             <${Rail} screen=${state.screen} />
             <main class="main">
-                ${playing ? null : html`<${Home} />`}
+                ${!playing && state.screen === 'home' ? html`<${Home} />` : null}
                 ${!playing && state.screen === 'tv' ? html`<${TvScreen} />` : null}
                 ${!playing && state.screen === 'tvcat' ? html`<${TvCategoryScreen} />` : null}
                 ${!playing && state.screen === 'recents' ? html`<${Recents} />` : null}
