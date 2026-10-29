@@ -81,6 +81,23 @@ App.uiKit = (function () {
             />`,
         24,
     )
+    const iconFilm = svg(
+        html`<rect
+                x="3"
+                y="4.5"
+                width="18"
+                height="15"
+                rx="2"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+            /><path
+                d="M7.5 4.5v15M16.5 4.5v15M3 9.5h4.5M3 14.5h4.5M16.5 9.5H21M16.5 14.5H21"
+                stroke="currentColor"
+                stroke-width="1.8"
+            />`,
+        24,
+    )
     const iconClock = svg(
         html`<circle
                 cx="12"
@@ -290,6 +307,15 @@ App.uiKit = (function () {
                 screens: ["tv", "cats"],
                 action: function () {
                     store.openTv()
+                },
+            },
+            {
+                id: "navMovies",
+                label: "Movies",
+                icon: iconFilm,
+                screens: ["movies", "title"],
+                action: function () {
+                    App.vod.openMovies()
                 },
             },
             {

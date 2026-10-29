@@ -39,7 +39,7 @@ them. None of it ships: the app has no idea this exists.
 ```bash
 python3 tools/build-wgt.py
 tizen install -n dist/VexonTV.wgt -t <tv>       # or drop it into Apps2Samsung
-tizen run -p ts9k4m2w8p.VexonTV -t <tv>
+tizen run -p vx7vod0fk2.VexonVOD -t <tv>
 ```
 
 The package is an unsigned `.wgt`; whoever installs it signs it.

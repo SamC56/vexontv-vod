@@ -149,7 +149,7 @@ App.player = (function () {
     }
 
     // Fallback for environments without AVPlay: emulator, browser, Public install.
-    function playWithVideo(url) {
+    function playWithVideo(url, start) {
         if (!video) {
             fail(new Error("No player available"))
             return
@@ -162,13 +162,33 @@ App.player = (function () {
             },
             { once: true },
         )
+        video.addEventListener(
+            "ended",
+            () => {
+                if (handlers.onEnd) handlers.onEnd()
+            },
+            { once: true },
+        )
+        if (start > 0) {
+            video.addEventListener(
+                "loadedmetadata",
+                () => {
+                    try {
+                        video.currentTime = start
+                    } catch {}
+                },
+                { once: true },
+            )
+        }
         waitForStart()
         video.play().then(started).catch(fail)
     }
 
-    function play(url, rect) {
+    // options.start: seconds to open a film or an episode at, where it was left.
+    function play(url, rect, options) {
         stop()
         if (!url) return
+        const start = (options && options.start) || 0
         lastRect = rect || null
         if (!rect) clearRect()
 
@@ -194,12 +214,25 @@ App.player = (function () {
                     onstreamcompleted: function () {
                         if (handlers.onEnd) handlers.onEnd()
                     },
+                    // AVPlay decodes embedded subtitles but does not draw them: the text
+                    // comes here and the page shows it for the given milliseconds.
+                    onsubtitlechange: function (duration, text) {
+                        if (handlers.onSubtitle) handlers.onSubtitle(text, Number(duration))
+                    },
                 })
                 waitForStart()
                 AV.prepareAsync(
                     () => {
-                        AV.play()
-                        started()
+                        function begin() {
+                            AV.play()
+                            started()
+                        }
+                        if (!(start > 0)) return begin()
+                        try {
+                            AV.seekTo(Math.round(start * 1000), begin, begin)
+                        } catch {
+                            begin()
+                        }
                     },
                     (error) => {
                         fail(error)
@@ -211,7 +244,107 @@ App.player = (function () {
             }
         }
 
-        playWithVideo(url)
+        playWithVideo(url, start)
+    }
+
+    // Seconds, from either engine. A live stream or nothing open reads 0.
+    function position() {
+        const AV = avplay()
+        if (AV) {
+            try {
+                return (AV.getCurrentTime() || 0) / 1000
+            } catch {
+                return 0
+            }
+        }
+        return video && video.src ? video.currentTime || 0 : 0
+    }
+
+    function duration() {
+        const AV = avplay()
+        if (AV) {
+            try {
+                const ms = AV.getDuration()
+                return ms > 0 ? ms / 1000 : 0
+            } catch {
+                return 0
+            }
+        }
+        return video && video.src && isFinite(video.duration) ? video.duration : 0
+    }
+
+    function trackInfo(raw) {
+        try {
+            return typeof raw === "string" ? JSON.parse(raw) : raw || {}
+        } catch {
+            return {}
+        }
+    }
+
+    // The audio and subtitle tracks of what is open, and which ones are on. Only AVPlay
+    // reports them; anywhere else the lists are empty.
+    function tracks() {
+        const out = { audio: [], text: [], audioIndex: null, textIndex: null }
+        const AV = avplay()
+        if (!AV) return out
+        try {
+            ;(AV.getTotalTrackInfo() || []).forEach((track) => {
+                const info = trackInfo(track.extra_info)
+                const lang = info.language || info.track_lang || ""
+                if (track.type === "AUDIO")
+                    out.audio.push({ index: track.index, lang, codec: info.fourCC || "" })
+                else if (track.type === "TEXT") out.text.push({ index: track.index, lang })
+            })
+            ;(AV.getCurrentStreamInfo() || []).forEach((track) => {
+                if (track.type === "AUDIO") out.audioIndex = track.index
+                else if (track.type === "TEXT") out.textIndex = track.index
+            })
+        } catch {}
+        return out
+    }
+
+    function selectTrack(type, index) {
+        const AV = avplay()
+        if (!AV) return false
+        try {
+            AV.setSelectTrack(type, index)
+            return true
+        } catch {
+            return false
+        }
+    }
+
+    function silenceSubtitles(silent) {
+        const AV = avplay()
+        if (!AV) return
+        try {
+            AV.setSilentSubtitle(!!silent)
+        } catch {}
+    }
+
+    // AVPlay seeks asynchronously over HTTP and is slow: callers ask once per landing point.
+    function seekTo(seconds) {
+        const target = Math.max(0, seconds || 0)
+        const AV = avplay()
+        if (AV) {
+            try {
+                AV.seekTo(
+                    Math.round(target * 1000),
+                    () => {},
+                    (error) => {
+                        console.error("seek failed:", error)
+                    },
+                )
+            } catch (error) {
+                console.error("seek failed:", error)
+            }
+            return
+        }
+        if (video && video.src) {
+            try {
+                video.currentTime = target
+            } catch {}
+        }
     }
 
     function toggle() {
@@ -242,6 +375,12 @@ App.player = (function () {
         play,
         stop,
         toggle,
+        position,
+        duration,
+        seekTo,
+        tracks,
+        selectTrack,
+        silenceSubtitles,
         state,
         clearRect,
         resize,

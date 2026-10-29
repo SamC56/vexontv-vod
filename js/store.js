@@ -93,8 +93,8 @@ App.store = (function () {
         emit()
     }
 
-    function focus(zone, row, col) {
-        state.pendingZone = { zone, row: row || 0, col: col || 0 }
+    function focus(zone, row, col, selector) {
+        state.pendingZone = { zone, row: row || 0, col: col || 0, selector: selector || null }
     }
 
     function takeFocus() {
@@ -125,7 +125,11 @@ App.store = (function () {
     function seedDefault() {
         if (state.lists.length) return
         if (read(KEYS.seeded, false)) return
-        const built = buildSource("url", { url: DEFAULT_LIST.url, name: DEFAULT_LIST.name })
+        // A build can carry its owner's source (tools/build-wgt.py, local-source.json).
+        const local = App.localSource
+        const built = local
+            ? buildSource(local.type || "xtream", local)
+            : buildSource("url", { url: DEFAULT_LIST.url, name: DEFAULT_LIST.name })
         if (!built.list) return
         state.lists = [built.list]
         write(KEYS.lists, state.lists)
@@ -145,6 +149,7 @@ App.store = (function () {
         if (screen === "recents") return "recentsList"
         if (screen === "favs") return "favsList"
         if (screen === "home") return "sources"
+        if (screen === "movies") return "vodCats"
         return null
     }
 
@@ -1238,6 +1243,7 @@ App.store = (function () {
         state,
         subscribe,
         emit,
+        set,
         init,
         takeFocus,
         focus,

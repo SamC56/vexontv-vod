@@ -25,6 +25,8 @@ var App = App || {} // eslint-disable-line no-var -- shared namespace, no module
                 else if (screen === "tv") tv.set("tvActions", 0, 0)
                 else if (screen === "recents") tv.set("recentsSearch", 0, 0)
                 else if (screen === "favs") tv.set("favsSearch", 0, 0)
+                else if (screen === "movies") tv.set("vodCats", 0, 0)
+                else if (screen === "title") tv.set("titleActions", 0, 0)
                 else if (screen === "cats") tv.set("catActions", 0, 0)
                 else if (screen === "add") tv.set(store.state.addType ? "fields" : "addTypes", 0, 0)
                 else if (screen === "edit") tv.set("fields", 0, 0)
@@ -121,6 +123,48 @@ var App = App || {} // eslint-disable-line no-var -- shared namespace, no module
         zone("tvPreview", "#tvPreview", {
             onEdge: function (dir) {
                 if (dir === "left") tv.set("tvChannels", 0, 0)
+            },
+        })
+
+        zone("vodSort", "#vodSort .seg-btn", {
+            onEdge: function (dir) {
+                if (dir === "left") tv.set("rail", 0, 0)
+                else if (dir === "right") tv.set("vodSearch", 0, 0)
+                else if (dir === "down") tv.set("vodCats", 0, 0)
+            },
+        })
+
+        zone("vodSearch", "#vodSearch", {
+            onEdge: function (dir) {
+                if (dir === "left") tv.set("vodSort", 0, 0)
+                else if (dir === "down") tv.set("vodGrid", 0, 0)
+            },
+        })
+
+        zone("vodCats", "#vodCats .vodcat", {
+            onEdge: function (dir) {
+                if (dir === "up") tv.set("vodSort", 0, 0)
+                else if (dir === "right") tv.set("vodGrid", 0, 0)
+                else if (dir === "left") tv.set("rail", 0, 0)
+            },
+        })
+
+        // The grid's top and bottom edges turn the page before they leave it.
+        zone("vodGrid", "#vodGrid .poster", {
+            onEdge: function (dir) {
+                if (dir === "left") tv.set("vodCats", 0, 0)
+                else if (dir === "up") {
+                    if (App.vod.turnPage(-1)) store.focus("vodGrid", 9999, 0)
+                    else tv.set("vodSearch", 0, 0)
+                } else if (dir === "down") {
+                    if (App.vod.turnPage(1)) store.focus("vodGrid", 0, 0)
+                }
+            },
+        })
+
+        zone("titleActions", "#titleActions .btn", {
+            onEdge: function (dir) {
+                if (dir === "left") tv.set("rail", 0, 0)
             },
         })
 
@@ -221,6 +265,20 @@ var App = App || {} // eslint-disable-line no-var -- shared namespace, no module
 
         zone("playError", "#playError .btn")
 
+        tv.define("vodIdle", () => {
+            return []
+        })
+
+        zone("vodError", "#vodError .btn")
+
+        zone("vodMenu", "#vodMenu .btn", {
+            onEdge: function (dir) {
+                if (dir === "up") App.vod.closeMenu()
+            },
+        })
+
+        zone("vodTracks", "#vodTracks .vod-track-opt")
+
         zone("confirm", "#confirm .btn")
     }
 
@@ -235,6 +293,18 @@ var App = App || {} // eslint-disable-line no-var -- shared namespace, no module
         }
         if (store.state.screen === "player") {
             store.exitPlayer()
+            return true
+        }
+        if (store.state.screen === "vodplayer") {
+            const vod = App.vod
+            if (vod.ui.trackMenu) vod.closeTracks()
+            else if (vod.ui.seek) vod.cancelSeek()
+            else if (vod.ui.menu) vod.closeMenu()
+            else vod.exitPlayer()
+            return true
+        }
+        if (store.state.screen === "title") {
+            App.vod.backFromTitle()
             return true
         }
         if (store.state.screen === "edit") {
@@ -283,7 +353,37 @@ var App = App || {} // eslint-disable-line no-var -- shared namespace, no module
         store.notify(saved ? "Added to favorites" : "Removed from favorites")
     }
 
+    // Films and episodes: the arrows seek, OK and the media keys play and pause.
+    function vodKey(code) {
+        const vod = App.vod
+        if (vod.ui.error) {
+            if (code === tv.KEY.UP || code === tv.KEY.DOWN) {
+                const buttons = ui.qsa("#vodError .btn")
+                const index = buttons.indexOf(document.querySelector(".focused"))
+                tv.set("vodError", index === 0 ? 1 : 0, 0)
+                return true
+            }
+            return code !== tv.KEY.ENTER && code !== tv.KEY.LEFT && code !== tv.KEY.RIGHT
+        }
+        // The audio and subtitle menu is ordinary focus: the arrows and OK move through it.
+        if (vod.ui.trackMenu || vod.ui.menu) {
+            const navigation = [tv.KEY.UP, tv.KEY.DOWN, tv.KEY.LEFT, tv.KEY.RIGHT, tv.KEY.ENTER]
+            return navigation.indexOf(code) === -1
+        }
+        if (code === tv.KEY.LEFT || code === tv.KEY.REWIND) vod.seekBy(-1)
+        else if (code === tv.KEY.RIGHT || code === tv.KEY.FAST_FORWARD) vod.seekBy(1)
+        else if (code === tv.KEY.ENTER && vod.ui.seek) vod.commitSeek()
+        else if (code === tv.KEY.DOWN) vod.openMenu()
+        else if (code === tv.KEY.ENTER || code === tv.KEY.PLAY_PAUSE) vod.setPaused()
+        else if (code === tv.KEY.PLAY) vod.setPaused(false)
+        else if (code === tv.KEY.PAUSE) vod.setPaused(true)
+        else if (code === tv.KEY.STOP) vod.exitPlayer()
+        return true
+    }
+
     function onKey(code) {
+        if (store.state.screen === "vodplayer" && code !== tv.KEY.BACK && code !== 27)
+            return vodKey(code)
         if (code >= 48 && code <= 57) {
             store.pushDigit(String(code - 48))
             return true

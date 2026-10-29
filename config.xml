@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <widget xmlns="http://www.w3.org/ns/widgets" xmlns:tizen="http://tizen.org/ns/widgets"
-	id="http://vexontv.local/VexonTV" version="1.0.0" viewmodes="maximized">
-	<tizen:application id="ts9k4m2w8p.VexonTV" package="ts9k4m2w8p" required_version="2.3" />
+	id="http://vexontv.local/VexonVOD" version="1.0.0" viewmodes="maximized">
+	<tizen:application id="vx7vod0fk2.VexonVOD" package="vx7vod0fk2" required_version="2.3" />
 	<content src="index.html" />
-	<name>VexonTV</name>
+	<name>VexonTV VOD</name>
 	<icon src="icon.png" />
 	<feature name="http://tizen.org/feature/screen.size.normal.1080.1920" />
 	<tizen:privilege name="http://tizen.org/privilege/internet" />

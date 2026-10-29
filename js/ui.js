@@ -18,6 +18,9 @@ App.ui = (function () {
     const SourceForm = screens.sourceForm
     const AddTypePicker = screens.addTypePicker
     const Player = screens.player
+    const Movies = screens.movies
+    const Title = screens.title
+    const VodPlayer = screens.vodPlayer
     const Loader = screens.loader
     const Toast = screens.toast
     const NumBuffer = screens.numBuffer
@@ -26,12 +29,15 @@ App.ui = (function () {
     function Root() {
         useEffect(() => {
             const request = store.takeFocus()
-            if (request) tv.set(request.zone, request.row, request.col)
+            const target =
+                request && request.selector ? document.querySelector(request.selector) : null
+            if (target) tv.setOn(request.zone, target)
+            else if (request) tv.set(request.zone, request.row, request.col)
             else tv.refresh()
         })
 
         const state = store.state
-        const playing = state.screen === "player"
+        const playing = state.screen === "player" || state.screen === "vodplayer"
         return html`<div class=${`app${playing ? " playing" : ""}`}>
             <div class="backdrop" id="backdrop" aria-hidden="true"></div>
             <${Rail} screen=${state.screen} />
@@ -40,6 +46,8 @@ App.ui = (function () {
                 ${!playing && state.screen === "tv" ? html`<${TvScreen} />` : null}
                 ${!playing && state.screen === "recents" ? html`<${Recents} />` : null}
                 ${!playing && state.screen === "favs" ? html`<${Favs} />` : null}
+                ${!playing && state.screen === "movies" ? html`<${Movies} />` : null}
+                ${!playing && state.screen === "title" ? html`<${Title} />` : null}
                 ${!playing && state.screen === "cats" ? html`<${Categories} />` : null}
                 ${
                     !playing && state.screen === "add"
@@ -50,6 +58,7 @@ App.ui = (function () {
                 }
                 ${!playing && state.screen === "edit" ? html`<${SourceForm} mode="edit" />` : null}
                 ${state.screen === "player" ? html`<${Player} />` : null}
+                ${state.screen === "vodplayer" ? html`<${VodPlayer} />` : null}
             </main>
             ${state.numBuffer ? html`<${NumBuffer} value=${state.numBuffer} />` : null}
             ${state.loading ? html`<${Loader} />` : null}

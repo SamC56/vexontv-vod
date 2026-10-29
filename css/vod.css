@@ -1,0 +1,466 @@
+/* Movies: the browse grid, the details page and the seek bar of the player. */
+
+.vod-browse {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: minmax(260px, 24%) 1fr;
+    grid-template-rows: minmax(0, 1fr);
+    gap: 32px;
+}
+
+.bar-actions.seg {
+    gap: 8px;
+}
+
+.btn.seg-btn {
+    padding: 12px 20px;
+    font-size: 19px;
+    color: var(--text-3);
+}
+
+.btn.seg-btn.on {
+    color: var(--text);
+    background: var(--surface-2);
+}
+
+.row.vodcat.pinned .row-name {
+    color: var(--saved);
+}
+
+.vod-grid {
+    min-height: 0;
+    overflow-y: auto;
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    align-content: start;
+    gap: 28px 22px;
+    /* Room for the focused poster to grow without the scroll box clipping it. */
+    padding: 10px 12px 24px;
+}
+
+.vod-grid .empty {
+    grid-column: 1 / -1;
+}
+
+.poster {
+    display: block;
+    min-width: 0;
+    color: var(--text-2);
+    cursor: pointer;
+}
+
+/* 2:3 boxes by padding, not aspect-ratio: the TV's engine ignored it and the boxes
+   collapsed to nothing, with the text on top of each other. */
+.poster-art {
+    position: relative;
+    display: block;
+    width: 100%;
+    height: 0;
+    padding-top: 150%;
+    overflow: hidden;
+    border-radius: var(--r-md);
+    background-color: var(--surface-2);
+    box-shadow: inset 0 0 0 1px var(--line);
+    transition:
+        transform var(--dur-fast) var(--ease),
+        box-shadow var(--dur-fast) var(--ease);
+}
+
+.poster.focused .poster-art {
+    transform: scale(1.05);
+    box-shadow:
+        0 0 0 3px var(--focus),
+        0 18px 40px rgba(0, 0, 0, 0.6);
+}
+
+.poster-letter {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 64px;
+    font-weight: 700;
+    color: var(--text-3);
+}
+
+/* Over the letter: a cover that fails to load leaves the letter showing. */
+.poster-img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.title-poster .poster-letter {
+    font-size: 120px;
+}
+
+.poster-rating {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    padding: 2px 8px;
+    border-radius: var(--r-sm);
+    background: rgba(5, 5, 5, 0.72);
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--saved);
+}
+
+.poster-seen {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: var(--ok);
+    color: var(--on-accent);
+}
+
+.poster-seen svg {
+    width: 18px;
+    height: 18px;
+}
+
+.poster-progress {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 5px;
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.poster-progress-fill {
+    display: block;
+    height: 100%;
+    background: var(--ok);
+}
+
+.poster-name {
+    display: block;
+    margin-top: 10px;
+    overflow: hidden;
+    font-size: 18px;
+    font-weight: 600;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.poster.focused .poster-name {
+    color: var(--text);
+}
+
+.poster-sub {
+    display: block;
+    min-height: 1.2em;
+    margin-top: 4px;
+    font-size: 15px;
+    color: var(--text-3);
+}
+
+/* Details */
+
+.screen.title-screen {
+    position: static;
+}
+
+.title-backdrop {
+    position: absolute;
+    inset: 0;
+    background-position: center top;
+    background-size: cover;
+    opacity: 0.35;
+    pointer-events: none;
+}
+
+.title-backdrop::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+        linear-gradient(90deg, var(--black) 18%, rgba(5, 5, 5, 0.55) 62%, rgba(5, 5, 5, 0.2)),
+        linear-gradient(0deg, var(--black) 2%, transparent 45%);
+}
+
+.title-body {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(240px, 26%);
+    align-items: start;
+    gap: 64px;
+    padding-top: 48px;
+}
+
+.title-text {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    max-width: 62ch;
+}
+
+.title-kicker {
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-3);
+}
+
+.title-name {
+    font-size: clamp(48px, 4vw, 76px);
+    line-height: 1.02;
+    text-wrap: balance;
+}
+
+.title-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 20px;
+    font-size: 20px;
+    color: var(--text-2);
+}
+
+.chip-rating {
+    font-weight: 700;
+    color: var(--saved);
+}
+
+.title-plot {
+    font-size: 23px;
+    line-height: 1.5;
+    color: var(--text-2);
+}
+
+.title-cast {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 19px;
+    color: var(--text-3);
+}
+
+.title-cast b {
+    font-weight: 600;
+    color: var(--text-2);
+}
+
+.actions.title-actions {
+    margin-top: 12px;
+}
+
+.title-progress {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-width: 480px;
+    font-size: 17px;
+    color: var(--text-3);
+}
+
+.title-progress-bar {
+    height: 6px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.title-progress-fill {
+    display: block;
+    height: 100%;
+    background: var(--grad-ink);
+}
+
+.title-progress-left {
+    font-variant-numeric: tabular-nums;
+}
+
+.title-poster {
+    position: relative;
+    height: 0;
+    padding-top: 150%;
+    overflow: hidden;
+    border-radius: var(--r-lg);
+    background-color: var(--surface-2);
+    box-shadow:
+        inset 0 0 0 1px var(--line),
+        0 30px 80px rgba(0, 0, 0, 0.6);
+}
+
+/* Player: the guide's place is taken by the seek bar. */
+
+.screen.player.vod-player {
+    z-index: 10;
+}
+
+.overlay.vod-osd {
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-end;
+    gap: 18px;
+}
+
+.vod-osd-title h1 {
+    font-size: clamp(36px, 2.8vw, 52px);
+}
+
+.vod-track {
+    position: relative;
+    height: 8px;
+    /* The seek time floats above the bar: room for it under the subtitle. */
+    margin-top: 64px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.vod-track-fill {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    border-radius: 999px;
+    background: var(--grad-ink);
+}
+
+.vod-knob {
+    position: absolute;
+    top: 50%;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--focus);
+    box-shadow: 0 0 0 5px rgba(255, 255, 255, 0.22);
+    transform: translate(-50%, -50%);
+}
+
+.vod-seek-tip {
+    position: absolute;
+    bottom: 26px;
+    padding: 4px 12px;
+    border-radius: var(--r-sm);
+    background: var(--focus);
+    color: var(--on-accent);
+    font-size: 20px;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    transform: translateX(-50%);
+}
+
+.vod-times {
+    display: flex;
+    justify-content: space-between;
+    font-size: 20px;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-2);
+}
+
+.vod-paused {
+    position: absolute;
+    top: -40vh;
+    left: 50%;
+    padding: 10px 26px;
+    border-radius: 999px;
+    background: rgba(5, 5, 5, 0.72);
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    transform: translateX(-50%);
+}
+
+.vod-osd-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+}
+
+.vod-menu {
+    display: flex;
+    gap: 12px;
+}
+
+.btn.vod-menu-btn {
+    padding: 10px 20px;
+    font-size: 19px;
+    background: rgba(5, 5, 5, 0.6);
+}
+
+.vod-subtitle {
+    position: absolute;
+    left: 10%;
+    right: 10%;
+    bottom: 9%;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    text-align: center;
+    pointer-events: none;
+}
+
+/* Above the seek bar while the controls are showing. */
+.vod-subtitle.raised {
+    bottom: 36%;
+}
+
+.vod-subtitle-line {
+    padding: 2px 14px;
+    border-radius: var(--r-sm);
+    background: rgba(5, 5, 5, 0.72);
+    font-size: 40px;
+    font-weight: 600;
+    line-height: 1.3;
+    color: var(--text);
+}
+
+.vod-tracks {
+    position: absolute;
+    top: 8%;
+    right: 5%;
+    bottom: 8%;
+    z-index: 3;
+    display: flex;
+    flex-direction: column;
+    width: 460px;
+    padding: 28px 0 12px;
+    border: 1px solid var(--line-2);
+    border-radius: var(--r-xl);
+    background: linear-gradient(180deg, rgba(22, 22, 21, 0.98), rgba(11, 11, 10, 0.98));
+    box-shadow: 0 40px 110px rgba(0, 0, 0, 0.8);
+}
+
+.vod-tracks-title {
+    padding: 0 28px 14px;
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-3);
+}
+
+.vod-tracks-list {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+.row.vod-track-opt {
+    min-height: 64px;
+    padding: 10px 28px;
+}
+
+.row.vod-track-opt.selected .row-name {
+    color: var(--text);
+}

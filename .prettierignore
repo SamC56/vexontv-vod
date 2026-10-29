@@ -7,3 +7,4 @@ pnpm-lock.yaml
 pnpm-workspace.yaml
 # Artifact page: a body fragment the host wraps at publish time
 docs/movies-series-spec.html
+local-source.json

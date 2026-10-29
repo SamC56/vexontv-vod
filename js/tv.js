@@ -12,6 +12,11 @@ App.tv = (function () {
         CH_UP: 427,
         CH_DOWN: 428,
         PLAY_PAUSE: 10252,
+        PLAY: 415,
+        PAUSE: 19,
+        STOP: 413,
+        FAST_FORWARD: 417,
+        REWIND: 412,
     }
 
     const zones = {}
@@ -96,6 +101,24 @@ App.tv = (function () {
         current = name
         row = r || 0
         col = c || 0
+        apply()
+    }
+
+    // Focus one element of a zone wherever the layout put it: a grid's columns depend on
+    // the screen, so a row and column cannot be worked out beforehand.
+    function setOn(name, element) {
+        current = name
+        row = 0
+        col = 0
+        const grid = matrix()
+        for (let r = 0; r < grid.length; r++) {
+            const c = grid[r].indexOf(element)
+            if (c !== -1) {
+                row = r
+                col = c
+                break
+            }
+        }
         apply()
     }
 
@@ -196,6 +219,11 @@ App.tv = (function () {
                     "ChannelUp",
                     "ChannelDown",
                     "MediaPlayPause",
+                    "MediaPlay",
+                    "MediaPause",
+                    "MediaStop",
+                    "MediaFastForward",
+                    "MediaRewind",
                 ])
             }
         } catch {}
@@ -205,6 +233,7 @@ App.tv = (function () {
         KEY,
         define,
         set,
+        setOn,
         refresh: apply,
         move,
         select,

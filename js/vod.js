@@ -6,6 +6,7 @@ var App = App || {} // eslint-disable-line no-var -- shared namespace, no module
 App.vod = (function () {
     const KEYS = {
         progress: "ts.progress",
+        sort: "ts.vod.sort.",
     }
 
     const KINDS = ["movie", "series"]
@@ -14,6 +15,88 @@ App.vod = (function () {
     // Watched: past this share of the runtime, or with less than this many seconds left.
     const WATCHED_RATIO = 0.92
     const WATCHED_TAIL_S = 180
+    // Saved this often while a title plays, and once more on the way out.
+    const SAVE_EVERY_S = 15
+    // Scrubbing: the arrows move a mark, OK jumps there, Back or a long pause drops it.
+    const SEEK_IDLE_MS = 10000
+    const SEEK_CHAIN_MS = 500
+    // A subtitle line with no duration, or a wrong one, still goes away.
+    const SUBTITLE_MAX_MS = 10000
+
+    // Track languages arrive as ISO 639-2 (eng, spa, fre) or 639-1 (en, es) codes.
+    const ISO3 = {
+        eng: "en",
+        spa: "es",
+        fre: "fr",
+        fra: "fr",
+        ger: "de",
+        deu: "de",
+        ita: "it",
+        por: "pt",
+        dut: "nl",
+        nld: "nl",
+        ara: "ar",
+        chi: "zh",
+        zho: "zh",
+        jpn: "ja",
+        kor: "ko",
+        rus: "ru",
+        pol: "pl",
+        tur: "tr",
+        swe: "sv",
+        dan: "da",
+        nor: "no",
+        nob: "no",
+        fin: "fi",
+        gre: "el",
+        ell: "el",
+        heb: "he",
+        hin: "hi",
+        hun: "hu",
+        cze: "cs",
+        ces: "cs",
+        rum: "ro",
+        ron: "ro",
+        tha: "th",
+        vie: "vi",
+        ind: "id",
+        may: "ms",
+        msa: "ms",
+    }
+    const LANGS = {
+        en: "English",
+        es: "Spanish",
+        fr: "French",
+        de: "German",
+        it: "Italian",
+        pt: "Portuguese",
+        nl: "Dutch",
+        ar: "Arabic",
+        zh: "Chinese",
+        ja: "Japanese",
+        ko: "Korean",
+        ru: "Russian",
+        pl: "Polish",
+        tr: "Turkish",
+        sv: "Swedish",
+        da: "Danish",
+        no: "Norwegian",
+        fi: "Finnish",
+        el: "Greek",
+        he: "Hebrew",
+        hi: "Hindi",
+        hu: "Hungarian",
+        cs: "Czech",
+        ro: "Romanian",
+        th: "Thai",
+        vi: "Vietnamese",
+        id: "Indonesian",
+        ms: "Malay",
+    }
+    const CONTINUE = "@continue"
+    // Many panels allow one stream per account and free it a few seconds after the last one
+    // stops: the first refusal is retried once on its own after this long.
+    const RETRY_MS = 3000
 
     const state = {
         catalogs: {},
@@ -290,6 +373,485 @@ App.vod = (function () {
         merged = {}
     }
 
+    // What the Movies screen, the details page and the player are showing.
+    const ui = {
+        kind: "movie",
+        category: "",
+        sort: "added",
+        query: "",
+        page: 0,
+        title: null,
+        details: null,
+        detailsError: null,
+        playing: null,
+        paused: false,
+        seek: null,
+        presses: 0,
+        error: null,
+        tracks: null,
+        menu: false,
+        trackMenu: null,
+        subtitle: "",
+    }
+    let seekTimer = null
+    let subtitleTimer = null
+    let lastSaved = 0
+
+    function store() {
+        return App.store
+    }
+
+    function formatTime(seconds) {
+        const total = Math.max(0, Math.floor(seconds || 0))
+        const h = Math.floor(total / 3600)
+        const m = Math.floor((total % 3600) / 60)
+        const sec = `0${total % 60}`.slice(-2)
+        return h ? `${h}:${`0${m}`.slice(-2)}:${sec}` : `${m}:${sec}`
+    }
+
+    function formatRuntime(seconds) {
+        if (!(seconds > 0)) return ""
+        const h = Math.floor(seconds / 3600)
+        const m = Math.round((seconds % 3600) / 60)
+        return h ? `${h}h ${`0${m}`.slice(-2)}m` : `${m}m`
+    }
+
+    function openMovies() {
+        ui.kind = "movie"
+        ui.sort = read(KEYS.sort + ui.kind, "added") || "added"
+        store().set({ screen: "movies" })
+        store().focus("vodCats", 0, 0)
+        ensure(ui.kind)
+    }
+
+    function browse() {
+        const kind = ui.kind
+        const resume = continueWatching(kind)
+        const rows = []
+        if (resume.length)
+            rows.push({
+                id: CONTINUE,
+                name: "Continue watching",
+                count: resume.length,
+                pinned: true,
+            })
+        rows.push({
+            id: "",
+            name: kind === "series" ? "All series" : "All movies",
+            count: items(kind).length,
+        })
+        categories(kind).forEach((row) => {
+            rows.push({ id: row.name, name: row.name, count: row.count, sources: row.sources })
+        })
+
+        const category = ui.category === CONTINUE && !resume.length ? "" : ui.category
+        const known = rows.some((row) => {
+            return row.id === category
+        })
+        const selected = known ? category : ""
+        const list =
+            selected === CONTINUE
+                ? App.api.match(resume, ui.query)
+                : view(kind, { category: selected, query: ui.query, sort: ui.sort })
+        const shown = page(list, ui.page)
+        ui.page = shown.index
+        const name = rows.filter((row) => {
+            return row.id === selected
+        })[0].name
+        const count = store().formatCount(shown.total)
+        let label = `${name} · ${count} ${shown.total === 1 ? "title" : "titles"}`
+        if (shown.pages > 1) label += ` · page ${shown.index + 1} of ${shown.pages}`
+        return { rows, category: selected, page: shown, label, sort: ui.sort, status: status(kind) }
+    }
+
+    function setCategory(id) {
+        ui.category = id
+        ui.page = 0
+        changed()
+        store().focus("vodGrid", 0, 0)
+    }
+
+    function setSort(id) {
+        if (!SORTS[id]) return
+        ui.sort = id
+        ui.page = 0
+        write(KEYS.sort + ui.kind, id)
+        changed()
+    }
+
+    function setQuery(value) {
+        ui.query = value || ""
+        ui.page = 0
+        changed()
+    }
+
+    // The grid's edges turn the page. Answers whether there was a page to turn to.
+    function turnPage(delta) {
+        const shown = browse().page
+        const next = shown.index + delta
+        if (next < 0 || next >= shown.pages) return false
+        ui.page = next
+        changed()
+        return true
+    }
+
+    function openTitle(item) {
+        if (!item) return
+        ui.title = item
+        ui.details = null
+        ui.detailsError = null
+        store().set({ screen: "title" })
+        store().focus("titleActions", 0, 0)
+        info(item)
+            .then((details) => {
+                if (ui.title !== item) return
+                ui.details = details
+                changed()
+            })
+            .catch((error) => {
+                if (ui.title !== item) return
+                ui.details = {}
+                ui.detailsError = error.message || "The panel sent no details for this title"
+                changed()
+            })
+    }
+
+    function backFromTitle() {
+        const item = ui.title
+        store().set({ screen: "movies" })
+        if (item) {
+            const key = keyOf(item).replace(/["\\]/g, "\\$&")
+            const selector = `#vodGrid .poster[data-key="${key}"]`
+            store().focus("vodGrid", 0, 0, selector)
+        } else store().focus("vodCats", 0, 0)
+    }
+
+    function resumePoint(item) {
+        const entry = progressOf(item)
+        return entry && !entry.done && entry.pos > 0 ? entry.pos : 0
+    }
+
+    function playTitle(item, fromStart) {
+        if (!item) return
+        const details = ui.title === item ? ui.details : null
+        ui.playing = {
+            item,
+            url: (details && details.url) || item.url,
+            start: fromStart ? 0 : resumePoint(item),
+            origin: store().state.screen,
+        }
+        ui.paused = false
+        clearSeek()
+        resetTracks()
+        ui.error = null
+        lastSaved = 0
+        store().set({ screen: "vodplayer" })
+        store().focus("vodIdle", 0, 0)
+    }
+
+    function saveCurrent() {
+        const playing = ui.playing
+        if (!playing) return null
+        const duration = App.player.duration()
+        const position = App.player.position()
+        if (!(duration > 0) || !(position > 0)) return null
+        return saveProgress(playing.item, position, duration)
+    }
+
+    // Called by the player screen every second while a title plays.
+    function tick() {
+        const position = App.player.position()
+        if (ui.playing && !ui.paused && position - lastSaved >= SAVE_EVERY_S) {
+            lastSaved = position
+            saveCurrent()
+        }
+    }
+
+    function exitPlayer() {
+        if (!ui.playing) return
+        if (!ui.playing.ended) saveCurrent()
+        const origin = ui.playing.origin
+        clearSeek()
+        resetTracks()
+        ui.playing = null
+        ui.error = null
+        if (origin === "title" && ui.title) {
+            store().set({ screen: "title" })
+            store().focus("titleActions", 0, 0)
+        } else backFromTitle()
+    }
+
+    function playEnded() {
+        const playing = ui.playing
+        if (!playing) return
+        const duration = App.player.duration()
+        if (duration > 0) saveProgress(playing.item, duration, duration)
+        ui.playing = Object.assign({}, playing, { ended: true })
+        exitPlayer()
+    }
+
+    function playFailed(message) {
+        const playing = ui.playing
+        if (!playing) return
+        if (!playing.retried) {
+            ui.playing = Object.assign({}, playing, { retried: true })
+            setTimeout(() => {
+                if (ui.playing && ui.playing.item === playing.item && !ui.error) retry()
+            }, RETRY_MS)
+            return
+        }
+        ui.error = message || "Could not open the title"
+        changed()
+        store().focus("vodError", 0, 0)
+    }
+
+    function retry() {
+        if (!ui.playing) return
+        const position = App.player.position()
+        ui.playing = Object.assign({}, ui.playing, {
+            start: position > 0 ? position : ui.playing.start,
+            attempt: (ui.playing.attempt || 0) + 1,
+        })
+        resetTracks()
+        ui.error = null
+        changed()
+        store().focus("vodIdle", 0, 0)
+    }
+
+    // paused: true to pause, false to play, undefined to toggle.
+    function setPaused(paused) {
+        if (!ui.playing || ui.error) return
+        const pause = paused === undefined ? !ui.paused : paused
+        if (pause === ui.paused) return
+        const result = App.player.toggle()
+        ui.paused = result === "PAUSED" || (result !== "PLAYING" && pause)
+        if (ui.paused) saveCurrent()
+        changed()
+    }
+
+    function seekStep(presses) {
+        if (presses < 5) return 10
+        return presses < 15 ? 30 : 60
+    }
+
+    function seekBy(direction) {
+        if (!ui.playing || ui.error) return
+        const now = Date.now()
+        const chained =
+            ui.seek && ui.seek.direction === direction && now - ui.seek.at < SEEK_CHAIN_MS
+        ui.presses = chained ? ui.presses + 1 : 0
+        const from = ui.seek ? ui.seek.target : App.player.position()
+        const duration = App.player.duration()
+        let target = Math.max(0, from + direction * seekStep(ui.presses))
+        if (duration > 0) target = Math.min(target, Math.max(0, duration - 1))
+        ui.seek = { target, at: now, direction }
+        if (seekTimer) clearTimeout(seekTimer)
+        seekTimer = setTimeout(cancelSeek, SEEK_IDLE_MS)
+        changed()
+    }
+
+    function cancelSeek() {
+        if (!ui.seek) return
+        clearSeek()
+        changed()
+    }
+
+    function clearSeek() {
+        if (seekTimer) clearTimeout(seekTimer)
+        seekTimer = null
+        ui.seek = null
+        ui.presses = 0
+    }
+
+    function commitSeek() {
+        if (!ui.seek) return
+        const target = ui.seek.target
+        clearSeek()
+        App.player.seekTo(target)
+        lastSaved = target
+        changed()
+    }
+
+    function langCode(value) {
+        const code = String(value || "")
+            .toLowerCase()
+            .split(/[-_]/)[0]
+        if (code === "english") return "en"
+        return ISO3[code] || code
+    }
+
+    function langName(value) {
+        const code = langCode(value)
+        if (!code || code === "und") return "Unknown"
+        return LANGS[code] || code.toUpperCase()
+    }
+
+    // English audio when there is any. Subtitles: English ones under foreign audio; under
+    // English audio only a track marked forced, which subtitles the foreign parts alone.
+    function chooseTracks(tracks) {
+        const english = (list) => {
+            return list.filter((track) => {
+                return langCode(track.lang) === "en"
+            })
+        }
+        const englishAudio = english(tracks.audio)[0]
+        const current =
+            tracks.audio.filter((track) => {
+                return track.index === tracks.audioIndex
+            })[0] || tracks.audio[0]
+        const audio = englishAudio || current
+        const englishText = english(tracks.text)
+        const forced = englishText.filter((track) => {
+            return /forced/i.test(track.name || "")
+        })[0]
+        let text = -1
+        // Unknown audio is not foreign: most files that do not say are English.
+        const hearing = audio ? langCode(audio.lang) : ""
+        const foreign = hearing && hearing !== "und" && hearing !== "en"
+        if (foreign && englishText.length) text = englishText[0].index
+        else if (forced) text = forced.index
+        return { audio: audio ? audio.index : null, text }
+    }
+
+    function labelled(list) {
+        const seen = {}
+        return list.map((track) => {
+            const name = langName(track.lang)
+            seen[name] = (seen[name] || 0) + 1
+            return Object.assign({}, track, {
+                label: seen[name] > 1 ? `${name} ${seen[name]}` : name,
+            })
+        })
+    }
+
+    function resetTracks() {
+        ui.tracks = null
+        ui.menu = false
+        ui.trackMenu = null
+        ui.subtitle = ""
+        if (subtitleTimer) clearTimeout(subtitleTimer)
+        subtitleTimer = null
+    }
+
+    // Once a title has started: read its tracks and apply the English defaults.
+    function tracksReady() {
+        if (!ui.playing || ui.tracks) return
+        const found = App.player.tracks()
+        const choice = chooseTracks(found)
+        if (choice.audio !== null && choice.audio !== found.audioIndex)
+            App.player.selectTrack("AUDIO", choice.audio)
+        if (choice.text !== -1) App.player.selectTrack("TEXT", choice.text)
+        App.player.silenceSubtitles(choice.text === -1)
+        ui.tracks = {
+            audio: labelled(found.audio),
+            text: labelled(found.text),
+            audioIndex: choice.audio,
+            textIndex: choice.text,
+        }
+        changed()
+    }
+
+    function trackLabel(type) {
+        const tracks = ui.tracks
+        if (!tracks) return type === "audio" ? "Default" : "Off"
+        const list = type === "audio" ? tracks.audio : tracks.text
+        const index = type === "audio" ? tracks.audioIndex : tracks.textIndex
+        const track = list.filter((item) => {
+            return item.index === index
+        })[0]
+        if (track) return track.label
+        return type === "audio" ? "Default" : "Off"
+    }
+
+    function openMenu() {
+        if (!ui.playing || ui.error) return
+        ui.menu = true
+        changed()
+        store().focus("vodMenu", 0, 0)
+    }
+
+    function closeMenu() {
+        ui.menu = false
+        ui.trackMenu = null
+        changed()
+        store().focus("vodIdle", 0, 0)
+    }
+
+    function openTracks(type) {
+        ui.trackMenu = type
+        changed()
+        const options = trackOptions(type)
+        let at = 0
+        options.forEach((option, index) => {
+            if (option.selected) at = index
+        })
+        store().focus("vodTracks", at, 0)
+    }
+
+    function closeTracks() {
+        const type = ui.trackMenu
+        ui.trackMenu = null
+        changed()
+        store().focus("vodMenu", type === "text" ? 1 : 0, 0)
+    }
+
+    function trackOptions(type) {
+        const tracks = ui.tracks || { audio: [], text: [], audioIndex: null, textIndex: -1 }
+        if (type === "audio") {
+            return tracks.audio.map((track) => {
+                return {
+                    index: track.index,
+                    label: track.label,
+                    selected: track.index === tracks.audioIndex,
+                }
+            })
+        }
+        return [{ index: -1, label: "Off", selected: tracks.textIndex === -1 }].concat(
+            tracks.text.map((track) => {
+                return {
+                    index: track.index,
+                    label: track.label,
+                    selected: track.index === tracks.textIndex,
+                }
+            }),
+        )
+    }
+
+    function pickTrack(type, index) {
+        const tracks = ui.tracks
+        if (!tracks) return
+        if (type === "audio") {
+            if (App.player.selectTrack("AUDIO", index)) tracks.audioIndex = index
+        } else {
+            if (index !== -1) App.player.selectTrack("TEXT", index)
+            App.player.silenceSubtitles(index === -1)
+            tracks.textIndex = index
+            if (index === -1) showSubtitle("", 0)
+        }
+        closeTracks()
+    }
+
+    // Subtitle markup (SRT italics, ASS overrides) is dropped: the page draws plain lines.
+    function showSubtitle(text, duration) {
+        if (subtitleTimer) clearTimeout(subtitleTimer)
+        subtitleTimer = null
+        const clean = String(text || "")
+            .replace(/\{\\[^}]*\}/g, "")
+            .replace(/<[^>]+>/g, "")
+            .replace(/\\N/g, "\n")
+            .trim()
+        ui.subtitle = ui.tracks && ui.tracks.textIndex !== -1 ? clean : ""
+        if (ui.subtitle) {
+            const ms = duration > 0 ? Math.min(duration, SUBTITLE_MAX_MS) : SUBTITLE_MAX_MS
+            subtitleTimer = setTimeout(() => {
+                ui.subtitle = ""
+                subtitleTimer = null
+                changed()
+            }, ms)
+        }
+        changed()
+    }
+
     return {
         KINDS,
         PAGE,
@@ -308,5 +870,40 @@ App.vod = (function () {
         saveProgress,
         continueWatching,
         forget,
+        CONTINUE,
+        ui,
+        formatTime,
+        formatRuntime,
+        openMovies,
+        browse,
+        setCategory,
+        setSort,
+        setQuery,
+        turnPage,
+        openTitle,
+        backFromTitle,
+        resumePoint,
+        playTitle,
+        tick,
+        exitPlayer,
+        playEnded,
+        playFailed,
+        retry,
+        setPaused,
+        seekBy,
+        commitSeek,
+        cancelSeek,
+        langCode,
+        langName,
+        chooseTracks,
+        tracksReady,
+        trackLabel,
+        trackOptions,
+        openMenu,
+        closeMenu,
+        openTracks,
+        closeTracks,
+        pickTrack,
+        showSubtitle,
     }
 })()

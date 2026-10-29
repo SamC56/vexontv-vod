@@ -253,6 +253,67 @@ check("not watched with no runtime", vod.isWatched(100, 0) === false)
 check("watched past 92%", vod.isWatched(920, 1000) === true)
 check("watched with the credits left", vod.isWatched(5000, 5100) === true)
 check("not watched halfway", vod.isWatched(500, 1000) === false)
+;[
+    [0, "0:00"],
+    [75, "1:15"],
+    [3725, "1:02:05"],
+    [-4, "0:00"],
+].forEach((item) => {
+    check(`formatTime ${item[0]}`, vod.formatTime(item[0]) === item[1], vod.formatTime(item[0]))
+})
+const tracks = (audio, text, current) => {
+    return {
+        audio: audio.map((lang, index) => {
+            return { index: index + 1, lang }
+        }),
+        text: text.map((lang, index) => {
+            return { index: index + 10, lang }
+        }),
+        audioIndex: current === undefined ? 1 : current,
+        textIndex: null,
+    }
+}
+;[
+    ["English audio over a Spanish first track", tracks(["spa", "eng"], ["eng"]), 2, -1],
+    ["two-letter and region codes count", tracks(["es", "en-GB"], []), 2, -1],
+    ["foreign audio only: English subtitles on", tracks(["spa"], ["fre", "eng"]), 1, 11],
+    ["unknown audio is not foreign", tracks(["und"], ["eng"]), 1, -1],
+    ["no English anywhere: leave it", tracks(["ita"], ["ita"]), 1, -1],
+    ["no track information at all", tracks([], []), null, -1],
+].forEach((item) => {
+    const got = vod.chooseTracks(item[1])
+    check(
+        `chooseTracks: ${item[0]}`,
+        got.audio === item[2] && got.text === item[3],
+        JSON.stringify(got),
+    )
+})
+check(
+    "chooseTracks: an English track named forced is used under English audio",
+    vod.chooseTracks({
+        audio: [{ index: 1, lang: "eng" }],
+        text: [
+            { index: 5, lang: "eng" },
+            { index: 6, lang: "eng", name: "English (Forced)" },
+        ],
+        audioIndex: 1,
+    }).text === 6,
+)
+check(
+    "language names read either code",
+    vod.langName("spa") === "Spanish" &&
+        vod.langName("en") === "English" &&
+        vod.langName("") === "Unknown",
+)
+;[
+    [7560, "2h 06m"],
+    [2820, "47m"],
+    [0, ""],
+    [null, ""],
+].forEach((item) => {
+    const got = vod.formatRuntime(item[0])
+    check(`formatRuntime ${item[0]}`, got === item[1], got)
+})
 
 const xtreamCases = [
     [
@@ -413,6 +474,31 @@ check(
         global.localStorage.clear()
         return ok
     })(),
+)
+
+check(
+    "a build with its owner's source starts with it instead",
+    (function () {
+        global.localStorage.clear()
+        App.localSource = {
+            type: "xtream",
+            name: "Mine",
+            origin: "http://panel.example",
+            user: "u",
+            pass: "p",
+        }
+        store.init()
+        const list = store.state.lists[0]
+        delete App.localSource
+        global.localStorage.clear()
+        return (
+            store.state.lists.length === 1 &&
+            list.kind === "xtream" &&
+            list.name === "Mine" &&
+            list.origin === "http://panel.example"
+        )
+    })(),
+    JSON.stringify(store.state.lists),
 )
 
 store.init()

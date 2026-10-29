@@ -122,6 +122,394 @@ function typeInto(selector, value) {
     return input
 }
 
+// Movies with the remote: the rail entry, the grid, details, play, seek, pause, resume, the end.
+async function movies() {
+    const vod = window.App.vod
+    const store = window.App.store
+    window.localStorage.removeItem("ts.progress")
+    vod.init()
+    store.state.lists = [{ id: "vm", name: "Pelis", kind: "m3u", source: "text", text: sampleM3u }]
+
+    document.getElementById("navMovies").click()
+    await wait(120)
+    check("Movies opens from the rail", onlyScreen("screen-movies"), screens().join(", "))
+    check(
+        "the grid shows the playlist's movies and leaves the channels out",
+        document.querySelectorAll("#vodGrid .poster").length === 3,
+        String(document.querySelectorAll("#vodGrid .poster").length),
+    )
+    const names = Array.prototype.map.call(
+        document.querySelectorAll("#vodCats .vodcat .row-name"),
+        (el) => {
+            return el.textContent
+        },
+    )
+    check(
+        "the categories start with All movies",
+        names.join("|") === "All movies|Cine en casa|VOD | Acción|VOD | Drama",
+        names.join("|"),
+    )
+    check(
+        "the focus starts on the categories",
+        !!focused() && focused().classList.contains("vodcat"),
+        focused() ? focused().className : "(nothing)",
+    )
+    checkClasses("the Movies screen uses the classes the CSS styles", [
+        ["#vodSort .seg-btn.on", "sort"],
+        [".vod-grid .poster .poster-art", "poster"],
+        [".poster .poster-letter", "letter"],
+        [".poster .poster-name", "name"],
+    ])
+
+    press(40)
+    await wait(40)
+    press(13)
+    await wait(80)
+    check(
+        "OK on a category fills the grid with it and moves into it",
+        document.querySelectorAll("#vodGrid .poster").length === 1 &&
+            !!focused() &&
+            focused().classList.contains("poster"),
+        focused() ? focused().className : "(nothing)",
+    )
+    press(37)
+    await wait(40)
+    check(
+        "left from the grid goes back to the categories",
+        !!focused() && focused().classList.contains("vodcat"),
+    )
+
+    vod.setCategory("")
+    await wait(60)
+    typeInto("#vodSearch", "otra")
+    await wait(260)
+    check(
+        "the search narrows the grid",
+        document.querySelectorAll("#vodGrid .poster").length === 1 &&
+            document.querySelector("#vodGrid .poster-name").textContent === "Otra película",
+    )
+    typeInto("#vodSearch", "")
+    await wait(260)
+    document.querySelector('#vodSort .seg-btn[data-sort="name"]').click()
+    await wait(60)
+    check(
+        "A–Z sorts by name and is remembered",
+        document.querySelector("#vodGrid .poster-name").textContent === "Corto sin ruta" &&
+            window.localStorage.getItem("ts.vod.sort.movie") === '"name"',
+    )
+
+    let avTime = 0
+    let opens = 0
+    let audioTrack = 1
+    let subtitlesSilent = null
+    const selected = []
+    let avState = "IDLE"
+    let listener = null
+    const seeks = []
+    window.webapis = {
+        avplay: {
+            open: function () {
+                avTime = 0
+                opens++
+            },
+            setDisplayRect: function () {},
+            setDisplayMethod: function () {},
+            setListener: function (value) {
+                listener = value
+            },
+            prepareAsync: function (ok) {
+                avState = "READY"
+                ok()
+            },
+            play: function () {
+                avState = "PLAYING"
+            },
+            pause: function () {
+                avState = "PAUSED"
+            },
+            getState: function () {
+                return avState
+            },
+            getCurrentTime: function () {
+                return avTime
+            },
+            getDuration: function () {
+                return 6000000
+            },
+            // Spanish first, as the provider's file had it: the app must pick English.
+            getTotalTrackInfo: function () {
+                return [
+                    { index: 0, type: "VIDEO", extra_info: "{}" },
+                    { index: 1, type: "AUDIO", extra_info: '{"language":"spa","fourCC":"AC3"}' },
+                    { index: 2, type: "AUDIO", extra_info: '{"language":"eng","fourCC":"AAC"}' },
+                    { index: 3, type: "TEXT", extra_info: '{"track_lang":"spa"}' },
+                    { index: 4, type: "TEXT", extra_info: '{"track_lang":"eng"}' },
+                ]
+            },
+            getCurrentStreamInfo: function () {
+                return [{ index: audioTrack, type: "AUDIO", extra_info: "{}" }]
+            },
+            setSelectTrack: function (type, index) {
+                selected.push(`${type}:${index}`)
+                if (type === "AUDIO") audioTrack = index
+            },
+            setSilentSubtitle: function (silent) {
+                subtitlesSilent = silent
+            },
+            seekTo: function (ms, ok) {
+                seeks.push(ms)
+                avTime = ms
+                if (ok) ok()
+            },
+            stop: function () {
+                avState = "IDLE"
+            },
+            close: function () {},
+        },
+    }
+
+    store.focus("vodGrid", 0, 0)
+    store.emit()
+    await wait(60)
+    const key = focused() ? focused().dataset.key : ""
+    press(13)
+    await wait(80)
+    check("OK on a poster opens its details", onlyScreen("screen-title"), screens().join(", "))
+    check(
+        "the details show the title and a Play button, no Start over yet",
+        document.getElementById("titleName").textContent === "Corto sin ruta" &&
+            document.getElementById("titlePlay").textContent.trim() === "Play" &&
+            !document.getElementById("titleRestart"),
+    )
+    check(
+        "a playlist movie has no description and says so",
+        document.getElementById("titlePlot").textContent.indexOf("no description") !== -1,
+        document.getElementById("titlePlot").textContent,
+    )
+    press(10009)
+    await wait(80)
+    check(
+        "Back returns to the grid on the same poster",
+        onlyScreen("screen-movies") && !!focused() && focused().dataset.key === key,
+        focused() ? focused().dataset.key : "(nothing)",
+    )
+    press(13)
+    await wait(80)
+
+    press(13)
+    await wait(120)
+    check("Play opens the movie player", onlyScreen("screen-vodplayer"), screens().join(", "))
+    check(
+        "the movie player has a seek bar and its legend",
+        !!document.getElementById("vodTrack") &&
+            document.getElementById("vodKeys").textContent.indexOf("choose where to jump") !== -1,
+    )
+    await wait(350)
+    check(
+        "English audio is picked over the Spanish one the file starts with",
+        selected.indexOf("AUDIO:2") !== -1 &&
+            document.getElementById("vodAudioBtn").textContent.indexOf("English") !== -1,
+        selected.join(),
+    )
+    check(
+        "and under English audio the subtitles stay off",
+        subtitlesSilent === true &&
+            document.getElementById("vodTextBtn").textContent.indexOf("Off") !== -1,
+        String(subtitlesSilent),
+    )
+
+    press(39)
+    press(39)
+    press(39)
+    await wait(40)
+    check(
+        "right moves the mark 10 s a press, and the video waits",
+        document.getElementById("vodSeekTip").textContent === "0:30" && seeks.length === 0,
+        `${(document.getElementById("vodSeekTip") || {}).textContent} / ${seeks.join()}`,
+    )
+    check(
+        "the legend says OK jumps and Back stays",
+        document.getElementById("vodKeys").textContent.indexOf("jump there") !== -1,
+    )
+    await wait(800)
+    check("it waits for OK, however long the presses stop", seeks.length === 0, seeks.join())
+    press(13)
+    await wait(40)
+    check(
+        "OK jumps to the mark, once",
+        seeks.length === 1 && seeks[0] === 30000 && avState === "PLAYING",
+        `${seeks.join()} / ${avState}`,
+    )
+    for (let i = 0; i < 6; i++) press(39)
+    press(13)
+    await wait(40)
+    check("held down, the step grows", seeks.length === 2 && seeks[1] === 110000, seeks.join())
+    press(37)
+    press(13)
+    await wait(40)
+    check("left goes back", seeks[2] === 100000, seeks.join())
+    press(39)
+    await wait(40)
+    press(10009)
+    await wait(60)
+    check(
+        "Back drops the mark and stays in the movie",
+        onlyScreen("screen-vodplayer") && !vod.ui.seek && seeks.length === 3,
+        `${screens().join(", ")} / ${seeks.join()}`,
+    )
+
+    press(40)
+    await wait(60)
+    check(
+        "down reaches the audio and subtitle buttons",
+        !!focused() && focused().id === "vodAudioBtn",
+        focused() ? focused().id : "(nothing)",
+    )
+    press(40)
+    await wait(40)
+    press(13)
+    await wait(60)
+    const options = Array.prototype.map.call(
+        document.querySelectorAll("#vodTracks .vod-track-opt .row-name"),
+        (el) => {
+            return el.textContent
+        },
+    )
+    check(
+        "the subtitle list offers Off and each language",
+        options.join("|") === "Off|Spanish|English" &&
+            !!focused() &&
+            focused().classList.contains("selected"),
+        options.join("|"),
+    )
+    press(40)
+    press(40)
+    await wait(40)
+    press(13)
+    await wait(60)
+    check(
+        "choosing English turns those subtitles on",
+        selected.indexOf("TEXT:4") !== -1 &&
+            subtitlesSilent === false &&
+            !document.getElementById("vodTracks") &&
+            document.getElementById("vodTextBtn").textContent.indexOf("English") !== -1,
+        `${selected.join()} / ${subtitlesSilent}`,
+    )
+    listener.onsubtitlechange(2000, "<i>Where are we?</i>\nNowhere.")
+    await wait(40)
+    check(
+        "a subtitle is drawn without its markup, a line each",
+        document.querySelectorAll("#vodSubtitle .vod-subtitle-line").length === 2 &&
+            document.getElementById("vodSubtitle").textContent.indexOf("<i>") === -1,
+        (document.getElementById("vodSubtitle") || {}).textContent,
+    )
+    press(10009)
+    await wait(60)
+    check(
+        "Back closes the buttons before it leaves the movie",
+        onlyScreen("screen-vodplayer") && !vod.ui.menu,
+    )
+
+    press(13)
+    await wait(40)
+    check(
+        "OK pauses and says so",
+        avState === "PAUSED" && !!document.getElementById("vodPaused"),
+        avState,
+    )
+    press(415)
+    await wait(40)
+    check("the play key resumes", avState === "PLAYING" && !document.getElementById("vodPaused"))
+    press(48)
+    await wait(40)
+    check("numbers do nothing in a movie", !store.state.numBuffer)
+
+    avTime = 1800000
+    press(10009)
+    await wait(80)
+    check(
+        "Back leaves the movie and offers to resume where it was",
+        onlyScreen("screen-title") &&
+            document.getElementById("titlePlay").textContent.trim() === "Resume from 30:00" &&
+            !!document.getElementById("titleRestart") &&
+            !!document.getElementById("titleProgress"),
+        document.getElementById("titlePlay")
+            ? document.getElementById("titlePlay").textContent
+            : screens().join(", "),
+    )
+    press(13)
+    await wait(120)
+    check(
+        "Resume opens it at that point",
+        vod.ui.playing.start === 1800 && seeks[seeks.length - 1] === 1800000,
+        seeks.join(),
+    )
+    press(10009)
+    await wait(80)
+    // Down here, right on the TV: jsdom gives every element a row of its own.
+    press(40)
+    await wait(40)
+    press(13)
+    await wait(120)
+    check("Start over opens it from the beginning", vod.ui.playing.start === 0)
+    press(10009)
+    await wait(80)
+
+    press(10009)
+    await wait(80)
+    check(
+        "a movie left halfway appears in Continue watching",
+        document.querySelector("#vodCats .vodcat .row-name").textContent === "Continue watching",
+    )
+    store.focus("vodGrid", 0, 0, `#vodGrid .poster[data-key="${key}"]`)
+    store.emit()
+    await wait(60)
+    press(13)
+    await wait(80)
+    press(13)
+    await wait(120)
+    const logged = errors.length
+    const opened = opens
+    listener.onerror({ name: "PLAYER_ERROR_CONNECTION_FAILED" })
+    await wait(60)
+    check(
+        "the first refusal is not shown: one stream per account takes a moment to free",
+        !document.getElementById("vodError"),
+    )
+    await wait(3200)
+    check("and it is retried once on its own", opens === opened + 1, `${opens - opened} opens`)
+    listener.onerror({ name: "PLAYER_ERROR_CONNECTION_FAILED" })
+    await wait(60)
+    // The player logs the failure on purpose; it is not one of the session's errors.
+    const failure = errors.splice(logged).filter((line) => {
+        return line.indexOf("playback error") === -1
+    })
+    errors.push(...failure)
+    check(
+        "a failure shows the error card with Retry focused",
+        !!document.getElementById("vodError") && !!focused() && focused().id === "vodRetry",
+        focused() ? focused().id : "(nothing)",
+    )
+    press(13)
+    await wait(120)
+    check("Retry opens it again", !document.getElementById("vodError") && !!vod.ui.playing)
+    listener.onstreamcompleted()
+    await wait(80)
+    check(
+        "at the end it is marked watched and the details offer Play again",
+        onlyScreen("screen-title") &&
+            document.getElementById("titlePlay").textContent.trim() === "Play" &&
+            vod.progressOf(vod.ui.title).done === true,
+    )
+    press(10009)
+    await wait(80)
+    check(
+        "and the poster carries the watched tick",
+        !!document.querySelector(`#vodGrid .poster[data-key="${key}"] .poster-seen`),
+    )
+    window.webapis = undefined
+}
+
 async function run() {
     const indexSource = fs.readFileSync(path.join(root, "index.html"), "utf8")
     const scripts = Array.from(indexSource.matchAll(/<script src="([^"]+)"/g)).map((m) => {
@@ -146,8 +534,8 @@ async function run() {
     check("home screen mounted", !!document.getElementById("screen-home"))
     check("and it is the only screen mounted", onlyScreen("screen-home"), screens().join(", "))
     check(
-        "the rail has its four sections",
-        document.querySelectorAll(".rail .rail-btn").length === 4,
+        "the rail has its five sections",
+        document.querySelectorAll(".rail .rail-btn").length === 5,
     )
     check(
         "the rail carries clock and count at the bottom",
@@ -259,7 +647,7 @@ async function run() {
         })(),
         (document.querySelector(".rail-src[data-list]") || {}).textContent,
     )
-    window.App.tv.set("rail", 3, 0)
+    window.App.tv.set("rail", 4, 0)
     await wait(40)
     press(40)
     await wait(60)
@@ -1274,6 +1662,8 @@ async function run() {
         markHome !== "" && markTv !== "" && markHome !== markTv,
         `${markHome} -> ${markTv}`,
     )
+
+    await movies()
 
     check("without errors after the whole session", errors.length === 0, errors.join(" | "))
 
