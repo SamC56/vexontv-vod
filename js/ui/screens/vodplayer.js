@@ -10,7 +10,6 @@ App.uiScreens = App.uiScreens || {}
     const useState = kit.useState
     const useEffect = kit.useEffect
     const useRef = kit.useRef
-    const OSD_MS = 5000
     const TRACKS_MS = 300
 
     // Films and episodes: the same video plane as live, with a seek bar instead of the guide.
@@ -18,13 +17,9 @@ App.uiScreens = App.uiScreens || {}
         const ui = vod.ui
         const playing = ui.playing
         const videoRef = useRef(null)
-        const osdState = useState(true)
-        const osd = osdState[0]
-        const setOsd = osdState[1]
         const timeState = useState({ position: 0, duration: 0 })
         const time = timeState[0]
         const setTime = timeState[1]
-        const timer = useRef(null)
         const statusState = useState("opening")
         const status = statusState[0]
         const setStatus = statusState[1]
@@ -57,10 +52,15 @@ App.uiScreens = App.uiScreens || {}
         }, [])
 
         useEffect(() => {
-            if (!playing) return
+            if (!playing || !playing.ready) return
             setStatus("opening")
             player.play(playing.url, null, { start: playing.start })
-        }, [playing && playing.url, playing && playing.start, playing && playing.attempt])
+        }, [
+            playing && playing.url,
+            playing && playing.start,
+            playing && playing.attempt,
+            playing && playing.ready,
+        ])
 
         useEffect(() => {
             const tick = setInterval(() => {
@@ -72,32 +72,25 @@ App.uiScreens = App.uiScreens || {}
             }
         }, [])
 
+        // Any key shows the controls, except Back, which is how they are put away.
         useEffect(() => {
-            function pulse() {
-                show()
+            function pulse(event) {
+                if (event.keyCode === App.tv.KEY.BACK || event.keyCode === 27) return
+                vod.showOsd()
             }
             document.addEventListener("keydown", pulse)
-            show()
+            vod.showOsd()
             return function () {
                 document.removeEventListener("keydown", pulse)
-                if (timer.current) clearTimeout(timer.current)
             }
         }, [])
-
-        function show() {
-            setOsd(true)
-            if (timer.current) clearTimeout(timer.current)
-            timer.current = setTimeout(() => {
-                setOsd(false)
-            }, OSD_MS)
-        }
 
         if (!playing) return null
         const item = playing.item
         const duration = time.duration
         const position = ui.seek ? ui.seek.target : time.position || playing.start || 0
         const ratio = duration > 0 ? Math.min(1, position / duration) : 0
-        const visible = (osd || ui.paused || !!ui.seek || ui.menu) && !ui.error
+        const visible = (ui.osd || ui.paused || !!ui.seek || ui.menu) && !ui.error
         const legend = ui.seek
             ? [
                   ["LEFT/RIGHT", "move the mark"],
@@ -108,7 +101,7 @@ App.uiScreens = App.uiScreens || {}
                   ["LEFT/RIGHT", "choose where to jump, hold to go faster"],
                   ["OK", ui.paused ? "play" : "pause"],
                   ["DOWN", "audio and subtitles"],
-                  ["BACK", "exit, it remembers where you were"],
+                  ["BACK", "hide this, again to leave where you are"],
               ]
 
         return html`<section

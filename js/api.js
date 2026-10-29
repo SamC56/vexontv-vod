@@ -598,6 +598,156 @@ App.api = (function () {
         return Promise.resolve({})
     }
 
+    // Matroska: the track list sits in the first bytes of the file, before any picture. It
+    // names what AVPlay leaves blank on this TV (subtitle languages, names, forced flags),
+    // in file order, which is the order AVPlay lists the tracks in.
+    const MKV_ID = {
+        segment: 0x18538067,
+        tracks: 0x1654ae6b,
+        entry: 0xae,
+        cluster: 0x1f43b675,
+        type: 0x83,
+        language: 0x22b59c,
+        bcp47: 0x22b59d,
+        name: 0x536e,
+        isDefault: 0x88,
+        forced: 0x55aa,
+    }
+    const MKV_HEAD_BYTES = 262144
+    const MKV_TIMEOUT_MS = 4000
+
+    function readVint(bytes, at, keepMarker) {
+        const first = bytes[at]
+        if (first === undefined || first === 0) return null
+        let length = 1
+        let mask = 0x80
+        while (!(first & mask)) {
+            length++
+            mask >>= 1
+        }
+        if (at + length > bytes.length) return null
+        let value = keepMarker ? first : first & (mask - 1)
+        let unknown = !keepMarker && value === mask - 1
+        for (let i = 1; i < length; i++) {
+            value = value * 256 + bytes[at + i]
+            if (bytes[at + i] !== 0xff) unknown = false
+        }
+        return { value, length, unknown }
+    }
+
+    function parseMkvTracks(bytes) {
+        const decoder = new TextDecoder()
+        const entries = []
+        let entry = null
+        let done = false
+
+        function uint(start, end) {
+            let value = 0
+            for (let i = start; i < end; i++) value = value * 256 + bytes[i]
+            return value
+        }
+
+        function field(id, start, end) {
+            if (id === MKV_ID.type) entry.type = uint(start, end)
+            else if (id === MKV_ID.language)
+                entry.language = decoder.decode(bytes.subarray(start, end))
+            else if (id === MKV_ID.bcp47) entry.bcp47 = decoder.decode(bytes.subarray(start, end))
+            else if (id === MKV_ID.name) entry.name = decoder.decode(bytes.subarray(start, end))
+            else if (id === MKV_ID.isDefault) entry.isDefault = uint(start, end) === 1
+            else if (id === MKV_ID.forced) entry.forced = uint(start, end) === 1
+        }
+
+        function walk(at, end) {
+            while (at < end && !done) {
+                const id = readVint(bytes, at, true)
+                const size = id && readVint(bytes, at + id.length, false)
+                if (!size) return
+                const body = at + id.length + size.length
+                const stop = size.unknown ? end : Math.min(end, body + size.value)
+                if (id.value === MKV_ID.cluster) {
+                    done = true
+                    return
+                }
+                if (id.value === MKV_ID.segment || id.value === MKV_ID.tracks) {
+                    walk(body, stop)
+                    if (id.value === MKV_ID.tracks) done = true
+                } else if (id.value === MKV_ID.entry) {
+                    entry = { type: 0, language: "", bcp47: "", name: "", isDefault: true }
+                    entry.forced = false
+                    entries.push(entry)
+                    walk(body, stop)
+                    entry = null
+                } else if (entry && body + size.value <= bytes.length) {
+                    field(id.value, body, body + size.value)
+                }
+                if (size.unknown) return
+                at = body + size.value
+            }
+        }
+
+        walk(0, bytes.length)
+        const tracks = { audio: [], text: [] }
+        entries.forEach((item) => {
+            const track = {
+                // Matroska's own rule: a track that names no language is English.
+                lang: (item.bcp47 || item.language || "eng").replace(/\0+$/, ""),
+                name: item.name.replace(/\0+$/, ""),
+                forced: item.forced,
+                isDefault: item.isDefault,
+            }
+            if (item.type === 2) tracks.audio.push(track)
+            else if (item.type === 17) tracks.text.push(track)
+        })
+        return tracks
+    }
+
+    // Reads only the start of the file and lets go: the provider may allow one stream, and
+    // the player is about to open the same address.
+    function loadMkvTracks(url) {
+        if (!url || typeof AbortController === "undefined" || typeof TextDecoder === "undefined")
+            return Promise.resolve(null)
+        const controller = new AbortController()
+        const chunks = []
+        let total = 0
+        const timer = setTimeout(() => {
+            controller.abort()
+        }, MKV_TIMEOUT_MS)
+
+        function finish() {
+            clearTimeout(timer)
+            controller.abort()
+            if (!total) return null
+            const bytes = new Uint8Array(total)
+            let at = 0
+            chunks.forEach((chunk) => {
+                bytes.set(chunk, at)
+                at += chunk.length
+            })
+            try {
+                const tracks = parseMkvTracks(bytes)
+                return tracks.audio.length || tracks.text.length ? tracks : null
+            } catch {
+                return null
+            }
+        }
+
+        return fetch(url, { signal: controller.signal })
+            .then((res) => {
+                if (!res.ok || !res.body || !res.body.getReader) return null
+                const reader = res.body.getReader()
+                function step() {
+                    return reader.read().then((result) => {
+                        if (result.done) return null
+                        chunks.push(result.value)
+                        total += result.value.length
+                        return total < MKV_HEAD_BYTES ? step() : null
+                    })
+                }
+                return step()
+            })
+            .then(finish, finish)
+    }
+
     function parseLiveUrl(url) {
         const match = (url || "").match(
             /^(https?:\/\/[^\/?#]+)\/live\/([^\/]+)\/([^\/]+)\/([^\/.]+)\.(?:ts|m3u8)/i,
@@ -852,6 +1002,8 @@ App.api = (function () {
         match,
         parseM3u,
         parseM3uCatalog,
+        parseMkvTracks,
+        loadMkvTracks,
         classify,
         parseEpisode,
         parseTitle,

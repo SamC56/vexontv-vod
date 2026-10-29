@@ -299,6 +299,72 @@ check(
         audioIndex: 1,
     }).text === 6,
 )
+// A Matroska head built by hand: EBML ids and sizes, as the provider's files carry them.
+function ebml(id, body) {
+    const idBytes = []
+    for (let value = id; value > 0; value = Math.floor(value / 256)) idBytes.unshift(value % 256)
+    const size = body.length
+    const sizeBytes = size < 127 ? [0x80 | size] : [0x40 | (size >> 8), size & 0xff]
+    return idBytes.concat(sizeBytes, body)
+}
+const str = (value) => {
+    return Array.from(Buffer.from(value, "utf8"))
+}
+function mkvTrack(type, lang, extra) {
+    const fields = ebml(0x83, [type])
+    return ebml(0xae, fields.concat(lang ? ebml(0x22b59c, str(lang)) : [], extra || []))
+}
+const mkvHead = new Uint8Array(
+    ebml(0x1a45dfa3, ebml(0x4282, str("matroska"))).concat(
+        [0x18, 0x53, 0x80, 0x67, 0x01, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff],
+        ebml(0x1549a966, ebml(0x2ad7b1, [0x0f, 0x42, 0x40])),
+        ebml(
+            0x1654ae6b,
+            mkvTrack(1, "und").concat(
+                mkvTrack(2, "spa"),
+                mkvTrack(2, ""),
+                mkvTrack(17, "spa"),
+                mkvTrack(17, "eng", ebml(0x55aa, [1]).concat(ebml(0x536e, str("Forced")))),
+                mkvTrack(17, "eng", ebml(0x536e, str("SDH"))),
+            ),
+        ),
+        ebml(0x1f43b675, [0xe7, 0x81, 0x00]),
+    ),
+)
+const head = api.parseMkvTracks(mkvHead)
+check(
+    "parseMkvTracks finds audio and subtitles in file order",
+    head.audio.length === 2 && head.text.length === 3 && head.text[0].lang === "spa",
+    JSON.stringify(head),
+)
+check("a track that names no language is English, as Matroska says", head.audio[1].lang === "eng")
+check(
+    "names and the forced flag come through",
+    head.text[1].forced === true && head.text[1].name === "Forced" && head.text[2].name === "SDH",
+)
+check(
+    "a cut-off head gives what it has without failing",
+    (function () {
+        try {
+            api.parseMkvTracks(mkvHead.subarray(0, 60))
+            return true
+        } catch {
+            return false
+        }
+    })(),
+)
+check(
+    "with the file's flags, the forced English track is chosen under English audio",
+    vod.chooseTracks({
+        audio: [{ index: 1, lang: "eng" }],
+        text: [
+            { index: 4, lang: "eng" },
+            { index: 5, lang: "eng", forced: true },
+        ],
+        audioIndex: 1,
+    }).text === 5,
+)
+
 check(
     "language names read either code",
     vod.langName("spa") === "Spanish" &&

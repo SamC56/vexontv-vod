@@ -122,6 +122,14 @@ function typeInto(selector, value) {
     return input
 }
 
+// Back steps down: menus, the mark, the controls, then out. Pressed until it is out.
+async function leavePlayer() {
+    for (let i = 0; i < 4 && window.App.store.state.screen === "vodplayer"; i++) {
+        press(10009)
+        await wait(60)
+    }
+}
+
 // Movies with the remote: the rail entry, the grid, details, play, seek, pause, resume, the end.
 async function movies() {
     const vod = window.App.vod
@@ -426,9 +434,17 @@ async function movies() {
 
     avTime = 1800000
     press(10009)
+    await wait(60)
+    check(
+        "with the controls showing, Back only hides them",
+        onlyScreen("screen-vodplayer") &&
+            !document.getElementById("vodOsd").classList.contains("visible"),
+        screens().join(", "),
+    )
+    press(10009)
     await wait(80)
     check(
-        "Back leaves the movie and offers to resume where it was",
+        "and Back again leaves the movie, offering to resume where it was",
         onlyScreen("screen-title") &&
             document.getElementById("titlePlay").textContent.trim() === "Resume from 30:00" &&
             !!document.getElementById("titleRestart") &&
@@ -444,16 +460,14 @@ async function movies() {
         vod.ui.playing.start === 1800 && seeks[seeks.length - 1] === 1800000,
         seeks.join(),
     )
-    press(10009)
-    await wait(80)
+    await leavePlayer()
     // Down here, right on the TV: jsdom gives every element a row of its own.
     press(40)
     await wait(40)
     press(13)
     await wait(120)
     check("Start over opens it from the beginning", vod.ui.playing.start === 0)
-    press(10009)
-    await wait(80)
+    await leavePlayer()
 
     press(10009)
     await wait(80)

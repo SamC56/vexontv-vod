@@ -300,6 +300,7 @@ var App = App || {} // eslint-disable-line no-var -- shared namespace, no module
             if (vod.ui.trackMenu) vod.closeTracks()
             else if (vod.ui.seek) vod.cancelSeek()
             else if (vod.ui.menu) vod.closeMenu()
+            else if (vod.ui.osd && !vod.ui.paused) vod.hideOsd()
             else vod.exitPlayer()
             return true
         }

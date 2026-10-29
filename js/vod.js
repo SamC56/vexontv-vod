@@ -20,6 +20,8 @@ App.vod = (function () {
     // Scrubbing: the arrows move a mark, OK jumps there, Back or a long pause drops it.
     const SEEK_IDLE_MS = 10000
     const SEEK_CHAIN_MS = 500
+    // The controls show on any key and hide on their own after this.
+    const OSD_MS = 5000
     // A subtitle line with no duration, or a wrong one, still goes away.
     const SUBTITLE_MAX_MS = 10000
 
@@ -392,8 +394,10 @@ App.vod = (function () {
         menu: false,
         trackMenu: null,
         subtitle: "",
+        osd: false,
     }
     let seekTimer = null
+    let osdTimer = null
     let subtitleTimer = null
     let lastSaved = 0
 
@@ -534,11 +538,24 @@ App.vod = (function () {
     function playTitle(item, fromStart) {
         if (!item) return
         const details = ui.title === item ? ui.details : null
+        const url = (details && details.url) || item.url
+        // An MKV says in its first bytes what each track is; the player opens once that is
+        // read, or once it gives up after a few seconds.
+        const mkv = item.ext === "mkv" || /\.mkv(?:[?#]|$)/i.test(url || "")
         ui.playing = {
             item,
-            url: (details && details.url) || item.url,
+            url,
             start: fromStart ? 0 : resumePoint(item),
             origin: store().state.screen,
+            ready: !mkv,
+            hint: null,
+        }
+        if (mkv) {
+            App.api.loadMkvTracks(url).then((hint) => {
+                if (!ui.playing || ui.playing.item !== item || ui.playing.ready) return
+                ui.playing = Object.assign({}, ui.playing, { ready: true, hint })
+                changed()
+            })
         }
         ui.paused = false
         clearSeek()
@@ -573,6 +590,9 @@ App.vod = (function () {
         const origin = ui.playing.origin
         clearSeek()
         resetTracks()
+        if (osdTimer) clearTimeout(osdTimer)
+        osdTimer = null
+        ui.osd = false
         ui.playing = null
         ui.error = null
         if (origin === "title" && ui.title) {
@@ -702,7 +722,7 @@ App.vod = (function () {
         const audio = englishAudio || current
         const englishText = english(tracks.text)
         const forced = englishText.filter((track) => {
-            return /forced/i.test(track.name || "")
+            return track.forced || /forced/i.test(track.name || "")
         })[0]
         let text = -1
         // Unknown audio is not foreign: most files that do not say are English.
@@ -713,15 +733,52 @@ App.vod = (function () {
         return { audio: audio ? audio.index : null, text }
     }
 
+    // "English", "English (forced)", "English · SDH"; tracks that say nothing are numbered.
     function labelled(list) {
         const seen = {}
-        return list.map((track) => {
-            const name = langName(track.lang)
-            seen[name] = (seen[name] || 0) + 1
+        return list.map((track, index) => {
+            const code = langCode(track.lang)
+            let label = !code || code === "und" ? `Track ${index + 1}` : langName(track.lang)
+            if (track.forced) label += " (forced)"
+            else if (track.name && track.name.toLowerCase() !== label.toLowerCase())
+                label += ` · ${track.name}`
+            seen[label] = (seen[label] || 0) + 1
             return Object.assign({}, track, {
-                label: seen[name] > 1 ? `${name} ${seen[name]}` : name,
+                label: seen[label] > 1 ? `${label} ${seen[label]}` : label,
             })
         })
+    }
+
+    // The file's own description, laid over AVPlay's list when both count the same tracks.
+    function withHint(list, hint) {
+        if (!hint || hint.length !== list.length) return list
+        return list.map((track, index) => {
+            return Object.assign({}, track, {
+                lang: hint[index].lang || track.lang,
+                name: hint[index].name || "",
+                forced: !!hint[index].forced,
+            })
+        })
+    }
+
+    function showOsd() {
+        if (osdTimer) clearTimeout(osdTimer)
+        osdTimer = setTimeout(() => {
+            osdTimer = null
+            ui.osd = false
+            changed()
+        }, OSD_MS)
+        if (ui.osd) return
+        ui.osd = true
+        changed()
+    }
+
+    // Back's first press while the controls show: they go, the film stays.
+    function hideOsd() {
+        if (osdTimer) clearTimeout(osdTimer)
+        osdTimer = null
+        ui.osd = false
+        changed()
     }
 
     function resetTracks() {
@@ -736,7 +793,12 @@ App.vod = (function () {
     // Once a title has started: read its tracks and apply the English defaults.
     function tracksReady() {
         if (!ui.playing || ui.tracks) return
-        const found = App.player.tracks()
+        const reported = App.player.tracks()
+        const hint = ui.playing.hint
+        const found = Object.assign({}, reported, {
+            audio: withHint(reported.audio, hint && hint.audio),
+            text: withHint(reported.text, hint && hint.text),
+        })
         const choice = chooseTracks(found)
         if (choice.audio !== null && choice.audio !== found.audioIndex)
             App.player.selectTrack("AUDIO", choice.audio)
@@ -893,6 +955,8 @@ App.vod = (function () {
         seekBy,
         commitSeek,
         cancelSeek,
+        showOsd,
+        hideOsd,
         langCode,
         langName,
         chooseTracks,
