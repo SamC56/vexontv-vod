@@ -17,7 +17,19 @@ https://panel.example/live/user/pass/4.ts
 https://panel.example/live/user/pass/5.ts
 #EXTINF:-1 tvg-logo="" group-title="Noticias",24h
 https://panel.example/live/user/pass/6.ts
-#EXTINF:-1 tvg-logo="" group-title="VOD | Acción",Esto deberia filtrarse (2024)
+#EXTINF:-1 tvg-logo="" group-title="VOD | Acción",Una película (2024)
 https://panel.example/movie/user/pass/900.mp4
-#EXTINF:-1 tvg-logo="" group-title="Series",Esto tambien deberia filtrarse S01
+#EXTINF:-1 tvg-logo="" group-title="Series",Una serie S01
 https://panel.example/series/user/pass/901.mp4
+#EXTINF:-1 tvg-logo="http://cdn/poster.png" group-title="VOD | Drama",Otra película [2019]
+https://panel.example/movie/user/pass/902.mkv
+#EXTINF:-1 tvg-logo="" group-title="Series",El Ministerio S02E01 Capítulo uno
+https://panel.example/series/user/pass/903.mp4
+#EXTINF:-1 tvg-logo="" group-title="Series",El Ministerio S01E02
+https://panel.example/series/user/pass/904.mp4
+#EXTINF:-1 tvg-logo="" group-title="Series",El Ministerio S01E01
+https://panel.example/series/user/pass/905.mp4
+#EXTINF:-1 tvg-logo="" group-title="Cine en casa",Corto sin ruta (2021)
+https://cdn.example/files/corto.mp4
+#EXTINF:-1 tvg-logo="" group-title="Cine en casa",Dark 1x02
+https://cdn.example/files/dark-102.mkv

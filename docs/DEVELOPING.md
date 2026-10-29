@@ -49,8 +49,8 @@ The package is an unsigned `.wgt`; whoever installs it signs it.
 A desktop browser is useful for the interface: arrows are the D-pad, `Enter` is OK and
 `Escape` is Back. It will **not** play a channel: Chrome doesn't decode MPEG-TS or HLS, and
 AVPlay only exists on the TV. Serve it with `python3 -m http.server 8000`: it loads the
-bundled `test/sample.m3u`, which is also what proves the live-only filter drops `/movie/`
-and `/series/`.
+bundled `test/sample.m3u`, which also carries the movies and episodes that prove live TV
+keeps only the channels while the catalog keeps the rest.
 
 Tizen Studio's emulator is a full Tizen, so there the player, the guide and the remote keys
 all behave like on the TV (it needs VT-x/AMD-V enabled).

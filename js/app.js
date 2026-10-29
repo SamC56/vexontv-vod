@@ -351,6 +351,7 @@ var App = App || {} // eslint-disable-line no-var -- shared namespace, no module
 
     function start() {
         store.init()
+        App.vod.init()
         defineZones()
         tv.listen(onKey, { onFocus: store.focusChanged })
         ui.render()

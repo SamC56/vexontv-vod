@@ -1,0 +1,555 @@
+<title>VexonTV Movies &amp; Series</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: one reading column for the spec; mockups break out wider as 16:9 TV frames drawn
+   in VexonTV's own tokens (black, amber→ember→mint, white focus ring). Deliberately dark-only. */
+:root {
+    color-scheme: dark;
+    --ink: #050505;
+    --panel: #0e0e0d;
+    --panel-2: #161614;
+    --line: rgba(255, 255, 255, 0.09);
+    --line-2: rgba(255, 255, 255, 0.18);
+    --text: #f7f7f6;
+    --text-2: #b4b4ae;
+    --text-3: #7a7a74;
+    --amber: #febc06;
+    --ember: #cc4207;
+    --mint: #15e9a4;
+    --ring: rgba(255, 255, 255, 0.55);
+    --grad-line: linear-gradient(90deg, var(--amber), var(--ember) 48%, var(--mint));
+    --grad-ink: linear-gradient(92deg, var(--amber) 0%, var(--mint) 100%);
+    --f-doc: "Source Sans 3", system-ui, sans-serif;
+    --f-tv: "SamsungOne", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --f-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+}
+* { box-sizing: border-box; }
+body {
+    background: var(--ink);
+    color: var(--text);
+    font-family: var(--f-doc);
+    font-size: 17px;
+    line-height: 1.55;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 0 80px;
+}
+body::before {
+    content: ""; position: fixed; inset: 0 0 auto; height: 3px; z-index: 10;
+    background: var(--grad-line);
+}
+.wrap { max-width: 1180px; margin: 0 auto; }
+.prose { max-width: 760px; }
+header.top { padding-block: 64px 24px; display: grid; gap: 14px; }
+.eyebrow {
+    font-family: var(--f-mono); font-size: 12px; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--text-3);
+}
+h1 { font-size: clamp(34px, 5vw, 56px); line-height: 1.05; margin: 0; text-wrap: balance; letter-spacing: -0.01em; }
+h1 span { background: var(--grad-ink); -webkit-background-clip: text; background-clip: text; color: transparent; }
+h2 { font-size: 28px; margin: 0; text-wrap: balance; }
+h3 { font-size: 19px; margin: 0; }
+p { margin: 0; }
+.lede { font-size: 19px; color: var(--text-2); max-width: 720px; }
+section { padding-block: 48px 8px; border-top: 1px solid var(--line); margin-top: 40px; display: grid; gap: 20px; }
+code, .mono { font-family: var(--f-mono); font-size: 0.86em; }
+code { background: var(--panel-2); border: 1px solid var(--line); padding: 1px 6px; border-radius: 6px; color: #e9e3cf; }
+a { color: var(--mint); }
+ul.plain { margin: 0; padding-left: 20px; display: grid; gap: 6px; color: var(--text-2); }
+ul.plain b { color: var(--text); }
+
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.fact { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; display: grid; gap: 6px; align-content: start; }
+.fact .k { font-family: var(--f-mono); font-size: 12px; color: var(--amber); }
+.fact p { color: var(--text-2); font-size: 15.5px; }
+
+/* ---------- TV frames ---------- */
+figure { margin: 0; display: grid; gap: 12px; }
+.frame {
+    container-type: inline-size;
+    width: 100%; max-width: 100%;
+    border-radius: 14px; overflow: hidden;
+    border: 1px solid var(--line-2);
+    box-shadow: 0 30px 80px -40px rgba(0,0,0,.9);
+}
+.tv {
+    /* 1em == 16px on a 1920-wide screen */
+    font-size: calc(100cqw / 120);
+    aspect-ratio: 16 / 9; position: relative; overflow: hidden;
+    font-family: var(--f-tv); color: var(--text); background: var(--ink);
+    line-height: 1.25;
+}
+.tv::before {
+    content: ""; position: absolute; inset: 0;
+    background:
+        linear-gradient(180deg, rgba(5,5,5,0) 0%, var(--ink) 24%),
+        linear-gradient(90deg, rgba(254,188,6,.3), rgba(204,66,7,.23) 48%, rgba(21,233,164,.3));
+    pointer-events: none;
+}
+.tv::after { content: ""; position: absolute; inset: 0 0 auto; height: .12em; background: var(--grad-line); }
+.tv > * { position: absolute; }
+figcaption { display: grid; gap: 6px; max-width: 860px; }
+figcaption .t { font-weight: 700; font-size: 18px; }
+figcaption p { color: var(--text-2); font-size: 15.5px; }
+.keys { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 14px; color: var(--text-2); }
+.keys kbd {
+    font-family: var(--f-mono); font-size: 12px; color: var(--text);
+    border: 1px solid var(--line-2); border-bottom-width: 2px; border-radius: 6px; padding: 1px 7px; margin-right: 5px;
+}
+
+/* rail */
+.rail { left: 0; top: 0; bottom: 0; width: 12em; background: #0b0b0a; border-right: 1px solid var(--line); padding: 3em 1.4em; display: flex; flex-direction: column; gap: .4em; z-index: 1; }
+.brand { display: flex; align-items: center; gap: .6em; margin-bottom: 2.2em; }
+.brand i { width: 2.4em; height: 2.4em; border-radius: .6em; background: var(--grad-ink); display: block; }
+.brand b { font-size: 1.05em; letter-spacing: .06em; color: var(--amber); display: block; }
+.brand small { font-size: .62em; letter-spacing: .18em; color: var(--text-3); }
+.rb { display: flex; align-items: center; gap: .8em; padding: .75em .6em; border-radius: .5em; color: var(--text-2); font-size: 1.05em; font-weight: 600; }
+.rb s { width: 1.1em; height: 1.1em; border: .12em solid currentColor; border-radius: .25em; opacity: .8; }
+.rb.on { color: var(--text); }
+.rb.on s { border-color: var(--mint); }
+.rb.new::after { content: "NEW"; margin-left: auto; font-size: .55em; letter-spacing: .12em; color: var(--ink); background: var(--amber); padding: .15em .45em; border-radius: .3em; }
+.clock { position: absolute; bottom: 2.5em; left: 1.4em; font-size: 2em; font-weight: 700; }
+
+/* bar */
+.bar { left: 16em; right: 4em; top: 3em; display: flex; align-items: flex-start; gap: 1.2em; z-index: 1; }
+.bar .ttl { flex: 1; }
+.bar h4 { margin: 0; font-size: 3.4em; line-height: 1; letter-spacing: -.01em; }
+.bar .meta { color: var(--text-3); font-size: 1.25em; margin-top: .35em; }
+.btn { border: 1px solid var(--line-2); border-radius: 2em; padding: .75em 1.6em; font-weight: 700; font-size: 1.3em; }
+.search { width: 28em; border: 1px solid var(--line-2); border-radius: .7em; padding: .75em 1.2em; color: var(--text-3); font-size: 1.3em; }
+.seg { display: flex; border: 1px solid var(--line-2); border-radius: 2em; overflow: hidden; font-size: 1.15em; font-weight: 700; }
+.seg span { padding: .7em 1.2em; color: var(--text-3); }
+.seg span.on { color: var(--text); background: rgba(255,255,255,.08); }
+
+/* category column */
+.cats { left: 16em; top: 10.5em; width: 22em; bottom: 0; z-index: 1; }
+.cat { display: flex; justify-content: space-between; align-items: center; padding: 1.15em 1.25em; border-bottom: 1px solid var(--line); font-weight: 700; font-size: 1.35em; }
+.cat em { font-style: normal; color: var(--text-3); font-weight: 400; font-size: .85em; }
+.cat.sel { background: rgba(255,255,255,.05); box-shadow: inset .18em 0 0 var(--mint); }
+.cat.pin { color: var(--amber); }
+
+/* poster grid */
+.grid { left: 40em; right: 4em; top: 10.5em; display: grid; grid-template-columns: repeat(6, 1fr); gap: 1.6em 1.3em; z-index: 1; }
+.poster { aspect-ratio: 2 / 3; border-radius: .7em; position: relative; overflow: hidden;
+    background: linear-gradient(165deg, hsl(var(--h) 42% 34%), hsl(calc(var(--h) + 35) 48% 11%) 75%);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.07); }
+.poster::before { content: ""; position: absolute; inset: 0; background:
+    radial-gradient(60% 40% at 70% 25%, hsla(calc(var(--h) - 20), 80%, 70%, .35), transparent 70%); }
+.poster b { position: absolute; left: .7em; right: .7em; bottom: .8em; font-size: 1.05em; line-height: 1.1; text-transform: uppercase; letter-spacing: .04em; }
+.poster .rate { position: absolute; top: .6em; right: .6em; font-size: .75em; font-weight: 700; background: rgba(0,0,0,.6); padding: .2em .45em; border-radius: .3em; color: var(--amber); }
+.poster .prog { position: absolute; left: 0; right: 0; bottom: 0; height: .3em; background: rgba(255,255,255,.18); }
+.poster .prog i { display: block; height: 100%; background: var(--mint); }
+.poster .seen { position: absolute; top: .6em; left: .6em; width: 1.4em; height: 1.4em; border-radius: 50%; background: var(--mint); color: var(--ink); font-size: .8em; display: grid; place-items: center; font-weight: 900; }
+.poster.focus { outline: .22em solid #fff; outline-offset: .25em; transform: scale(1.06); z-index: 2; }
+.cap { margin-top: .55em; font-size: .95em; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cap.f { color: var(--text); font-weight: 700; }
+
+/* detail */
+.backdrop { inset: 0; background:
+    linear-gradient(90deg, var(--ink) 30%, rgba(5,5,5,.6) 60%, rgba(5,5,5,.2)),
+    linear-gradient(0deg, var(--ink) 5%, transparent 50%),
+    radial-gradient(70% 90% at 80% 30%, hsl(18 70% 38%), hsl(200 50% 10%) 70%); z-index: 0; }
+.detail { left: 16em; top: 9em; width: 62em; z-index: 1; display: grid; gap: 1.3em; }
+.detail .kicker { color: var(--text-3); font-size: 1.15em; letter-spacing: .14em; text-transform: uppercase; }
+.detail h5 { margin: 0; font-size: 4.6em; line-height: 1; letter-spacing: -.01em; }
+.chips { display: flex; gap: .8em; flex-wrap: wrap; font-size: 1.2em; color: var(--text-2); align-items: center; }
+.chips .c { border: 1px solid var(--line-2); border-radius: .4em; padding: .1em .55em; }
+.chips .r { color: var(--amber); font-weight: 700; }
+.plot { font-size: 1.45em; color: var(--text-2); line-height: 1.45; max-width: 36em; }
+.cast { font-size: 1.15em; color: var(--text-3); }
+.cast b { color: var(--text-2); font-weight: 600; }
+.acts { display: flex; gap: 1em; margin-top: .6em; align-items: center; }
+.act { border: 1px solid var(--line-2); border-radius: 2em; padding: .8em 1.7em; font-weight: 700; font-size: 1.3em; display: flex; gap: .6em; align-items: center; }
+.act.prim { background: #fff; color: var(--ink); border-color: #fff; box-shadow: 0 0 0 .2em var(--ink), 0 0 0 .35em #fff; }
+.act small { font-weight: 400; opacity: .7; }
+.resume { width: 30em; display: grid; gap: .45em; font-size: 1.1em; color: var(--text-3); }
+.bar2 { height: .35em; background: rgba(255,255,255,.15); border-radius: 1em; overflow: hidden; }
+.bar2 i { display: block; height: 100%; background: var(--grad-ink); }
+.posterL { right: 6em; top: 9em; width: 22em; z-index: 1; --h: 18; }
+.posterL b { font-size: 1.6em; }
+
+/* series detail */
+.shead { left: 16em; top: 4em; right: 4em; z-index: 1; display: flex; gap: 2.2em; align-items: flex-end; }
+.shead .poster { width: 10em; flex: none; --h: 205; }
+.shead .poster b { font-size: .8em; }
+.shead .info { display: grid; gap: .8em; flex: 1; }
+.shead h5 { margin: 0; font-size: 3.6em; line-height: 1; }
+.shead .plot { font-size: 1.25em; max-width: 46em; }
+.seasons { left: 16em; top: 25em; width: 18em; z-index: 1; }
+.season { padding: 1em 1.2em; border-bottom: 1px solid var(--line); font-weight: 700; font-size: 1.3em; display: flex; justify-content: space-between; }
+.season em { font-style: normal; font-weight: 400; color: var(--text-3); font-size: .85em; }
+.season.sel { background: rgba(255,255,255,.05); box-shadow: inset .18em 0 0 var(--mint); }
+.eps { left: 36em; right: 4em; top: 25em; z-index: 1; display: grid; gap: .2em; }
+.ep { display: grid; grid-template-columns: 3em 13em 1fr auto; gap: 1.4em; align-items: center; padding: .9em 1em; border-radius: .6em; }
+.ep .n { font-size: 1.6em; color: var(--text-3); font-weight: 700; text-align: center; }
+.ep .thumb { aspect-ratio: 16/9; border-radius: .4em; position: relative; overflow: hidden;
+    background: linear-gradient(140deg, hsl(var(--h) 35% 28%), hsl(calc(var(--h) + 30) 40% 10%)); }
+.ep .thumb .prog { position: absolute; left: 0; right: 0; bottom: 0; height: .3em; background: rgba(255,255,255,.2); }
+.ep .thumb .prog i { display: block; height: 100%; background: var(--mint); }
+.ep h6 { margin: 0 0 .3em; font-size: 1.35em; }
+.ep p { font-size: 1.05em; color: var(--text-3); line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.ep .d { font-size: 1.05em; color: var(--text-3); white-space: nowrap; }
+.ep .d.ok { color: var(--mint); }
+.ep.focus { background: rgba(255,255,255,.08); box-shadow: inset 0 0 0 1px var(--ring); }
+.ep.focus h6 { color: #fff; }
+
+/* player */
+.video { inset: 0; z-index: 0; background:
+    radial-gradient(50% 60% at 60% 40%, hsl(200 40% 30%), transparent 70%),
+    radial-gradient(40% 50% at 25% 70%, hsl(30 60% 25%), transparent 70%),
+    #0b1418; }
+.video::after { content: "video plane (AVPlay)"; position: absolute; left: 50%; top: 40%; transform: translate(-50%,-50%); font-family: var(--f-mono); font-size: 1.1em; color: rgba(255,255,255,.25); letter-spacing: .1em; }
+.tv.player::before { background: none; }
+.shade { left: 0; right: 0; bottom: 0; height: 22em; z-index: 1; background: linear-gradient(0deg, rgba(0,0,0,.92), transparent); }
+.osd { left: 6em; right: 6em; bottom: 4em; z-index: 2; display: grid; gap: 1.2em; }
+.osd .t { display: flex; align-items: baseline; gap: 1em; }
+.osd h5 { margin: 0; font-size: 2.6em; }
+.osd .sub { color: var(--text-2); font-size: 1.3em; }
+.track { position: relative; height: .5em; background: rgba(255,255,255,.2); border-radius: 1em; }
+.track .buf { position: absolute; left: 0; top: 0; bottom: 0; width: 61%; background: rgba(255,255,255,.25); border-radius: 1em; }
+.track .pl { position: absolute; left: 0; top: 0; bottom: 0; width: 47%; background: var(--grad-ink); border-radius: 1em; }
+.track .knob { position: absolute; left: 47%; top: 50%; width: 1.4em; height: 1.4em; border-radius: 50%; background: #fff; transform: translate(-50%,-50%); box-shadow: 0 0 0 .3em rgba(255,255,255,.25); }
+.track .tip { position: absolute; left: 47%; bottom: 1.6em; transform: translateX(-50%); background: #fff; color: var(--ink); font-weight: 800; font-size: 1.15em; padding: .25em .6em; border-radius: .4em; white-space: nowrap; }
+.times { display: flex; justify-content: space-between; font-size: 1.2em; color: var(--text-2); font-variant-numeric: tabular-nums; }
+.ctrls { display: flex; gap: 1em; align-items: center; }
+.ctrl { border: 1px solid var(--line-2); border-radius: 2em; padding: .6em 1.3em; font-size: 1.15em; font-weight: 700; background: rgba(0,0,0,.4); }
+.ctrl.f { background: #fff; color: var(--ink); }
+.ctrls .sp { flex: 1; }
+.hint { font-size: 1.05em; color: var(--text-3); }
+.upnext { right: 6em; top: 6em; width: 30em; z-index: 2; background: rgba(14,14,13,.92); border: 1px solid var(--line-2); border-radius: 1em; padding: 1.4em; display: grid; gap: 1em; }
+.upnext .lbl { font-size: .95em; letter-spacing: .16em; color: var(--amber); font-weight: 800; }
+.upnext .row { display: flex; gap: 1.1em; align-items: center; }
+.upnext .thumb { width: 10em; aspect-ratio: 16/9; border-radius: .4em; background: linear-gradient(140deg, hsl(215 35% 30%), hsl(245 40% 10%)); flex: none; }
+.upnext h6 { margin: 0; font-size: 1.3em; }
+.upnext p { font-size: 1em; color: var(--text-3); }
+.ring { height: .3em; background: rgba(255,255,255,.15); border-radius: 1em; overflow: hidden; }
+.ring i { display: block; height: 100%; width: 65%; background: var(--amber); }
+
+/* ---------- tables ---------- */
+.tbl { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; }
+table { border-collapse: collapse; width: 100%; min-width: 720px; font-size: 15.5px; }
+th, td { text-align: left; vertical-align: top; padding: 11px 14px; border-bottom: 1px solid var(--line); }
+th { font-family: var(--f-mono); font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--text-3); font-weight: 600; background: var(--panel); }
+tr:last-child td { border-bottom: 0; }
+td.id { font-family: var(--f-mono); font-size: 13px; color: var(--text-3); white-space: nowrap; }
+td .sub { color: var(--text-2); display: block; margin-top: 3px; font-size: 14.5px; }
+tr.grp td { background: var(--panel-2); font-weight: 700; color: var(--text); font-size: 14px; letter-spacing: .02em; }
+.pri { font-family: var(--f-mono); font-size: 11.5px; font-weight: 600; padding: 2px 8px; border-radius: 20px; white-space: nowrap; display: inline-block; }
+.pri.must { color: var(--ink); background: var(--mint); }
+.pri.should { color: var(--ink); background: var(--amber); }
+.pri.could { color: var(--text-2); border: 1px solid var(--line-2); }
+
+.phases { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px; }
+.phase { border: 1px solid var(--line); border-radius: 12px; padding: 18px; background: var(--panel); display: grid; gap: 10px; align-content: start; }
+.phase .k { font-family: var(--f-mono); font-size: 12px; color: var(--mint); letter-spacing: .08em; }
+.phase ul { margin: 0; padding-left: 18px; color: var(--text-2); font-size: 15px; display: grid; gap: 4px; }
+
+ol.q { margin: 0; padding-left: 22px; display: grid; gap: 14px; max-width: 820px; }
+ol.q li::marker { color: var(--amber); font-weight: 700; }
+ol.q b { display: block; }
+ol.q span { color: var(--text-2); }
+
+@media (max-width: 640px) {
+    body { font-size: 16px; }
+    header.top { padding-block: 40px 12px; }
+}
+@media (prefers-reduced-motion: no-preference) {
+    .poster.focus, .ep.focus { transition: transform .2s; }
+}
+</style>
+
+<div class="wrap">
+<header class="top">
+    <div class="eyebrow">Fork plan · VexonTV for Tizen 8</div>
+    <h1>Adding <span>Movies &amp; Series</span> to VexonTV</h1>
+    <p class="lede">VexonTV is built for live TV only. It throws away movie and series entries while it loads a playlist. This plan keeps those entries, gives them two new sections in the side menu, and adds the player controls on-demand video needs: seeking, resume and an up-next screen.</p>
+</header>
+
+<section style="border-top:0;margin-top:0;padding-top:8px">
+    <h2>What the code does today</h2>
+    <div class="facts">
+        <div class="fact"><span class="k">js/api.js:4</span><p><code>MOVIE_OR_SERIES</code> drops any M3U line whose URL contains <code>/movie/</code> or <code>/series/</code>. Xtream only calls <code>get_live_*</code>, and Stalker only calls <code>get_all_channels</code>.</p></div>
+        <div class="fact"><span class="k">js/player.js</span><p>AVPlay can open, play, pause and stop. It has no seek, no duration and no position reporting. <code>oncurrentplaytime</code> is only used to detect that playback started.</p></div>
+        <div class="fact"><span class="k">js/store.js</span><p>One flat <code>state.channels[listId]</code> array and nothing else. Only lists, favorites and recents go to <code>localStorage</code>. Channels are fetched again on every launch.</p></div>
+        <div class="fact"><span class="k">js/app.js · js/tv.js</span><p>Navigation is built from named focus zones with <code>onEdge</code> hand-offs. New screens just define new zones. Only the Red, CH± and Play/Pause keys are registered.</p></div>
+    </div>
+    <div class="prose">
+        <ul class="plain">
+            <li><b>Live TV stays the same.</b> Its categories and channel lists only ever contain live streams, so nothing changes for people who just watch channels.</li>
+            <li><b>Movies and Series are separate catalogs.</b> They are fetched the first time you open them, not at boot. VOD catalogs on Xtream panels often have 20,000–80,000 entries.</li>
+            <li><b>No build step and no new dependencies.</b> The new code uses the same Preact + htm screens and the same focus engine, follows the same Prettier rules, and comes with tests in the existing three suites.</li>
+        </ul>
+    </div>
+</section>
+
+<section>
+    <div class="prose" style="display:grid;gap:8px">
+        <h2>How it looks</h2>
+        <p style="color:var(--text-2)">These are drawn at 1920×1080 using VexonTV's own colors, side menu and focus ring. The posters are coloured placeholders; the real app shows the cover art from the panel.</p>
+    </div>
+
+    <!-- A: Movies browse -->
+    <figure>
+        <div class="frame"><div class="tv">
+            <div class="rail">
+                <div class="brand"><i></i><div><b>VexonTV</b><small>IPTV PLAYER</small></div></div>
+                <div class="rb"><s></s>Sources</div>
+                <div class="rb"><s></s>Live TV</div>
+                <div class="rb on new"><s></s>Movies</div>
+                <div class="rb new"><s></s>Series</div>
+                <div class="rb"><s></s>Recent</div>
+                <div class="rb"><s></s>Favorites</div>
+                <div class="clock">21:40</div>
+            </div>
+            <div class="bar">
+                <div class="ttl"><h4>Movies</h4><div class="meta">Action · 1,284 titles</div></div>
+                <div class="seg"><span class="on">Recently added</span><span>A–Z</span><span>Rating</span></div>
+                <div class="search">Search movies</div>
+            </div>
+            <div class="cats">
+                <div class="cat pin">Continue watching <em>3</em></div>
+                <div class="cat">Recently added <em>120</em></div>
+                <div class="cat sel">Action <em>1,284</em></div>
+                <div class="cat">Comedy <em>962</em></div>
+                <div class="cat">Documentary <em>411</em></div>
+                <div class="cat">Drama <em>2,031</em></div>
+                <div class="cat">Family <em>538</em></div>
+                <div class="cat">Thriller <em>877</em></div>
+            </div>
+            <div class="grid" id="movieGrid"></div>
+        </div></div>
+        <figcaption>
+            <span class="t">A · Movies: categories on the left, posters on the right</span>
+            <p>This uses the same three-part layout as Live TV, so it feels familiar: the side menu, a category list, then the content. Continue watching is pinned to the top of the category list. Posters show the rating, a progress bar for anything half-watched and a tick once you've finished it. Up/Down at the edge of the grid moves to the next page of posters. Only about 60 posters are drawn at a time, so the app stays quick on TV hardware.</p>
+            <div class="keys"><span><kbd>←</kbd>from the grid's left edge, back to the categories</span><span><kbd>OK</kbd>open details</span><span><kbd>Red</kbd>add to favorites</span><span><kbd>Back</kbd>return to the side menu</span></div>
+        </figcaption>
+    </figure>
+
+    <!-- B: Movie detail -->
+    <figure>
+        <div class="frame"><div class="tv">
+            <div class="backdrop"></div>
+            <div class="rail">
+                <div class="brand"><i></i><div><b>VexonTV</b><small>IPTV PLAYER</small></div></div>
+                <div class="rb"><s></s>Sources</div>
+                <div class="rb"><s></s>Live TV</div>
+                <div class="rb on"><s></s>Movies</div>
+                <div class="rb"><s></s>Series</div>
+                <div class="rb"><s></s>Recent</div>
+                <div class="rb"><s></s>Favorites</div>
+            </div>
+            <div class="detail">
+                <div class="kicker">Movie · Action</div>
+                <h5>Copperhead Bay</h5>
+                <div class="chips"><span class="r">★ 7.4</span><span>2023</span><span>2h 06m</span><span class="c">4K</span><span class="c">16+</span><span>English · Spanish</span></div>
+                <p class="plot">A salvage diver stumbles on a sunken shipment that three different crews would kill for. She has one night and one tide to get it back to shore before anyone notices it's gone.</p>
+                <p class="cast"><b>Director</b> R. Okafor &nbsp;·&nbsp; <b>Cast</b> M. Ilunga, T. Varga, S. Ferreira</p>
+                <div class="acts">
+                    <div class="act prim">▶ Resume <small>from 58:12</small></div>
+                    <div class="act">Start over</div>
+                    <div class="act">☆ Favorite</div>
+                </div>
+                <div class="resume"><div class="bar2"><i style="width:46%"></i></div>1h 07m left</div>
+            </div>
+            <div class="poster posterL"><span class="rate">★ 7.4</span><b>Copperhead Bay</b></div>
+        </div></div>
+        <figcaption>
+            <span class="t">B · Movie details</span>
+            <p>The first column comes from the catalog list and shows straight away. The plot, cast, runtime and backdrop are fetched only when you open this page (<code>get_vod_info</code>), and those fields fill in once they arrive. If you've already watched part of the film, the main button is Resume; otherwise it's Play.</p>
+            <div class="keys"><span><kbd>← →</kbd>move between buttons</span><span><kbd>OK</kbd>press the button</span><span><kbd>▶‖</kbd>play</span><span><kbd>Back</kbd>return to the grid with the same poster focused</span></div>
+        </figcaption>
+    </figure>
+
+    <!-- C: Series detail -->
+    <figure>
+        <div class="frame"><div class="tv">
+            <div class="rail">
+                <div class="brand"><i></i><div><b>VexonTV</b><small>IPTV PLAYER</small></div></div>
+                <div class="rb"><s></s>Sources</div>
+                <div class="rb"><s></s>Live TV</div>
+                <div class="rb"><s></s>Movies</div>
+                <div class="rb on"><s></s>Series</div>
+                <div class="rb"><s></s>Recent</div>
+                <div class="rb"><s></s>Favorites</div>
+            </div>
+            <div class="shead">
+                <div class="poster"><b>The Cartographers</b></div>
+                <div class="info">
+                    <div class="chips"><span class="r">★ 8.1</span><span>2021–2024</span><span>3 seasons</span><span>Drama</span></div>
+                    <h5>The Cartographers</h5>
+                    <p class="plot">A survey team charting a disputed coastline finds that its old maps don't agree with each other, or with the land.</p>
+                    <div class="acts"><div class="act">▶ Resume S2 · E4</div><div class="act">☆ Favorite</div></div>
+                </div>
+            </div>
+            <div class="seasons">
+                <div class="season">Season 1 <em>8 ✓</em></div>
+                <div class="season sel">Season 2 <em>10</em></div>
+                <div class="season">Season 3 <em>10</em></div>
+            </div>
+            <div class="eps">
+                <div class="ep" style="--h:190"><span class="n">3</span><div class="thumb"><div class="prog"><i style="width:100%"></i></div></div><div><h6>Dead Reckoning</h6><p>Ines takes the boat out alone to check a sounding that shouldn't exist.</p></div><span class="d ok">✓ 47m</span></div>
+                <div class="ep focus" style="--h:220"><span class="n">4</span><div class="thumb"><div class="prog"><i style="width:38%"></i></div></div><div><h6>The Ninth Lantern</h6><p>A lighthouse log from 1911 places the shoreline two kilometres inland.</p></div><span class="d">31m left</span></div>
+                <div class="ep" style="--h:250"><span class="n">5</span><div class="thumb"></div><div><h6>Low Water</h6><p>The team splits over whether to report what they found to the ministry.</p></div><span class="d">52m</span></div>
+                <div class="ep" style="--h:280"><span class="n">6</span><div class="thumb"></div><div><h6>Triangulation</h6><p>Three surveyors, three readings, one map that has to go to print.</p></div><span class="d">49m</span></div>
+            </div>
+        </div></div>
+        <figcaption>
+            <span class="t">C · Series details: seasons and episodes</span>
+            <p>The Series section looks like screen A. Opening a show brings you here: seasons on the left and that season's episodes on the right, with thumbnails, a short summary, the runtime, a progress bar and a tick for watched episodes. Focus starts on the next episode to watch. Seasons and episodes come from a single <code>get_series_info</code> call, which is cached while the app is open.</p>
+            <div class="keys"><span><kbd>↑ ↓</kbd>change season or episode</span><span><kbd>→</kbd>from seasons into episodes</span><span><kbd>↑</kbd>from the first episode, to the Resume button</span><span><kbd>OK</kbd>play</span></div>
+        </figcaption>
+    </figure>
+
+    <!-- D: VOD player -->
+    <figure>
+        <div class="frame"><div class="tv player">
+            <div class="video"></div>
+            <div class="shade"></div>
+            <div class="upnext">
+                <span class="lbl">UP NEXT IN 8s</span>
+                <div class="row"><div class="thumb"></div><div><h6>S2 · E5 · Low Water</h6><p>52m</p></div></div>
+                <div class="ring"><i></i></div>
+                <div class="ctrls"><span class="ctrl f">Play now</span><span class="ctrl">Cancel</span></div>
+            </div>
+            <div class="osd">
+                <div class="t"><h5>The Ninth Lantern</h5><span class="sub">The Cartographers · S2 · E4</span></div>
+                <div class="track"><div class="buf"></div><div class="pl"></div><div class="knob"></div><div class="tip">22:41</div></div>
+                <div class="times"><span>22:41</span><span>−25:04 &nbsp;·&nbsp; 47:45</span></div>
+                <div class="ctrls">
+                    <span class="ctrl">⏮ −10s</span><span class="ctrl f">‖ Pause</span><span class="ctrl">+30s ⏭</span>
+                    <span class="ctrl">Audio &amp; subtitles</span><span class="ctrl">Episodes</span>
+                    <span class="sp"></span><span class="hint">← → seek · hold to go faster</span>
+                </div>
+            </div>
+        </div></div>
+        <figcaption>
+            <span class="t">D · Player for movies and episodes</span>
+            <p>Live channels keep the current player overlay. Movies and episodes get a seek bar instead. Left/Right jump by 10 seconds and speed up while held (10s → 30s → 60s). The video only jumps when you let go, because seeking on AVPlay is slow over HTTP. Position is saved every 15 seconds and when you leave. About 2 minutes before the end of an episode (or when the panel's end-credits time is reached) the Up Next card appears and plays the next episode after 10 seconds.</p>
+            <div class="keys"><span><kbd>▶‖</kbd>play / pause</span><span><kbd>⏪ ⏩</kbd>rewind / fast-forward</span><span><kbd>↓</kbd>show controls</span><span><kbd>Back</kbd>save position and exit</span></div>
+        </figcaption>
+    </figure>
+</section>
+
+<section>
+    <h2>Requirements</h2>
+    <p class="prose" style="color:var(--text-2)"><span class="pri must">Must</span> is needed for the first usable release. <span class="pri should">Should</span> follows soon after. <span class="pri could">Could</span> is for later.</p>
+    <div class="tbl"><table>
+        <thead><tr><th>ID</th><th>Requirement</th><th>Priority</th><th>Done when</th></tr></thead>
+        <tbody>
+            <tr class="grp"><td colspan="4">Content and sources</td></tr>
+            <tr><td class="id">C1</td><td>Sort every entry into one of three kinds: <b>live</b>, <b>movie</b> or <b>episode</b>.<span class="sub">This replaces the drop filter in <code>lineFeeder</code>.</span></td><td><span class="pri must">Must</span></td><td>Loading <code>test/sample.m3u</code> gives 9 live channels, 1 movie and 1 episode, and Live TV still shows 9.</td></tr>
+            <tr><td class="id">C2</td><td>Xtream: fetch movies and series with <code>get_vod_categories / get_vod_streams</code> and <code>get_series_categories / get_series</code>.</td><td><span class="pri must">Must</span></td><td>Both sections show the panel's own categories and counts.</td></tr>
+            <tr><td class="id">C3</td><td>Xtream details on demand: <code>get_vod_info</code> and <code>get_series_info</code> (seasons, episodes, <code>container_extension</code>).</td><td><span class="pri must">Must</span></td><td>Playback URLs are built as <code>/movie/u/p/{id}.{ext}</code> and <code>/series/u/p/{episode_id}.{ext}</code>.</td></tr>
+            <tr><td class="id">C4</td><td>M3U: classify by URL path first, then by file extension (<code>.mp4 .mkv .avi</code>), then by group name. Group episodes into shows using <code>S01E02</code>, <code>S01 E02</code> and <code>1x02</code> in the title.</td><td><span class="pri must">Must</span></td><td>Tests cover each title pattern, plus a playlist with no season or episode info.</td></tr>
+            <tr><td class="id">C5</td><td>Load movies and series only when their section is first opened, show progress the same way sources already do, and keep them in memory only.</td><td><span class="pri must">Must</span></td><td>Boot time with an Xtream source matches today's. Nothing VOD-related is written to <code>localStorage</code> apart from progress.</td></tr>
+            <tr><td class="id">C6</td><td>A per-source setting "Include movies &amp; series", shown on the edit-source form.</td><td><span class="pri should">Should</span></td><td>Turning it off hides that source's VOD in both sections.</td></tr>
+            <tr><td class="id">C7</td><td>Stalker: <code>type=vod</code> categories and lists, with series detected from <code>is_series</code>.</td><td><span class="pri could">Could</span></td><td>Tested against a real portal (Stalker live TV isn't verified upstream either).</td></tr>
+
+            <tr class="grp"><td colspan="4">Browsing</td></tr>
+            <tr><td class="id">B1</td><td>Add Movies and Series to the side menu, between Live TV and Recent.</td><td><span class="pri must">Must</span></td><td>Both are reachable with the arrows and OK, and Back works the same as on every other screen.</td></tr>
+            <tr><td class="id">B2</td><td>A category column plus a 6-column poster grid. Categories are merged across sources the same way Live TV merges them.</td><td><span class="pri must">Must</span></td><td><code>layout.js</code> checks the grid at 1920 and 1280 wide with no overlap.</td></tr>
+            <tr><td class="id">B3</td><td>Draw the grid one page at a time (about 60 posters) and load cover images lazily, with an initial-letter fallback when there's no image.</td><td><span class="pri must">Must</span></td><td>Scrolling a 5,000-title category stays responsive on the Q64D.</td></tr>
+            <tr><td class="id">B4</td><td>Search the titles in the selected section (by default across all categories), using the same search box as everywhere else.</td><td><span class="pri must">Must</span></td><td>Typing narrows the grid, and the result count appears in the search box.</td></tr>
+            <tr><td class="id">B5</td><td>Sort by Recently added, A–Z or Rating, using <code>added</code> and <code>rating</code> from Xtream.</td><td><span class="pri should">Should</span></td><td>The chosen sort is remembered per section.</td></tr>
+            <tr><td class="id">B6</td><td>Hide categories in Movies and Series, the same way the existing Categories screen does for live.</td><td><span class="pri should">Should</span></td><td>Hidden categories survive a restart.</td></tr>
+
+            <tr class="grp"><td colspan="4">Details</td></tr>
+            <tr><td class="id">D1</td><td>Movie details page: backdrop, poster, year, runtime, rating, plot, cast, and Play / Resume / Start over / Favorite buttons.</td><td><span class="pri must">Must</span></td><td>Back returns to the grid with the same poster focused.</td></tr>
+            <tr><td class="id">D2</td><td>Series details page: show information, season list and episode list. Focus opens on the next episode to watch.</td><td><span class="pri must">Must</span></td><td>For a show you've partly watched, the screen opens on that episode.</td></tr>
+            <tr><td class="id">D3</td><td>A clear message when a panel returns no details, so the page still works with only the title and poster.</td><td><span class="pri must">Must</span></td><td>A test with an empty <code>info</code> object still renders a playable page.</td></tr>
+
+            <tr class="grp"><td colspan="4">Playback</td></tr>
+            <tr><td class="id">P1</td><td><code>player.js</code> gains <code>seekTo</code>, <code>duration</code> and <code>position</code> (AVPlay <code>seekTo / getDuration / getCurrentTime</code>, with a <code>&lt;video&gt;</code> fallback).</td><td><span class="pri must">Must</span></td><td>Seeking works on the TV and in the emulator.</td></tr>
+            <tr><td class="id">P2</td><td>A seek bar for movies and episodes: Left/Right with speed-up, and the jump applied when the key is released. Register the <code>MediaFastForward</code>, <code>MediaRewind</code>, <code>MediaPlay</code>, <code>MediaPause</code> and <code>MediaStop</code> keys.</td><td><span class="pri must">Must</span></td><td><code>dom.js</code> drives a seek with the arrows and checks where it lands.</td></tr>
+            <tr><td class="id">P3</td><td>Resume: save position every 15 seconds and when you exit. Count a title as watched past 92% or with less than 3 minutes left. Keep up to 300 entries under <code>ts.progress</code>.</td><td><span class="pri must">Must</span></td><td>Restarting the app offers to resume within 15 seconds of where you stopped.</td></tr>
+            <tr><td class="id">P4</td><td>Up Next: a countdown card near the end of an episode and autoplay of the next one, including across seasons.</td><td><span class="pri should">Should</span></td><td>The last episode of a season moves on to E1 of the next season. The last episode of the show shows no card.</td></tr>
+            <tr><td class="id">P5</td><td>Choose audio and subtitle tracks (AVPlay <code>getTotalTrackInfo / setSelectTrack</code>).</td><td><span class="pri could">Could</span></td><td>Track names come from the stream; when the stream has none, they're labelled by language code.</td></tr>
+
+            <tr class="grp"><td colspan="4">Library</td></tr>
+            <tr><td class="id">L1</td><td>A Continue watching row at the top of Movies and of Series.</td><td><span class="pri must">Must</span></td><td>Finished titles leave the row, and the most recently watched comes first.</td></tr>
+            <tr><td class="id">L2</td><td>Favorites for movies and shows, under Live / Movies / Series tabs on the Favorites screen.</td><td><span class="pri should">Should</span></td><td>Existing live favorites are unaffected (same <code>ts.favorites</code> key, with a new <code>kind</code> field).</td></tr>
+            <tr><td class="id">L3</td><td>Recent includes movies and episodes, with the poster and episode label.</td><td><span class="pri could">Could</span></td><td>Opening a recent episode resumes it.</td></tr>
+        </tbody>
+    </table></div>
+</section>
+
+<section>
+    <h2>Where the data comes from</h2>
+    <div class="tbl"><table>
+        <thead><tr><th>Source</th><th>Movies</th><th>Series</th><th>Details</th><th>Notes</th></tr></thead>
+        <tbody>
+            <tr><td><b>Xtream</b></td><td><code>get_vod_categories</code><br><code>get_vod_streams</code></td><td><code>get_series_categories</code><br><code>get_series</code></td><td><code>get_vod_info&amp;vod_id</code><br><code>get_series_info&amp;series_id</code></td><td>The best case: real categories, ratings, cover art, added dates and episode lists. Build this first.</td></tr>
+            <tr><td><b>M3U</b></td><td>URL contains <code>/movie/</code>, or a VOD file extension, or the group name matches <span class="mono">VOD|Movies|Films|Películas|Cine</span></td><td><code>/series/</code> or <code>SxxEyy</code> in the title; shows grouped by title with the episode part removed</td><td>Only what's in <code>#EXTINF</code>: logo and group</td><td>The details page shows title, poster and Play only. If the M3U URL is really an Xtream <code>get.php</code> link, use the Xtream API instead (<code>parseXtreamUrl</code> already detects it).</td></tr>
+            <tr><td><b>Stalker</b></td><td><code>type=vod&amp;action=get_categories</code><br><code>get_ordered_list</code></td><td>Same list, filtered by <code>is_series=1</code></td><td><code>create_link</code> per item</td><td>Comes last, and needs a real portal to test against.</td></tr>
+        </tbody>
+    </table></div>
+</section>
+
+<section>
+    <h2>Changes by file</h2>
+    <div class="tbl"><table>
+        <thead><tr><th>File</th><th>Change</th></tr></thead>
+        <tbody>
+            <tr><td class="id">js/api.js</td><td>Replace the drop filter with a <code>classify()</code> step. Add <code>loadVod(list)</code>, <code>loadSeries(list)</code>, <code>vodInfo()</code> and <code>seriesInfo()</code>, and title parsing for season and episode numbers. <code>load()</code> keeps returning live channels only.</td></tr>
+            <tr><td class="id">js/vod.js <em style="color:var(--text-3)">(new)</em></td><td>VOD state kept out of <code>store.js</code>, which is already 1,300 lines: catalogs per list, the info cache, the progress map, Continue watching, and paging and sorting views. It plugs into <code>App.store</code> the same way the other modules do.</td></tr>
+            <tr><td class="id">js/player.js</td><td><code>seekTo</code>, <code>position</code>, <code>duration</code>, a time callback from <code>oncurrentplaytime</code>, and track info.</td></tr>
+            <tr><td class="id">js/tv.js</td><td>New key codes and registering the media keys. A key-repeat counter for speeding up seeks.</td></tr>
+            <tr><td class="id">js/app.js</td><td>Zones for <code>vodCats</code>, <code>vodGrid</code>, <code>vodSort</code>, <code>detailActions</code>, <code>seasons</code>, <code>episodes</code>, <code>seek</code> and <code>upNext</code>, plus side-menu edge routing for the two new screens.</td></tr>
+            <tr><td class="id">js/ui/screens/</td><td><code>movies.js</code>, <code>series.js</code> (one browse component shared by both), <code>title.js</code> (details), and a <code>vod</code> mode inside <code>player.js</code>.</td></tr>
+            <tr><td class="id">js/ui/kit.js · css/</td><td>A <code>Poster</code> component, plus <code>css/vod.css</code> for the grid, details, episode list and seek bar, all built on the existing tokens.</td></tr>
+            <tr><td class="id">test/</td><td><code>sample.m3u</code> gains more movie and episode entries, plus an Xtream fixture. New checks in <code>check.js</code> (classifying, title parsing, progress), <code>dom.js</code> (browse → details → play → seek) and <code>layout.js</code> (grid).</td></tr>
+            <tr><td class="id">README · config.xml</td><td>New fork name and package id, so it can sit next to VexonTV on the TV. Remove the "Live only, by design" note.</td></tr>
+        </tbody>
+    </table></div>
+</section>
+
+<section>
+    <h2>Build order</h2>
+    <div class="phases">
+        <div class="phase"><span class="k">PHASE 1 · DATA</span><h3>Keep and classify</h3><ul><li>C1, C2, C4, C5</li><li><code>vod.js</code> store, with no UI yet</li><li>Tests and fixtures</li></ul></div>
+        <div class="phase"><span class="k">PHASE 2 · MOVIES</span><h3>Browse, details, play</h3><ul><li>B1–B4, D1, D3</li><li>P1–P3: seek and resume</li><li>L1 for movies</li></ul></div>
+        <div class="phase"><span class="k">PHASE 3 · SERIES</span><h3>Seasons and episodes</h3><ul><li>C3, D2</li><li>P4: Up Next</li><li>L1 for series</li></ul></div>
+        <div class="phase"><span class="k">PHASE 4 · POLISH</span><h3>The Should and Could items</h3><ul><li>B5, B6, C6, L2, L3</li><li>P5: audio and subtitle tracks</li><li>C7: Stalker</li></ul></div>
+    </div>
+    <p class="prose" style="color:var(--text-2)">Each phase ends in a working app with passing tests, so the fork can go on the TV after Phase 2.</p>
+</section>
+
+<section>
+    <h2>Questions before we build</h2>
+    <ol class="q">
+        <li><b>Which source types do you actually use?</b><span>If it's Xtream, Phase 1 starts there and the M3U guessing can be simpler.</span></li>
+        <li><b>Is the poster grid right, or would you rather have rows?</b><span>The alternative is the current list-row style with a preview panel on the right, which is closer to Live TV. Posters suit a film library better, but this is your call.</span></li>
+        <li><b>What should the fork be called?</b><span>A separate package id in <code>config.xml</code> lets it install next to VexonTV instead of replacing it.</span></li>
+        <li><b>Should Recent and Favorites mix live and on-demand content, or keep them in separate tabs?</b><span>The plan uses tabs on Favorites and one mixed Recent list.</span></li>
+    </ol>
+</section>
+</div>
+
+<script>
+(function () {
+    const movies = [
+        ["Copperhead Bay", 18, 7.4, 46], ["Northbound", 210, 6.8], ["Glass Harbour", 190, 7.9, 0, 1],
+        ["Kestrel", 30, 6.5], ["Salt & Ash", 5, 7.1], ["Ironwood", 120, 6.9, 12],
+        ["Quiet Engines", 260, 7.6], ["Last Ferry", 220, 6.2], ["The Long Meridian", 40, 8.0, 0, 1],
+        ["Paper Moons", 300, 7.0], ["Low Tide", 175, 6.7], ["Night Signal", 340, 7.3],
+    ]
+    const grid = document.getElementById("movieGrid")
+    if (!grid) return
+    movies.forEach((m, i) => {
+        const cell = document.createElement("div")
+        const focus = i === 0
+        cell.innerHTML =
+            `<div class="poster${focus ? " focus" : ""}" style="--h:${m[1]}">` +
+            `<span class="rate">★ ${m[2].toFixed(1)}</span>` +
+            (m[4] ? `<span class="seen">✓</span>` : "") +
+            `<b></b>` +
+            (m[3] ? `<span class="prog"><i style="width:${m[3]}%"></i></span>` : "") +
+            `</div><div class="cap${focus ? " f" : ""}"></div>`
+        cell.querySelector("b").textContent = m[0]
+        cell.querySelector(".cap").textContent = focus ? "2023 · 2h 06m" : m[0]
+        grid.appendChild(cell)
+    })
+})()
+</script>

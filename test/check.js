@@ -53,11 +53,12 @@ function load(file) {
         report.fail(`${file} does not load`, error.message)
     }
 }
-;["js/api.js", "js/store.js", "js/player.js"].forEach(load)
+;["js/api.js", "js/store.js", "js/vod.js", "js/player.js"].forEach(load)
 
 const api = App.api
 const store = App.store
 const player = App.player
+const vod = App.vod
 
 const b64 = (value) => Buffer.from(value, "utf8").toString("base64")
 global.fetch = function () {
@@ -105,7 +106,7 @@ const playlist = [
 ].join("\r\n")
 
 const channels = api.parseM3u(playlist)
-check("parseM3u discards movies and series", channels.length === 1, `quedaron ${channels.length}`)
+check("parseM3u keeps only the live channels", channels.length === 1, `quedaron ${channels.length}`)
 check(
     "parseM3u reads name, group and logo",
     !!channels[0] &&
@@ -123,6 +124,135 @@ check(
     "parseM3u with the sample file yields 9 channels",
     api.parseM3u(source("test/sample.m3u")).length === 9,
 )
+
+const classifyCases = [
+    ["https://panel.example/live/u/p/1.ts", "Cine", "Movistar Cine", "live"],
+    ["https://cdn.example/cine/stream.m3u8", "Cine", "Cine 24h", "live"],
+    ["http://host:8080/u/p/123", "Películas", "Algo", "live"],
+    ["https://panel.example/movie/u/p/9.mkv", "Otros", "Film", "movie"],
+    ["https://panel.example/series/u/p/9.mp4", "Otros", "Show", "episode"],
+    ["https://cdn.example/a.mp4", "Otros", "Film (2020)", "movie"],
+    ["https://cdn.example/a.mkv?token=1", "Otros", "Show S01E02", "episode"],
+    ["https://cdn.example/a.mp4", "TV Shows", "Pilot", "episode"],
+    ["https://cdn.example/a.avi", "Varios", "Show 2x05", "episode"],
+]
+classifyCases.forEach((item) => {
+    const got = api.classify(item[0], item[1], item[2])
+    check(`classify ${item[2]} in ${item[1]} is ${item[3]}`, got === item[3], got)
+})
+
+const episodeCases = [
+    ["Breaking.Bad.S02E05.720p", { show: "Breaking Bad", season: 2, episode: 5, title: "" }],
+    [
+        "The Office (US) - S03 E07 - Diwali",
+        { show: "The Office (US)", season: 3, episode: 7, title: "Diwali" },
+    ],
+    ["Dark 1x02", { show: "Dark", season: 1, episode: 2, title: "" }],
+    ["Friends s1e1", { show: "Friends", season: 1, episode: 1, title: "" }],
+    ["S01E01", null],
+    ["Plain Movie (2019)", null],
+    ["", null],
+]
+episodeCases.forEach((item) => {
+    const got = api.parseEpisode(item[0])
+    check(
+        `parseEpisode ${JSON.stringify(item[0])}`,
+        JSON.stringify(got) === JSON.stringify(item[1]),
+        JSON.stringify(got),
+    )
+})
+
+const titleCases = [
+    ["Plain Movie (2019)", { title: "Plain Movie", year: 2019 }],
+    ["Other [2001]", { title: "Other", year: 2001 }],
+    ["Blade Runner 2049", { title: "Blade Runner 2049", year: null }],
+    ["(2020)", { title: "(2020)", year: 2020 }],
+]
+titleCases.forEach((item) => {
+    const got = api.parseTitle(item[0])
+    check(
+        `parseTitle ${JSON.stringify(item[0])}`,
+        JSON.stringify(got) === JSON.stringify(item[1]),
+        JSON.stringify(got),
+    )
+})
+
+const inline = api.parseM3uCatalog(playlist)
+check(
+    "parseM3uCatalog keeps the movie and the episode the live list leaves out",
+    inline.movies.length === 1 &&
+        inline.movies[0].name === "Una película" &&
+        inline.movies[0].year === 2024 &&
+        inline.series.length === 1 &&
+        inline.series[0].name === "Una serie" &&
+        inline.series[0].episodes[0].season === 1 &&
+        inline.series[0].episodes[0].episode === 1,
+    JSON.stringify(inline),
+)
+
+const catalog = api.parseM3uCatalog(source("test/sample.m3u"))
+const episodeCount = catalog.series.reduce((sum, show) => {
+    return sum + show.episodes.length
+}, 0)
+check(
+    "the sample file splits into 9 channels, 3 movies and 5 episodes",
+    api.parseM3u(source("test/sample.m3u")).length === 9 &&
+        catalog.movies.length === 3 &&
+        episodeCount === 5,
+    `${catalog.movies.length} movies, ${episodeCount} episodes`,
+)
+const ministerio = catalog.series.filter((show) => {
+    return show.name === "El Ministerio"
+})[0]
+check(
+    "episodes of one show are gathered under it",
+    !!ministerio && ministerio.episodes.length === 3 && ministerio.group === "Series",
+    JSON.stringify(ministerio),
+)
+const seasons = api.seasonsOf(ministerio ? ministerio.episodes : [])
+check(
+    "seasonsOf orders seasons and episodes",
+    seasons.length === 2 &&
+        seasons[0].number === 1 &&
+        seasons[0].episodes
+            .map((episode) => {
+                return episode.episode
+            })
+            .join() === "1,2" &&
+        seasons[1].episodes[0].title === "Capítulo uno",
+    JSON.stringify(seasons),
+)
+check(
+    "a show with no season or episode in the title is still a show",
+    catalog.series.some((show) => {
+        return show.name === "Una serie" && show.episodes[0].season === 1
+    }),
+)
+check(
+    "an mp4 with no /movie/ in the address is a movie",
+    catalog.movies.some((movie) => {
+        return movie.name === "Corto sin ruta" && movie.year === 2021
+    }),
+)
+check(
+    "and an mkv titled 1x02 is an episode",
+    catalog.series.some((show) => {
+        return show.name === "Dark" && show.episodes[0].episode === 2
+    }),
+)
+const loose = api.seasonsOf([
+    { season: null, episode: null, title: "b" },
+    { season: null, episode: null, title: "a" },
+])
+check(
+    "unnumbered episodes keep the provider's order in a season 0",
+    loose.length === 1 && loose[0].number === 0 && loose[0].episodes[0].title === "b",
+)
+
+check("not watched with no runtime", vod.isWatched(100, 0) === false)
+check("watched past 92%", vod.isWatched(920, 1000) === true)
+check("watched with the credits left", vod.isWatched(5000, 5100) === true)
+check("not watched halfway", vod.isWatched(500, 1000) === false)
 
 const xtreamCases = [
     [
@@ -773,6 +903,350 @@ const pending = [
     }),
 ]
 
+// Movies and series: a panel and a playlist, fetched only when asked, merged, saved progress.
+async function vodSuite() {
+    const originalFetch = global.fetch
+    const savedLists = store.state.lists
+    const calls = []
+    const reply = (data) =>
+        Promise.resolve({
+            ok: true,
+            status: 200,
+            json: function () {
+                return Promise.resolve(data)
+            },
+        })
+    const panel = {
+        get_vod_categories: [
+            { category_id: "1", category_name: "Acción" },
+            { category_id: "2", category_name: "Drama" },
+        ],
+        get_vod_streams: [
+            {
+                stream_id: 11,
+                name: "Copperhead Bay (2023)",
+                stream_icon: "http://i/11.jpg",
+                rating: "7.4",
+                added: "1700000000",
+                category_id: "1",
+                container_extension: "mkv",
+            },
+            {
+                stream_id: 12,
+                name: "Northbound",
+                rating: "",
+                rating_5based: 3.4,
+                added: "1710000000",
+                category_id: "2",
+                container_extension: "mp4",
+            },
+            { stream_id: 13, name: "Kestrel", rating: 0, added: "1600000000", category_id: "9" },
+        ],
+        get_series_categories: [{ category_id: "5", category_name: "Drama" }],
+        get_series: [
+            {
+                series_id: 70,
+                name: "The Cartographers",
+                cover: "http://i/70.jpg",
+                plot: "Maps.",
+                releaseDate: "2021-03-01",
+                last_modified: "1720000000",
+                rating: "8.1",
+                category_id: "5",
+            },
+        ],
+    }
+    const details = {
+        "vod_id=11": {
+            info: {
+                plot: "A diver.",
+                cast: "M. Ilunga",
+                director: "R. Okafor",
+                genre: "Action",
+                releasedate: "2023-05-02",
+                duration: "02:06:00",
+                rating: "7.4",
+                backdrop_path: ["http://i/b11.jpg"],
+            },
+            movie_data: { stream_id: 11, container_extension: "mkv" },
+        },
+        "vod_id=12": { info: [], movie_data: { stream_id: 12, container_extension: "mkv" } },
+        "series_id=70": {
+            info: { plot: "Maps.", genre: "Drama" },
+            episodes: {
+                2: [
+                    {
+                        id: "702",
+                        episode_num: 1,
+                        title: "Low Water",
+                        container_extension: "mkv",
+                        info: { duration_secs: 3120 },
+                        season: 2,
+                    },
+                ],
+                1: [
+                    { id: "612", episode_num: 2, title: "Dead Reckoning", info: [] },
+                    { id: "611", episode_num: 1, title: "Pilot", info: { duration: "00:47:00" } },
+                ],
+            },
+        },
+    }
+    global.fetch = function (url) {
+        const address = String(url)
+        calls.push(address)
+        if (address.indexOf("http://lists.example/vod.m3u") === 0)
+            return Promise.resolve({
+                ok: true,
+                status: 200,
+                text: function () {
+                    return Promise.resolve(source("test/sample.m3u"))
+                },
+            })
+        if (address.indexOf("http://broken.panel") === 0)
+            return Promise.resolve({ ok: false, status: 500 })
+        const action = (address.match(/action=([a-z_]+)/) || [])[1]
+        if (action === "get_vod_info" || action === "get_series_info") {
+            const id = address.match(/(vod_id|series_id)=(\d+)/)
+            return reply(details[`${id[1]}=${id[2]}`] || {})
+        }
+        return reply(panel[action] || [])
+    }
+    const count = (needle) => {
+        return calls.filter((call) => {
+            return call.indexOf(needle) !== -1
+        }).length
+    }
+
+    store.state.lists = [
+        {
+            id: "vx",
+            name: "panel",
+            kind: "xtream",
+            source: "creds",
+            origin: "http://vod.panel",
+            user: "u s",
+            pass: "p",
+        },
+        {
+            id: "vm",
+            name: "playlist",
+            kind: "m3u",
+            source: "url",
+            url: "http://lists.example/vod.m3u",
+        },
+        { id: "vs", name: "portal", kind: "stalker", source: "mac", origin: "http://p", mac: "x" },
+    ]
+
+    const movies = await vod.ensure("movie")
+    check(
+        "vod: movies from the panel and the playlist meet",
+        movies.length === 6,
+        String(movies.length),
+    )
+    check(
+        "vod: opening movies does not ask the panel for series",
+        count("get_vod_streams") === 1 && count("get_series") === 0,
+        calls.join(" "),
+    )
+    check(
+        "vod: Stalker portals are left out, without an error",
+        count("http://p") === 0 && vod.status("movie").errors.length === 0,
+    )
+    const copper = movies.filter((movie) => {
+        return movie.id === "11"
+    })[0]
+    check(
+        "vod: an Xtream movie carries its year, category, rating and address",
+        !!copper &&
+            copper.name === "Copperhead Bay" &&
+            copper.year === 2023 &&
+            copper.group === "Acción" &&
+            copper.rating === 7.4 &&
+            copper.listId === "vx" &&
+            copper.url === "http://vod.panel/movie/u%20s/p/11.mkv",
+        JSON.stringify(copper),
+    )
+    const byId = (id) => {
+        return movies.filter((movie) => {
+            return movie.id === id
+        })[0]
+    }
+    check("vod: a five-star rating is doubled", byId("12").rating === 6.8, byId("12").rating)
+    check(
+        "vod: a zero rating is none, an unknown category is Otros, the container mp4",
+        byId("13").rating === null &&
+            byId("13").group === "Otros" &&
+            byId("13").url.slice(-7) === "/13.mp4",
+        JSON.stringify(byId("13")),
+    )
+
+    check(
+        "vod: categories are merged and sorted",
+        vod
+            .categories("movie")
+            .map((row) => {
+                return row.name
+            })
+            .join("|") === "Acción|Cine en casa|Drama|Otros|VOD | Acción|VOD | Drama",
+        JSON.stringify(vod.categories("movie")),
+    )
+    check(
+        "vod: by rating, the best first and the unrated last",
+        vod.view("movie", { sort: "rating" })[0].id === "11" &&
+            vod.view("movie", { sort: "rating" })[5].rating === null,
+    )
+    check(
+        "vod: recently added first by default",
+        vod.view("movie")[0].id === "12",
+        vod.view("movie")[0].name,
+    )
+    check(
+        "vod: one category, and the search inside it",
+        vod.view("movie", { category: "Drama" }).length === 1 &&
+            vod.view("movie", { query: "NORTH" }).length === 1,
+    )
+
+    const many = []
+    for (let i = 0; i < 130; i++) many.push({ name: `t${i}` })
+    const third = vod.page(many, 2)
+    check(
+        "vod: pages of 60, the last one short",
+        third.items.length === 10 && third.pages === 3 && third.total === 130,
+    )
+    check("vod: a page past the end is the last one", vod.page(many, 9).index === 2)
+    check("vod: an empty list is one empty page", vod.page([], 0).pages === 1)
+
+    const series = await vod.ensure("series")
+    check(
+        "vod: series from the panel and the playlist meet",
+        series.length === 4,
+        String(series.length),
+    )
+    check(
+        "vod: the playlist was downloaded once for both sections",
+        count("http://lists.example/vod.m3u") === 1,
+        String(count("http://lists.example/vod.m3u")),
+    )
+
+    const info = await vod.info(copper)
+    await vod.info(copper)
+    check(
+        "vod: movie details come once and are kept",
+        count("get_vod_info") === 1 &&
+            info.plot === "A diver." &&
+            info.duration === 7560 &&
+            info.backdrop === "http://i/b11.jpg" &&
+            info.year === 2023,
+        JSON.stringify(info),
+    )
+    const bare = await vod.info(byId("12"))
+    check(
+        "vod: a panel with no details still answers, with the right container",
+        bare.plot === "" && bare.url === "http://vod.panel/movie/u%20s/p/12.mkv",
+        JSON.stringify(bare),
+    )
+
+    const show = series.filter((item) => {
+        return item.id === "70"
+    })[0]
+    const showInfo = await vod.info(show)
+    const firstSeason = showInfo.seasons[0]
+    check(
+        "vod: series details bring the seasons and episodes in order",
+        showInfo.seasons.length === 2 &&
+            firstSeason.number === 1 &&
+            firstSeason.episodes[0].id === "611" &&
+            firstSeason.episodes[0].duration === 2820 &&
+            firstSeason.episodes[0].url === "http://vod.panel/series/u%20s/p/611.mp4" &&
+            showInfo.seasons[1].episodes[0].url.slice(-8) === "/702.mkv",
+        JSON.stringify(showInfo.seasons),
+    )
+    const playlistShow = series.filter((item) => {
+        return item.name === "El Ministerio"
+    })[0]
+    const before = calls.length
+    const playlistInfo = await vod.info(playlistShow)
+    check(
+        "vod: a playlist show has its seasons without asking anyone",
+        calls.length === before && playlistInfo.seasons.length === 2,
+    )
+
+    global.localStorage.removeItem("ts.progress")
+    vod.init()
+    vod.saveProgress(copper, 600, 7560)
+    check(
+        "vod: a movie half seen is in Continue watching",
+        vod.continueWatching("movie").length === 1 && vod.continueWatching("movie")[0].id === "11",
+    )
+    const done = vod.saveProgress(copper, 7500, 7560)
+    check(
+        "vod: and leaves it once finished",
+        done.done === true && vod.continueWatching("movie").length === 0,
+    )
+    vod.saveProgress(firstSeason.episodes[1], 300, 2800, show)
+    check(
+        "vod: an episode half seen puts its show in Continue watching",
+        vod.continueWatching("series").length === 1 &&
+            vod.continueWatching("series")[0].id === "70",
+    )
+    vod.state.progress = {}
+    vod.init()
+    check(
+        "vod: progress survives a restart",
+        !!vod.progressOf(copper) && vod.progressOf(copper).pos === 7500,
+    )
+    for (let i = 0; i < 310; i++)
+        vod.saveProgress({ listId: "vx", kind: "movie", id: `f${i}` }, 10, 100)
+    check(
+        "vod: progress keeps the newest 300",
+        Object.keys(vod.state.progress).length === 300 &&
+            !!vod.state.progress["vx:movie:f309"] &&
+            !vod.state.progress["vx:movie:f0"],
+    )
+
+    vod.forget("vx")
+    check(
+        "vod: a source forgotten takes its titles and details with it",
+        vod.items("movie").length === 3 &&
+            Object.keys(vod.state.info).every((key) => {
+                return key.indexOf("vx:") !== 0
+            }),
+    )
+    store.removeList("vm")
+    check("vod: removing a source drops its catalog", !vod.state.catalogs.vm)
+
+    store.state.lists = [
+        {
+            id: "vb",
+            name: "broken",
+            kind: "xtream",
+            source: "creds",
+            origin: "http://broken.panel",
+            user: "u",
+            pass: "p",
+        },
+        {
+            id: "vx",
+            name: "panel",
+            kind: "xtream",
+            source: "creds",
+            origin: "http://vod.panel",
+            user: "u s",
+            pass: "p",
+        },
+    ]
+    const partial = await vod.ensure("movie")
+    const problems = vod.status("movie").errors
+    check(
+        "vod: a panel that fails leaves its error and the others still load",
+        partial.length === 3 && problems.length === 1 && problems[0].name === "broken",
+        JSON.stringify(problems),
+    )
+
+    store.state.lists = savedLists
+    global.fetch = originalFetch
+}
+
 Promise.all(pending).then((results) => {
     const problems = results.filter((item) => {
         return !!item
@@ -945,7 +1419,9 @@ Promise.all(pending).then((results) => {
         global.fetch = originalFetch
     })()
 
-    return Promise.all([wording, stalker]).then(() => {
-        report.done()
-    })
+    return Promise.all([wording, stalker])
+        .then(vodSuite)
+        .then(() => {
+            report.done()
+        })
 })

@@ -541,6 +541,7 @@ App.store = (function () {
             .then((channels) => {
                 draft.imported = true
                 storeChannels(list.id, channels)
+                if (App.vod) App.vod.forget(list.id)
                 state.lists = state.lists.map((item) => {
                     return item.id === list.id ? draft : item
                 })
@@ -566,6 +567,7 @@ App.store = (function () {
         delete state.channels[listId]
         delete state.groups[listId]
         delete state.pending[listId]
+        if (App.vod) App.vod.forget(listId)
         write(KEYS.lists, state.lists)
         invalidate()
         emit()
@@ -1235,6 +1237,7 @@ App.store = (function () {
     return {
         state,
         subscribe,
+        emit,
         init,
         takeFocus,
         focus,
