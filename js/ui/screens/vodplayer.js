@@ -108,7 +108,7 @@ App.uiScreens = App.uiScreens || {}
             : [
                   ["LEFT/RIGHT", "choose where to jump, hold to go faster"],
                   ["OK", ui.paused ? "play" : "pause"],
-                  ["DOWN", "audio and subtitles"],
+                  ["DOWN", "audio, subtitles, sleep timer"],
                   ["BACK", "hide this, again to leave where you are"],
               ]
 
@@ -237,6 +237,16 @@ App.uiScreens = App.uiScreens || {}
                             }}
                         >
                             Subtitles: ${vod.trackLabel("text")}
+                        </button>
+                        <button
+                            class="btn vod-menu-btn"
+                            id="vodSleepBtn"
+                            tabindex="-1"
+                            onClick=${function () {
+                                App.store.cycleSleep()
+                            }}
+                        >
+                            ${App.store.sleepLabel()}
                         </button>
                     </div>
                 </div>

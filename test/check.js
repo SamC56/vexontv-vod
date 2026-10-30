@@ -511,6 +511,15 @@ vod.state.progress = {}
     )
 })()
 
+check("the sleep timer starts off", store.sleepLabel() === "Sleep: Off")
+store.cycleSleep()
+check("one press: 30 minutes", store.sleepLabel() === "Sleep: 30 min", store.sleepLabel())
+store.cycleSleep()
+store.cycleSleep()
+check("then 60, then 90", store.sleepLabel() === "Sleep: 90 min", store.sleepLabel())
+store.cycleSleep()
+check("and once more turns it off", store.sleepLabel() === "Sleep: Off" && !store.state.sleepUntil)
+
 check(
     "language names read either code",
     vod.langName("spa") === "Spanish" &&

@@ -64,10 +64,13 @@ App.store = (function () {
         toast: null,
         pendingZone: null,
         favTab: "live",
+        sleepUntil: 0,
     }
 
     const PROGRESS_MS = 250
     const PREVIEW_MS = 800
+    // The sleep timer's steps, in minutes; one more press turns it off.
+    const SLEEP_STEPS = [30, 60, 90]
 
     // Categories this viewer wants first: panels prefix them by country, "UK| GENERAL".
     const FIRST_GROUPS = /^\s*UK\s*[|:\-]/i
@@ -84,6 +87,7 @@ App.store = (function () {
     let toastTimer = null
     let digitsTimer = null
     let previewTimer = null
+    let sleepTimer = null
 
     function subscribe(fn) {
         listeners.push(fn)
@@ -1136,6 +1140,40 @@ App.store = (function () {
         goHome()
     }
 
+    function sleepMinutes() {
+        if (!state.sleepUntil) return 0
+        return Math.max(1, Math.ceil((state.sleepUntil - Date.now()) / 60000))
+    }
+
+    function sleepLabel() {
+        return state.sleepUntil ? `Sleep: ${sleepMinutes()} min` : "Sleep: Off"
+    }
+
+    // Off, 30, 60, 90, off: from the current setting to the next step up.
+    function cycleSleep() {
+        const left = sleepMinutes()
+        const next = state.sleepUntil
+            ? SLEEP_STEPS.filter((step) => {
+                  return step > left
+              })[0]
+            : SLEEP_STEPS[0]
+        if (sleepTimer) clearTimeout(sleepTimer)
+        sleepTimer = null
+        state.sleepUntil = next ? Date.now() + next * 60000 : 0
+        if (next) sleepTimer = setTimeout(sleep, next * 60000)
+        notify(next ? `Sleep timer: ${next} minutes` : "Sleep timer off")
+    }
+
+    // Time is up: whatever plays stops and the launch screen takes its place.
+    function sleep() {
+        sleepTimer = null
+        state.sleepUntil = 0
+        if (state.screen === "vodplayer" && App.vod) App.vod.exitPlayer()
+        else if (state.screen === "player") exitPlayer()
+        goStart()
+        notify("The sleep timer stopped playback")
+    }
+
     function notify(message) {
         toastSeq++
         state.toast = { message, id: toastSeq }
@@ -1316,6 +1354,9 @@ App.store = (function () {
         openRecents,
         openFavorites,
         setFavTab,
+        cycleSleep,
+        sleepLabel,
+        sleepNow: sleep,
         openAdd,
         chooseType,
         openEdit,

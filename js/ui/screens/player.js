@@ -220,6 +220,17 @@ App.uiScreens = App.uiScreens || {}
                     >
                         ${saved ? "Remove from favorites" : "Add to favorites"}
                     </button>
+                    <button
+                        class="btn"
+                        id="ovSleep"
+                        tabindex="-1"
+                        onClick=${function () {
+                            store.cycleSleep()
+                            show()
+                        }}
+                    >
+                        ${store.sleepLabel()}
+                    </button>
                 </div>
             </div>
         </section>`

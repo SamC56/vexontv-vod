@@ -470,6 +470,10 @@ async function movies() {
     press(40)
     await wait(60)
     check("down opens the buttons again", vod.ui.menu === true)
+    check(
+        "beside them, the sleep timer",
+        document.getElementById("vodSleepBtn").textContent.trim() === "Sleep: Off",
+    )
     await wait(5300)
     check(
         "left alone on them, they hide with the controls",
@@ -834,6 +838,15 @@ async function series() {
     check(
         "which keeps shuffling",
         vod.ui.playing.shuffle === true && vod.ui.playing.item.id !== shuffled.id,
+    )
+    store.sleepNow()
+    await wait(100)
+    check(
+        "when the sleep timer runs out, playback stops and the launch screen shows",
+        onlyScreen("screen-start") &&
+            !vod.ui.playing &&
+            (document.querySelector(".toast") || {}).textContent.indexOf("sleep timer") !== -1,
+        screens().join(", "),
     )
     await leavePlayer()
     press(10009)
