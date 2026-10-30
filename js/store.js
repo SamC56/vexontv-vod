@@ -63,6 +63,7 @@ App.store = (function () {
         loading: null,
         toast: null,
         pendingZone: null,
+        favTab: "live",
     }
 
     const PROGRESS_MS = 250
@@ -779,10 +780,17 @@ App.store = (function () {
         focus("recentsSearch")
     }
 
-    function openFavorites() {
+    // tab: "live", "movie" or "series"; the last one chosen when left out.
+    function openFavorites(tab) {
         state.search.favorites = read(`${KEYS.search}favorites`, "") || ""
+        if (tab) state.favTab = tab
         set({ screen: "favs" })
-        focus("favsSearch")
+        focus("favTabs", 0, ["live", "movie", "series"].indexOf(state.favTab))
+    }
+
+    function setFavTab(tab) {
+        set({ favTab: tab })
+        focus(tab === "live" ? "favsList" : "favGrid", 0, 0)
     }
 
     function openAdd() {
@@ -1307,6 +1315,7 @@ App.store = (function () {
         openTv,
         openRecents,
         openFavorites,
+        setFavTab,
         openAdd,
         chooseType,
         openEdit,

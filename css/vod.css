@@ -135,6 +135,25 @@
     height: 18px;
 }
 
+.poster-fav {
+    position: absolute;
+    right: 8px;
+    bottom: 12px;
+    padding: 0 8px;
+    border-radius: var(--r-sm);
+    background: rgba(5, 5, 5, 0.72);
+    font-size: 18px;
+    color: var(--saved);
+}
+
+.fav-tabs {
+    gap: 8px;
+}
+
+.vod-grid.fav-grid {
+    flex: 1;
+}
+
 .poster-progress {
     position: absolute;
     left: 0;

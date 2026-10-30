@@ -182,9 +182,24 @@ var App = App || {} // eslint-disable-line no-var -- shared namespace, no module
             },
         })
 
+        zone("favTabs", "#favTabs .btn", {
+            onEdge: function (dir) {
+                if (dir !== "down") return
+                if (store.state.favTab === "live") tv.set("favsSearch", 0, 0)
+                else tv.set("favGrid", 0, 0)
+            },
+        })
+
         zone("favsSearch", "#favsSearch", {
             onEdge: function (dir) {
                 if (dir === "down") tv.set("favsList", 0, 0)
+                else if (dir === "up") tv.set("favTabs", 0, 0)
+            },
+        })
+
+        zone("favGrid", "#favGrid .poster", {
+            onEdge: function (dir) {
+                if (dir === "up") tv.set("favTabs", 0, 0)
             },
         })
 
@@ -358,8 +373,22 @@ var App = App || {} // eslint-disable-line no-var -- shared namespace, no module
 
         if (!element) return
 
-        if ((state.screen === "movies" || state.screen === "series") && element.dataset.key) {
-            App.vod.confirmForget(App.vod.itemByKey(element.dataset.key), "vodCats")
+        // A poster: Red takes it out of Continue watching there, and is the favorite key elsewhere.
+        if (element.dataset.key && element.classList.contains("poster")) {
+            const vod = App.vod
+            const key = element.dataset.key
+            const item =
+                vod.itemByKey(key) ||
+                vod.state.favorites.filter((saved) => {
+                    return vod.keyOf(saved) === key
+                })[0]
+            const browsing = state.screen === "movies" || state.screen === "series"
+            if (browsing && vod.ui.category === vod.CONTINUE && vod.hasProgress(item)) {
+                vod.confirmForget(item, "vodCats")
+                return
+            }
+            const added = vod.toggleFavorite(item)
+            store.notify(added ? "Added to favorites" : "Removed from favorites")
             return
         }
 

@@ -889,6 +889,39 @@ async function series() {
             focused().id === "titlePlay",
         focused() ? focused().id : "(nothing)",
     )
+
+    document.getElementById("titleFav").click()
+    await wait(60)
+    check(
+        "Add to favorites on a film's page saves it",
+        vod.isFavorite(film) &&
+            document.getElementById("titleFav").textContent.indexOf("Remove") !== -1,
+    )
+    store.openFavorites("movie")
+    await wait(80)
+    check(
+        "Favorites has a Movies tab with it",
+        onlyScreen("screen-favs") &&
+            document.querySelector("#favTabs .seg-btn.on").textContent.trim() === "Movies" &&
+            document.querySelectorAll("#favGrid .poster").length === 1,
+        `${screens().join(", ")} / ${document.querySelectorAll("#favGrid .poster").length}`,
+    )
+    document.querySelector("#favGrid .poster").click()
+    await wait(120)
+    check("a favorite opens its page", onlyScreen("screen-title"), screens().join(", "))
+    press(10009)
+    await wait(80)
+    check(
+        "and Back returns to Favorites, on it",
+        onlyScreen("screen-favs") && !!focused() && focused().classList.contains("poster"),
+        `${screens().join(", ")} / ${focused() ? focused().className : "(nothing)"}`,
+    )
+    press(403)
+    await wait(60)
+    check(
+        "Red on it takes it out of favorites",
+        !vod.isFavorite(film) && document.querySelectorAll("#favGrid .poster").length === 0,
+    )
     window.webapis = undefined
 }
 

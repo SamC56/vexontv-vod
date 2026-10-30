@@ -33,10 +33,11 @@ App.uiScreens = App.uiScreens || {}
             data-key=${vod.keyOf(item)}
             tabindex="-1"
             onClick=${function () {
-                vod.openTitle(item)
+                vod.openTitle(item, props.from)
             }}
         >
             <span class="poster-art">
+                ${vod.isFavorite(item) ? html`<span class="poster-fav">★</span>` : null}
                 <span class="poster-letter">${kit.initial(item.name)}</span>
                 ${
                     item.logo
@@ -90,6 +91,8 @@ App.uiScreens = App.uiScreens || {}
     }
 
     // Movies and Series: the same screen, told apart by the section that opened it.
+    App.uiScreens.Poster = Poster
+
     App.uiScreens.movies = function Movies() {
         const view = vod.browse()
         const status = view.status

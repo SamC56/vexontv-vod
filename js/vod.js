@@ -9,6 +9,7 @@ App.vod = (function () {
         sort: "ts.vod.sort.",
         trackPrefs: "ts.vod.tracks",
         hidden: "ts.vod.hidden.",
+        favorites: "ts.vod.favorites",
     }
     const MAX_TRACK_PREFS = 200
 
@@ -113,6 +114,7 @@ App.vod = (function () {
         refreshed: {},
         trackPrefs: {},
         hidden: { movie: [], series: [] },
+        favorites: [],
         errors: {},
         info: {},
         progress: {},
@@ -150,6 +152,7 @@ App.vod = (function () {
         KINDS.forEach((kind) => {
             state.hidden[kind] = read(KEYS.hidden + kind, []) || []
         })
+        state.favorites = read(KEYS.favorites, []) || []
     }
 
     function sourcesWithVod() {
@@ -456,6 +459,50 @@ App.vod = (function () {
             returnZone,
         )
         return true
+    }
+
+    // A favorite keeps enough of the title to open before its catalog has loaded.
+    const SNAPSHOT = ["kind", "id", "listId", "name", "year", "group", "logo", "rating"]
+    const SNAPSHOT_MORE = ["added", "url", "ext", "plot", "episodes"]
+
+    function snapshot(item) {
+        const copy = {}
+        SNAPSHOT.concat(SNAPSHOT_MORE).forEach((field) => {
+            if (item[field] !== undefined) copy[field] = item[field]
+        })
+        return copy
+    }
+
+    function isFavorite(item) {
+        const key = keyOf(item)
+        return state.favorites.some((saved) => {
+            return keyOf(saved) === key
+        })
+    }
+
+    function toggleFavorite(item) {
+        if (!item) return false
+        const key = keyOf(item)
+        const added = !isFavorite(item)
+        state.favorites = added
+            ? [snapshot(item)].concat(state.favorites)
+            : state.favorites.filter((saved) => {
+                  return keyOf(saved) !== key
+              })
+        write(KEYS.favorites, state.favorites)
+        changed()
+        return added
+    }
+
+    // The catalog's own copy when it is loaded, the saved one until then.
+    function favorites(kind) {
+        return state.favorites
+            .filter((saved) => {
+                return saved.kind === kind
+            })
+            .map((saved) => {
+                return itemByKey(keyOf(saved)) || saved
+            })
     }
 
     function continueWatching(kind) {
@@ -830,9 +877,12 @@ App.vod = (function () {
         return true
     }
 
-    function openTitle(item) {
+    // from: "favs" when opened from Favorites, so Back returns there.
+    function openTitle(item, from) {
         if (!item) return
         const show = item.kind === "series"
+        ui.titleFrom = from || null
+        if (from) ui.kind = show ? "series" : "movie"
         ui.title = item
         ui.details = null
         ui.detailsError = null
@@ -862,6 +912,12 @@ App.vod = (function () {
 
     function backFromTitle() {
         const item = ui.title
+        if (ui.titleFrom === "favs" && item) {
+            const key = keyOf(item).replace(/["\\]/g, "\\$&")
+            store().openFavorites(item.kind)
+            store().focus("favGrid", 0, 0, `#favGrid .poster[data-key="${key}"]`)
+            return
+        }
         store().set({ screen: sectionScreen(ui.kind) })
         if (item) {
             const key = keyOf(item).replace(/["\\]/g, "\\$&")
@@ -1427,6 +1483,9 @@ App.vod = (function () {
         progressOf,
         forgetProgress,
         hasProgress,
+        isFavorite,
+        toggleFavorite,
+        favorites,
         itemByKey,
         confirmForget,
         saveProgress,

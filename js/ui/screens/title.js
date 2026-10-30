@@ -4,6 +4,7 @@ App.uiScreens = App.uiScreens || {}
 
 ;(function () {
     const kit = App.uiKit
+    const store = App.store
     const vod = App.vod
     const html = kit.html
 
@@ -73,6 +74,19 @@ App.uiScreens = App.uiScreens || {}
                                   </button>`
                                 : null
                         }
+                        <button
+                            class=${`btn${vod.isFavorite(item) ? " saved" : ""}`}
+                            id="titleFav"
+                            tabindex="-1"
+                            onClick=${function () {
+                                const added = vod.toggleFavorite(item)
+                                store.notify(
+                                    added ? "Added to favorites" : "Removed from favorites",
+                                )
+                            }}
+                        >
+                            ${vod.isFavorite(item) ? "Remove from favorites" : "Add to favorites"}
+                        </button>
                         ${
                             vod.hasProgress(item)
                                 ? html`<button
