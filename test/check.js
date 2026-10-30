@@ -420,6 +420,35 @@ check("nextToWatch: after a finished one, the next", vod.nextToWatch(showSeasons
 vod.saveProgress(e12, 2790, 2800, { listId: "sx", kind: "series", id: "show" }, true)
 check("nextToWatch: across the season", vod.nextToWatch(showSeasons) === e21)
 check(
+    "randomEpisode prefers what is not finished yet",
+    vod.randomEpisode(showSeasons, null) === e21,
+)
+;(function () {
+    const random = Math.random
+    Math.random = function () {
+        return 0
+    }
+    const low = vod.randomEpisode(showSeasons, e21)
+    Math.random = function () {
+        return 0.99
+    }
+    const high = vod.randomEpisode(showSeasons, e21)
+    Math.random = random
+    check(
+        "randomEpisode: all finished, any but the one just played, never a special",
+        low === e11 && high === e12,
+        `${low && low.id} ${high && high.id}`,
+    )
+})()
+check(
+    "randomEpisode: a show of specials only still shuffles them",
+    vod.randomEpisode([{ number: 0, episodes: [special] }], null) === special,
+)
+check(
+    "randomEpisode: nothing else to pick gives null",
+    vod.randomEpisode([{ number: 1, episodes: [e11] }], e11) === null,
+)
+check(
     "a finished episode with more after it keeps the show in Continue watching",
     vod.progressOf(e12).done === true && vod.progressOf(e12).more === true,
 )

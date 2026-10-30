@@ -245,7 +245,7 @@ App.uiScreens = App.uiScreens || {}
                 upNext
                     ? html`<div class="vod-up-next" id="vodUpNext">
                           <p class="vod-up-next-label" id="vodUpNextLabel">
-                              Up next in ${countdown}s
+                              ${playing.shuffle ? "Random next" : "Up next"} in ${countdown}s
                           </p>
                           <p class="vod-up-next-name">
                               ${vod.episodeLabel(upNext.episode)}${

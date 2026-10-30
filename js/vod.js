@@ -552,6 +552,36 @@ App.vod = (function () {
         return first ? first.episodes[0] : null
     }
 
+    // Shuffle: any episode of the numbered seasons (specials only when there is nothing else),
+    // the unfinished ones first, never the one just played.
+    function randomEpisode(seasons, except) {
+        const list = seasons || []
+        const numbered = list.filter((season) => {
+            return season.number && season.episodes.length
+        })
+        let pool = []
+        ;(numbered.length ? numbered : list).forEach((season) => {
+            pool = pool.concat(season.episodes)
+        })
+        pool = pool.filter((episode) => {
+            return !sameEpisode(episode, except)
+        })
+        const fresh = pool.filter((episode) => {
+            const entry = progressOf(episode)
+            return !entry || !entry.done
+        })
+        const from = fresh.length ? fresh : pool
+        return from.length ? from[Math.floor(Math.random() * from.length)] : null
+    }
+
+    function playRandom() {
+        if (!ui.title || !ui.details) return
+        const seasons = ui.details.seasons || []
+        const episode = randomEpisode(seasons, null)
+        if (!episode) return
+        playTitle(episode, false, { show: ui.title, seasons, origin: "show", shuffle: true })
+    }
+
     function seasonNumberOf(seasons, episode) {
         const list = seasons || []
         for (let s = 0; s < list.length; s++)
@@ -733,9 +763,12 @@ App.vod = (function () {
             origin: (context && context.origin) || store().state.screen,
             show: (context && context.show) || null,
             seasons: (context && context.seasons) || null,
+            shuffle: !!(context && context.shuffle),
             ready: !mkv,
             hint: null,
         }
+        // Picked once, so the Up Next card and the end of the episode agree on what follows.
+        if (ui.playing.shuffle) ui.playing.following = randomEpisode(ui.playing.seasons, item)
         clearUpNext()
         if (mkv) {
             App.api.loadMkvTracks(url).then((hint) => {
@@ -762,8 +795,14 @@ App.vod = (function () {
         return saveProgress(playing.item, position, duration, playing.show, hasNext(playing))
     }
 
+    function following(playing) {
+        if (!playing || !playing.show) return null
+        if (playing.shuffle) return playing.following || null
+        return nextEpisode(playing.seasons, playing.item)
+    }
+
     function hasNext(playing) {
-        return !!(playing && playing.show && nextEpisode(playing.seasons, playing.item))
+        return !!following(playing)
     }
 
     // Called by the player screen every second while a title plays.
@@ -777,7 +816,7 @@ App.vod = (function () {
         const duration = App.player.duration()
         const nearEnd = duration > 0 && position > 0 && duration - position <= UP_NEXT_S
         if (playing && playing.show && nearEnd && !ui.upNext && !playing.upNextDone && !ui.error) {
-            const next = nextEpisode(playing.seasons, playing.item)
+            const next = following(playing)
             if (next) startUpNext(next)
             else ui.playing = Object.assign({}, playing, { upNextDone: true })
         }
@@ -809,11 +848,16 @@ App.vod = (function () {
     function playNext() {
         const playing = ui.playing
         if (!playing || !playing.show) return
-        const next = ui.upNext ? ui.upNext.episode : nextEpisode(playing.seasons, playing.item)
+        const next = ui.upNext ? ui.upNext.episode : following(playing)
         clearUpNext()
         if (!next) return
         if (!playing.ended) saveCurrent()
-        playTitle(next, false, { show: playing.show, seasons: playing.seasons, origin: "show" })
+        playTitle(next, false, {
+            show: playing.show,
+            seasons: playing.seasons,
+            origin: "show",
+            shuffle: playing.shuffle,
+        })
     }
 
     function exitPlayer() {
@@ -1188,6 +1232,8 @@ App.vod = (function () {
         episodeLabel,
         nextEpisode,
         nextToWatch,
+        randomEpisode,
+        playRandom,
         selectSeason,
         playEpisode,
         dismissUpNext,

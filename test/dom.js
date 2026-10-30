@@ -595,6 +595,7 @@ async function series() {
         return opened[opened.length - 1] || ""
     }
 
+    const shuffleAv = window.webapis
     store.goStart()
     await wait(60)
     document.getElementById("startSeries").click()
@@ -721,6 +722,51 @@ async function series() {
     press(10009)
     await wait(80)
     check("and Back again to the launch screen", onlyScreen("screen-start"), screens().join(", "))
+
+    window.webapis = shuffleAv
+    document.getElementById("startSeries").click()
+    await wait(150)
+    Array.prototype.filter
+        .call(document.querySelectorAll("#vodGrid .poster"), (el) => {
+            return el.textContent.indexOf("El Ministerio") !== -1
+        })[0]
+        .click()
+    await wait(150)
+    check(
+        "a show with several episodes offers Play random",
+        !!document.getElementById("showRandom"),
+    )
+    document.getElementById("showRandom").click()
+    await wait(150)
+    check(
+        "Play random plays an episode of the show, in shuffle",
+        onlyScreen("screen-vodplayer") &&
+            vod.ui.playing.shuffle === true &&
+            /^S\d · E\d/.test(subtitle()),
+        `${screens().join(", ")} / ${subtitle()}`,
+    )
+    const shuffled = vod.ui.playing.item
+    avTime = 2900000
+    await wait(1200)
+    check(
+        "and Up Next offers another random one, not the same",
+        !!document.getElementById("vodUpNext") &&
+            document.getElementById("vodUpNextLabel").textContent.indexOf("Random next") !== -1 &&
+            vod.ui.upNext.episode.id !== shuffled.id,
+        (document.getElementById("vodUpNextLabel") || {}).textContent,
+    )
+    press(13)
+    await wait(150)
+    check(
+        "which keeps shuffling",
+        vod.ui.playing.shuffle === true && vod.ui.playing.item.id !== shuffled.id,
+    )
+    await leavePlayer()
+    press(10009)
+    await wait(80)
+    press(10009)
+    await wait(80)
+    window.webapis = undefined
 
     const film = vod.items("movie")[0]
     vod.saveProgress(film, 600, 6000)

@@ -85,6 +85,9 @@ App.uiScreens = App.uiScreens || {}
             return season.number
         }).length
         const backdrop = info.backdrop || info.poster || show.logo
+        const episodes = seasons.reduce((sum, season) => {
+            return sum + season.episodes.length
+        }, 0)
 
         let plot = info.plot || show.plot || ""
         if (!plot && !details) plot = "Loading episodes…"
@@ -138,6 +141,20 @@ App.uiScreens = App.uiScreens || {}
                                 : html`<button class="btn" id="showPlay" tabindex="-1">
                                       ${details ? "Nothing to play" : "Loading…"}
                                   </button>`
+                        }
+                        ${
+                            episodes > 1
+                                ? html`<button
+                                      class="btn"
+                                      id="showRandom"
+                                      tabindex="-1"
+                                      onClick=${function () {
+                                          vod.playRandom()
+                                      }}
+                                  >
+                                      Play random
+                                  </button>`
+                                : null
                         }
                         ${
                             vod.hasProgress(show)
