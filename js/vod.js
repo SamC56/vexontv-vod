@@ -99,9 +99,10 @@ App.vod = (function () {
     // Many panels allow one stream per account and free it a few seconds after the last one
     // stops: the first refusal is retried once on its own after this long.
     const RETRY_MS = 3000
-    // Up Next: shown this close to an episode's end, and it plays the next one after the count.
-    const UP_NEXT_S = 120
-    const UP_NEXT_MS = 10000
+    // Up Next: shown this close to an episode's end, and it plays the next one after the count,
+    // so the next episode starts with 30 seconds of credits left.
+    const UP_NEXT_S = 45
+    const UP_NEXT_MS = 15000
 
     const state = {
         catalogs: {},
@@ -824,7 +825,7 @@ App.vod = (function () {
 
     function startUpNext(episode) {
         clearUpNext()
-        ui.upNext = { episode, deadline: Date.now() + UP_NEXT_MS }
+        ui.upNext = { episode, deadline: Date.now() + UP_NEXT_MS, total: UP_NEXT_MS }
         upNextTimer = setTimeout(playNext, UP_NEXT_MS)
         changed()
         store().focus("vodUpNext", 0, 0)
@@ -1052,7 +1053,9 @@ App.vod = (function () {
         osdTimer = setTimeout(() => {
             osdTimer = null
             ui.osd = false
-            changed()
+            // Left on the audio or subtitle buttons, or their list, they go with the rest.
+            if (ui.menu || ui.trackMenu) closeMenu()
+            else changed()
         }, OSD_MS)
         if (ui.osd) return
         ui.osd = true

@@ -93,7 +93,8 @@ App.uiScreens = App.uiScreens || {}
             ? [vod.episodeLabel(item), item.title].filter(Boolean).join(" · ")
             : [item.year, item.group].filter(Boolean).join(" · ")
         const upNext = ui.upNext
-        const countdown = upNext ? Math.max(0, Math.ceil((upNext.deadline - Date.now()) / 1000)) : 0
+        const left = upNext ? Math.max(0, upNext.deadline - Date.now()) : 0
+        const countdown = Math.ceil(left / 1000)
         const duration = time.duration
         const position = ui.seek ? ui.seek.target : time.position || playing.start || 0
         const ratio = duration > 0 ? Math.min(1, position / duration) : 0
@@ -255,7 +256,7 @@ App.uiScreens = App.uiScreens || {}
                           <span class="vod-up-next-bar"
                               ><span
                                   class="vod-up-next-fill"
-                                  style=${`width:${Math.round((1 - countdown / 10) * 100)}%`}
+                                  style=${`width:${Math.round((1 - left / upNext.total) * 100)}%`}
                               ></span
                           ></span>
                           <div class="vod-up-next-actions">

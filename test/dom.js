@@ -433,6 +433,16 @@ async function movies() {
         "Back closes the buttons before it leaves the movie",
         onlyScreen("screen-vodplayer") && !vod.ui.menu,
     )
+    press(40)
+    await wait(60)
+    check("down opens the buttons again", vod.ui.menu === true)
+    await wait(5300)
+    check(
+        "left alone on them, they hide with the controls",
+        !vod.ui.menu &&
+            !document.getElementById("vodOsd").classList.contains("visible") &&
+            onlyScreen("screen-vodplayer"),
+    )
 
     press(13)
     await wait(40)
@@ -646,6 +656,9 @@ async function series() {
     )
     avTime = 2900000
     await wait(1200)
+    check("100 s from the end, Up Next is not shown yet", !document.getElementById("vodUpNext"))
+    avTime = 2985000
+    await wait(1200)
     check(
         "near the end, Up Next offers the next episode with Play now focused",
         !!document.getElementById("vodUpNext") &&
@@ -668,7 +681,7 @@ async function series() {
         vod.progressOf({ listId: "vm", kind: "episode", id: opened[opened.length - 2] }).done ===
             true,
     )
-    avTime = 2900000
+    avTime = 2985000
     await wait(1200)
     press(10009)
     await wait(60)
@@ -746,7 +759,7 @@ async function series() {
         `${screens().join(", ")} / ${subtitle()}`,
     )
     const shuffled = vod.ui.playing.item
-    avTime = 2900000
+    avTime = 2985000
     await wait(1200)
     check(
         "and Up Next offers another random one, not the same",
