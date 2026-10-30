@@ -34,7 +34,12 @@ remote the viewer uses. It needs no browser of its own: it borrows the one `layo
 `dist/shots`, which is ignored by git. `pnpm shots tv` does one screen, `pnpm shots` all of
 them. None of it ships: the app has no idea this exists.
 
-## Installing by hand
+## Installing on the TV
+
+`python3 tools/tv.py deploy` builds, signs, installs and launches. It reads `.local/tv.json`
+(ignored by git): `{"sdk": "~/tizen-studio", "profile": "<profile>", "target": "<tv-ip>:26101"}`.
+`build`, `install` and `launch` run alone too. These are the steps it takes:
+
 
 `tools/build-wgt.py` makes an unsigned `.wgt`. The TV only takes it signed with a Samsung
 certificate profile that includes its DUID, and `tizen package` signs a folder, so the
@@ -121,7 +126,8 @@ js/ui/kit.js        icons, rows, lists, search, bar, clock, quality badge
 js/ui/screens/      one file per screen: start (launch), tv, movies (Movies and Series),
                     title (movie details), show (seasons and episodes), vodplayer,
                     player (live), zap, recents, favs, cats, add, overlays
-tools/              brand generator, .wgt packager, README captures, pnpm guard
+tools/              brand generator, .wgt packager, TV deploy (tv.py), README captures,
+                    pnpm guard
 test/               the three suites, the reporter and a sample playlist
 docs/               these notes, upstream's publishing notes, the banner, the old
                     screenshots and movies-series-spec.html (the plan this fork followed)

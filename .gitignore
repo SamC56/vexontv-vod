@@ -5,3 +5,6 @@ package-lock.json
 yarn.lock
 # The owner's own source, packaged by tools/build-wgt.py and never versioned
 local-source.json
+# This machine's TV and signing settings, for tools/tv.py
+.local/
+__pycache__/

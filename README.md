@@ -128,7 +128,22 @@ and signed on your own computer.
   signed with it.
 - Python 3.
 
-**Build, sign and install**
+**Build, sign and install: one command**
+
+Put the three settings in `.local/tv.json` (ignored by git), then deploy:
+
+```json
+{ "sdk": "~/tizen-studio", "profile": "<profile>", "target": "<tv-ip>:26101" }
+```
+
+```bash
+python3 tools/tv.py deploy      # build, sign, install, launch
+```
+
+`build`, `install` and `launch` also run on their own. The script reconnects and retries when
+the TV drops the connection mid-install.
+
+**The same by hand**
 
 ```bash
 python3 tools/build-wgt.py                                   # -> dist/VexonTV.wgt (unsigned)
