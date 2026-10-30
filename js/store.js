@@ -771,6 +771,7 @@ App.store = (function () {
         if (state.preview && state.catName !== name) patch.preview = null
         set(patch)
         focus("tvChannels", 0, 0)
+        loadCategoryGuide(visibleTvCategory().items)
     }
 
     function selectPreview(channel) {
@@ -927,7 +928,7 @@ App.store = (function () {
         if (cached && Date.now() - cached.at < PROGRAM_MS) return
 
         state.programs[channel.url] = { list: [], at: Date.now() }
-        App.api
+        return App.api
             .loadNowPlaying(channel.url)
             .then((list) => {
                 state.programs[channel.url] = { list: list || [], at: Date.now() }
@@ -938,6 +939,21 @@ App.store = (function () {
                 emit()
             })
             .catch(() => {})
+    }
+
+    // A category's guide: every channel's now and next as soon as the category opens, a few at
+    // a time from the top so the panel is not flooded. Opening another category drops the rest.
+    const GUIDE_AT_ONCE = 3
+    let guideRun = 0
+
+    function loadCategoryGuide(channels) {
+        const run = ++guideRun
+        const queue = (channels || []).slice(0, MAX_TILES)
+        function next() {
+            if (run !== guideRun || !queue.length) return null
+            return Promise.resolve(loadProgramFor(queue.shift())).then(next, next)
+        }
+        for (let i = 0; i < GUIDE_AT_ONCE; i++) next()
     }
 
     function programProgress(program) {
@@ -1130,6 +1146,7 @@ App.store = (function () {
             const url = channel.url.replace(/["\\]/g, "\\$&")
             set({ screen: "tv", catName: group, preview: channel })
             focus("tvChannels", 0, 0, `#tvChannels .channel[data-url="${url}"]`)
+            loadCategoryGuide(visibleTvCategory().items)
             return
         }
         if (origin && origin.screen) {

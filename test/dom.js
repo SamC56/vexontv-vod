@@ -1685,6 +1685,19 @@ async function run() {
         document.querySelectorAll("#tvChannels .channel").length === 3,
         `${document.querySelectorAll("#tvChannels .channel").length} channels`,
     )
+    await wait(200)
+    check(
+        "and shows what is on every one of them, without moving onto each",
+        Array.prototype.every.call(document.querySelectorAll("#tvChannels .channel"), (row) => {
+            const sub = row.querySelector(".row-sub")
+            return !!sub && sub.textContent.indexOf("Programa de prueba") === 0
+        }),
+        Array.prototype.map
+            .call(document.querySelectorAll("#tvChannels .channel"), (row) => {
+                return (row.querySelector(".row-sub") || {}).textContent || "(none)"
+            })
+            .join(" | "),
+    )
     check(
         "they are not all the channels, only those of the category",
         document.querySelectorAll("#tvChannels .channel").length < 9,
