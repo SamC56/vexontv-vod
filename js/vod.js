@@ -104,9 +104,11 @@ App.vod = (function () {
     // stops: the first refusal is retried once on its own after this long.
     const RETRY_MS = 3000
     // Up Next: shown this close to an episode's end, and it plays the next one after the count,
-    // so the next episode starts with 30 seconds of credits left.
-    const UP_NEXT_S = 45
+    // so the next episode starts with 45 seconds of credits left.
+    const UP_NEXT_S = 60
     const UP_NEXT_MS = 15000
+    // The track list is read again once after this if the first read gets nothing.
+    const HINT_RETRY_MS = 1500
 
     const state = {
         catalogs: {},
@@ -428,6 +430,33 @@ App.vod = (function () {
         })
         write(KEYS.progress, state.progress)
         changed()
+    }
+
+    // An episode of the show on screen: watched without playing it, or back to unwatched.
+    function toggleWatched(episode) {
+        const show = ui.title
+        if (!episode || !show) return null
+        const key = keyOf(episode)
+        if (state.progress[key]) {
+            delete state.progress[key]
+            write(KEYS.progress, state.progress)
+            changed()
+            return false
+        }
+        const seasons = (ui.details && ui.details.seasons) || []
+        const runtime = episode.duration > 0 ? episode.duration : 1
+        saveProgress(episode, runtime, runtime, show, !!nextEpisode(seasons, episode))
+        return true
+    }
+
+    function episodeByKey(key) {
+        let found = null
+        ;((ui.details && ui.details.seasons) || []).forEach((season) => {
+            season.episodes.forEach((episode) => {
+                if (keyOf(episode) === key) found = episode
+            })
+        })
+        return found
     }
 
     function hasProgress(item) {
@@ -964,11 +993,25 @@ App.vod = (function () {
         if (ui.playing.shuffle) ui.playing.following = randomEpisode(ui.playing.seasons, item)
         clearUpNext()
         if (mkv) {
-            App.api.loadMkvTracks(url).then((hint) => {
-                if (!ui.playing || ui.playing.item !== item || ui.playing.ready) return
-                ui.playing = Object.assign({}, ui.playing, { ready: true, hint })
-                changed()
-            })
+            // From Up Next the last episode is still streaming, and a provider that allows one
+            // stream refuses the read beside it: stop it first, and ask twice.
+            App.player.stop()
+            const current = ui.playing
+            App.api
+                .loadMkvTracks(url)
+                .then((hint) => {
+                    if (hint || ui.playing !== current) return hint
+                    return new Promise((resolve) => {
+                        setTimeout(resolve, HINT_RETRY_MS)
+                    }).then(() => {
+                        return ui.playing === current ? App.api.loadMkvTracks(url) : null
+                    })
+                })
+                .then((hint) => {
+                    if (!ui.playing || ui.playing.item !== item || ui.playing.ready) return
+                    ui.playing = Object.assign({}, ui.playing, { ready: true, hint })
+                    changed()
+                })
         }
         ui.paused = false
         clearSeek()
@@ -1391,7 +1434,18 @@ App.vod = (function () {
         const flagged = same.filter((track) => {
             return !!track.forced === !!want.forced
         })[0]
-        return exact || flagged || same[0] || null
+        if (exact || flagged || same[0]) return exact || flagged || same[0]
+        // One side does not know its languages (an episode whose names could not be read): the
+        // track in the same place is the best guess left.
+        const unnamed = (value) => {
+            const code = langCode(value)
+            return !code || code === "und"
+        }
+        if (want.index === undefined) return null
+        const spot = list.filter((track) => {
+            return track.index === want.index
+        })[0]
+        return spot && (unnamed(spot.lang) || unnamed(want.lang)) ? spot : null
     }
 
     // A choice made for a show wins over the English defaults, in every later episode.
@@ -1485,6 +1539,8 @@ App.vod = (function () {
         hasProgress,
         isFavorite,
         toggleFavorite,
+        toggleWatched,
+        episodeByKey,
         favorites,
         itemByKey,
         confirmForget,

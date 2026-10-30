@@ -373,6 +373,14 @@ var App = App || {} // eslint-disable-line no-var -- shared namespace, no module
 
         if (!element) return
 
+        // An episode on a show's page: Red marks it watched or unwatched.
+        if (state.screen === "show" && element.classList.contains("episode")) {
+            const watched = App.vod.toggleWatched(App.vod.episodeByKey(element.dataset.key))
+            if (watched !== null)
+                store.notify(watched ? "Marked as watched" : "Marked as unwatched")
+            return
+        }
+
         // A poster: Red takes it out of Continue watching there, and is the favorite key elsewhere.
         if (element.dataset.key && element.classList.contains("poster")) {
             const vod = App.vod

@@ -216,6 +216,14 @@ App.uiScreens = App.uiScreens || {}
                 <div class="rows show-episodes" id="showEpisodes">
                     ${empty ? html`<p class="empty">${empty}</p>` : null}
                     ${
+                        current && current.episodes.length
+                            ? html`<p class="show-hint" id="showHint">
+                                  <span class="ov-key">RED</span>on an episode marks it watched or
+                                  unwatched
+                              </p>`
+                            : null
+                    }
+                    ${
                         current
                             ? current.episodes.map((episode, index) => {
                                   return html`<${EpisodeRow}

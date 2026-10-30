@@ -497,6 +497,35 @@ vod.state.progress = {}
         ).text === 4,
     )
     check(
+        "preferTracks: an episode whose tracks have no language gets the same place",
+        vod.preferTracks(
+            {
+                audio: [],
+                text: [
+                    { index: 3, lang: "" },
+                    { index: 4, lang: "" },
+                    { index: 5, lang: "" },
+                ],
+            },
+            { audio: null, text: -1 },
+            { text: { lang: "eng", name: "SDH", forced: false, index: 4 } },
+        ).text === 4,
+    )
+    check(
+        "preferTracks: but a named track elsewhere is not overruled by position",
+        vod.preferTracks(
+            {
+                audio: [],
+                text: [
+                    { index: 3, lang: "fre" },
+                    { index: 4, lang: "spa" },
+                ],
+            },
+            { audio: null, text: -1 },
+            { text: { lang: "eng", name: "", forced: false, index: 4 } },
+        ).text === -1,
+    )
+    check(
         "preferTracks: subtitles turned off stay off",
         vod.preferTracks(found, defaults, { text: "off" }).text === -1,
     )

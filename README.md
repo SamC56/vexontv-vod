@@ -177,8 +177,8 @@ a commit.
 - **Subtitles.** The TV's player reports subtitle tracks without their language. The app
   reads names and languages from the start of MKV files; MP4 tracks may still show as
   "Track 1, Track 2".
-- **Up Next** appears 45 seconds before an episode ends and plays the next one 15 seconds
-  later, with the last 30 seconds of credits left.
+- **Up Next** appears a minute before an episode ends and plays the next one 15 seconds
+  later, with the last 45 seconds of credits left.
 
 ### ✅ Tested on
 

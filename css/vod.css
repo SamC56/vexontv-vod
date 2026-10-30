@@ -566,6 +566,16 @@
     color: var(--text);
 }
 
+.show-hint {
+    padding: 0 20px 12px;
+    font-size: 16px;
+    color: var(--text-3);
+}
+
+.show-hint .ov-key {
+    margin-right: 10px;
+}
+
 .row.episode {
     gap: 22px;
     min-height: 124px;

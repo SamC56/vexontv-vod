@@ -794,6 +794,22 @@ async function series() {
         document.querySelectorAll("#showEpisodes .episode-time.done").length === 2 &&
             document.querySelector("#showSeasons .selected .row-name").textContent === "Season 1",
     )
+    check("the episode list says what Red does there", !!document.getElementById("showHint"))
+    window.App.tv.set("showEpisodes", 0, 0)
+    await wait(40)
+    press(403)
+    await wait(60)
+    check(
+        "Red on a watched episode marks it unwatched",
+        document.querySelectorAll("#showEpisodes .episode-time.done").length === 1 &&
+            (document.querySelector(".toast") || {}).textContent === "Marked as unwatched",
+    )
+    press(403)
+    await wait(60)
+    check(
+        "and again marks it watched",
+        document.querySelectorAll("#showEpisodes .episode-time.done").length === 2,
+    )
     press(10009)
     await wait(80)
     check("Back returns to the series grid", onlyScreen("screen-series"), screens().join(", "))
