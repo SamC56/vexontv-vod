@@ -558,6 +558,7 @@ async function series() {
     let avState = "IDLE"
     let listener = null
     const opened = []
+    const showSelected = []
     window.webapis = {
         avplay: {
             open: function (url) {
@@ -588,6 +589,20 @@ async function series() {
             getDuration: function () {
                 return 3000000
             },
+            getTotalTrackInfo: function () {
+                return [
+                    { index: 1, type: "AUDIO", extra_info: '{"language":"eng"}' },
+                    { index: 3, type: "TEXT", extra_info: '{"track_lang":"eng"}' },
+                    { index: 4, type: "TEXT", extra_info: '{"track_lang":"eng"}' },
+                ]
+            },
+            getCurrentStreamInfo: function () {
+                return [{ index: 1, type: "AUDIO", extra_info: "{}" }]
+            },
+            setSelectTrack: function (type, index) {
+                showSelected.push(`${type}:${index}`)
+            },
+            setSilentSubtitle: function () {},
             seekTo: function (ms, ok) {
                 avTime = ms
                 if (ok) ok()
@@ -654,6 +669,12 @@ async function series() {
             subtitle() === "S1 · E1",
         `${screens().join(", ")} / ${subtitle()}`,
     )
+    await wait(400)
+    vod.openTracks("text")
+    await wait(40)
+    vod.pickTrack("text", 4)
+    await wait(40)
+    showSelected.length = 0
     avTime = 2900000
     await wait(1200)
     check("100 s from the end, Up Next is not shown yet", !document.getElementById("vodUpNext"))
@@ -669,6 +690,12 @@ async function series() {
     )
     press(13)
     await wait(150)
+    await wait(400)
+    check(
+        "the next episode keeps the subtitles chosen for the show",
+        showSelected.indexOf("TEXT:4") !== -1,
+        showSelected.join(),
+    )
     check(
         "Play now goes straight to it",
         subtitle() === "S1 · E2" &&

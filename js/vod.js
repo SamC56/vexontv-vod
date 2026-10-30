@@ -7,7 +7,9 @@ App.vod = (function () {
     const KEYS = {
         progress: "ts.progress",
         sort: "ts.vod.sort.",
+        trackPrefs: "ts.vod.tracks",
     }
+    const MAX_TRACK_PREFS = 200
 
     const KINDS = ["movie", "series"]
     const PAGE = 60
@@ -108,6 +110,7 @@ App.vod = (function () {
         catalogs: {},
         pending: {},
         refreshed: {},
+        trackPrefs: {},
         errors: {},
         info: {},
         progress: {},
@@ -141,6 +144,7 @@ App.vod = (function () {
 
     function init() {
         state.progress = read(KEYS.progress, {})
+        state.trackPrefs = read(KEYS.trackPrefs, {})
     }
 
     function sourcesWithVod() {
@@ -1140,7 +1144,11 @@ App.vod = (function () {
             audio: withHint(reported.audio, hint && hint.audio),
             text: withHint(reported.text, hint && hint.text),
         })
-        const choice = chooseTracks(found)
+        const choice = preferTracks(
+            found,
+            chooseTracks(found),
+            ui.playing.show ? state.trackPrefs[keyOf(ui.playing.show)] : null,
+        )
         if (choice.audio !== null && choice.audio !== found.audioIndex)
             App.player.selectTrack("AUDIO", choice.audio)
         if (choice.text !== -1) App.player.selectTrack("TEXT", choice.text)
@@ -1220,9 +1228,76 @@ App.vod = (function () {
         )
     }
 
+    function describeTrack(list, index) {
+        const track = list.filter((item) => {
+            return item.index === index
+        })[0]
+        if (!track) return null
+        return { lang: track.lang || "", name: track.name || "", forced: !!track.forced, index }
+    }
+
+    // The same track in another episode: same language, name and forced flag if it has one,
+    // else the same language. Tracks alike in all of those (two unnamed English ones) are told
+    // apart by their position, which episodes of one show tend to share.
+    function matchTrack(list, want) {
+        if (!want) return null
+        const lang = langCode(want.lang)
+        const same = list.filter((track) => {
+            return langCode(track.lang) === lang
+        })
+        const alike = same.filter((track) => {
+            return (track.name || "") === (want.name || "") && !!track.forced === !!want.forced
+        })
+        const exact =
+            alike.filter((track) => {
+                return track.index === want.index
+            })[0] || alike[0]
+        const flagged = same.filter((track) => {
+            return !!track.forced === !!want.forced
+        })[0]
+        return exact || flagged || same[0] || null
+    }
+
+    // A choice made for a show wins over the English defaults, in every later episode.
+    function preferTracks(found, choice, pref) {
+        if (!pref) return choice
+        const result = { audio: choice.audio, text: choice.text }
+        const audio = matchTrack(found.audio, pref.audio)
+        if (audio) result.audio = audio.index
+        if (pref.text === "off") result.text = -1
+        else {
+            const text = matchTrack(found.text, pref.text)
+            if (text) result.text = text.index
+        }
+        return result
+    }
+
+    function rememberTrack(type, index) {
+        const show = ui.playing && ui.playing.show
+        if (!show || !ui.tracks) return
+        const key = keyOf(show)
+        const pref = Object.assign({}, state.trackPrefs[key] || {})
+        if (type === "audio") pref.audio = describeTrack(ui.tracks.audio, index)
+        else pref.text = index === -1 ? "off" : describeTrack(ui.tracks.text, index)
+        pref.at = Date.now()
+        state.trackPrefs[key] = pref
+        const keys = Object.keys(state.trackPrefs)
+        if (keys.length > MAX_TRACK_PREFS) {
+            keys.sort((a, b) => {
+                return (state.trackPrefs[b].at || 0) - (state.trackPrefs[a].at || 0)
+            })
+                .slice(MAX_TRACK_PREFS)
+                .forEach((old) => {
+                    delete state.trackPrefs[old]
+                })
+        }
+        write(KEYS.trackPrefs, state.trackPrefs)
+    }
+
     function pickTrack(type, index) {
         const tracks = ui.tracks
         if (!tracks) return
+        rememberTrack(type, index)
         if (type === "audio") {
             if (App.player.selectTrack("AUDIO", index)) tracks.audioIndex = index
         } else {
@@ -1316,6 +1391,7 @@ App.vod = (function () {
         langCode,
         langName,
         chooseTracks,
+        preferTracks,
         tracksReady,
         trackLabel,
         trackOptions,

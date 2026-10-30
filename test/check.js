@@ -463,6 +463,52 @@ check(
 global.localStorage.removeItem("ts.progress")
 vod.state.progress = {}
 
+;(function () {
+    const found = {
+        audio: [
+            { index: 1, lang: "eng" },
+            { index: 2, lang: "spa" },
+        ],
+        text: [
+            { index: 5, lang: "eng", name: "" },
+            { index: 6, lang: "eng", name: "SDH" },
+            { index: 7, lang: "eng", name: "Forced", forced: true },
+        ],
+    }
+    const defaults = { audio: 1, text: 7 }
+    check(
+        "preferTracks: a show set to English SDH gets SDH in the next episode",
+        vod.preferTracks(found, defaults, { text: { lang: "en", name: "SDH" } }).text === 6,
+    )
+    check(
+        "preferTracks: two unnamed English tracks are told apart by position",
+        vod.preferTracks(
+            {
+                audio: [],
+                text: [
+                    { index: 3, lang: "eng" },
+                    { index: 4, lang: "eng" },
+                ],
+            },
+            { audio: null, text: -1 },
+            { text: { lang: "eng", name: "", forced: false, index: 4 } },
+        ).text === 4,
+    )
+    check(
+        "preferTracks: subtitles turned off stay off",
+        vod.preferTracks(found, defaults, { text: "off" }).text === -1,
+    )
+    check(
+        "preferTracks: a name the episode lacks falls back to the language",
+        vod.preferTracks(found, defaults, { audio: { lang: "spa", name: "Castellano" } }).audio ===
+            2,
+    )
+    check(
+        "preferTracks: nothing saved keeps the defaults",
+        JSON.stringify(vod.preferTracks(found, defaults, null)) === JSON.stringify(defaults),
+    )
+})()
+
 check(
     "language names read either code",
     vod.langName("spa") === "Spanish" &&
