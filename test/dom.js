@@ -597,6 +597,7 @@ async function series() {
     let listener = null
     const opened = []
     const showSelected = []
+    let showCurrentText = null
     window.webapis = {
         avplay: {
             open: function (url) {
@@ -635,10 +636,14 @@ async function series() {
                 ]
             },
             getCurrentStreamInfo: function () {
-                return [{ index: 1, type: "AUDIO", extra_info: "{}" }]
+                const info = [{ index: 1, type: "AUDIO", extra_info: "{}" }]
+                if (showCurrentText !== null)
+                    info.push({ index: showCurrentText, type: "TEXT", extra_info: "{}" })
+                return info
             },
             setSelectTrack: function (type, index) {
                 showSelected.push(`${type}:${index}`)
+                if (type === "TEXT") showCurrentText = index
             },
             setSilentSubtitle: function () {},
             seekTo: function (ms, ok) {
@@ -731,6 +736,14 @@ async function series() {
     await wait(400)
     check(
         "the next episode keeps the subtitles chosen for the show",
+        showSelected.indexOf("TEXT:4") !== -1,
+        showSelected.join(),
+    )
+    showCurrentText = 3
+    showSelected.length = 0
+    await wait(1700)
+    check(
+        "and when the TV switches on a subtitle track of its own, the chosen one is put back",
         showSelected.indexOf("TEXT:4") !== -1,
         showSelected.join(),
     )

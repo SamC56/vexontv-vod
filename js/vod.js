@@ -114,6 +114,10 @@ App.vod = (function () {
     const TRACK_TRIES = 6
     const TRACK_RETRY_MS = 1000
     const OPEN_STATES = ["PLAYING", "PAUSED", "READY"]
+    // The TV's player switches on a subtitle track of its own a moment after it starts, over
+    // the one chosen: what it really plays is checked this often, this many times.
+    const VERIFY_MS = 1500
+    const VERIFY_TRIES = 4
 
     const state = {
         catalogs: {},
@@ -1348,6 +1352,7 @@ App.vod = (function () {
             App.player.selectTrack("AUDIO", choice.audio)
         if (choice.text !== -1) App.player.selectTrack("TEXT", choice.text)
         App.player.silenceSubtitles(choice.text === -1)
+        verifyTracks(playing, 0)
         ui.tracks = {
             audio: labelled(found.audio),
             text: labelled(found.text),
@@ -1355,6 +1360,35 @@ App.vod = (function () {
             textIndex: choice.text,
         }
         changed()
+    }
+
+    // What is shown as chosen must be what plays: while the player reports another track, the
+    // choice in ui.tracks is applied again. A player that does not say which subtitle track is
+    // on gets it applied again once, in case.
+    function verifyTracks(playing, tries) {
+        setTimeout(() => {
+            const tracks = ui.tracks
+            if (ui.playing !== playing || !tracks || tries >= VERIFY_TRIES) return
+            const now = App.player.tracks()
+            let again = false
+            if (tracks.audioIndex !== null && now.audioIndex !== null) {
+                if (now.audioIndex !== tracks.audioIndex) {
+                    App.player.selectTrack("AUDIO", tracks.audioIndex)
+                    again = true
+                }
+            }
+            if (tracks.textIndex !== -1) {
+                const unknown = now.textIndex === null
+                if ((unknown && tries === 0) || (!unknown && now.textIndex !== tracks.textIndex)) {
+                    App.player.selectTrack("TEXT", tracks.textIndex)
+                    App.player.silenceSubtitles(false)
+                    again = true
+                }
+            } else if (now.textIndex !== null) {
+                App.player.silenceSubtitles(true)
+            }
+            if (again || tries === 0) verifyTracks(playing, tries + 1)
+        }, VERIFY_MS)
     }
 
     function trackLabel(type) {
