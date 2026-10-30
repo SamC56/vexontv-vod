@@ -107,6 +107,7 @@ App.vod = (function () {
     const state = {
         catalogs: {},
         pending: {},
+        refreshed: {},
         errors: {},
         info: {},
         progress: {},
@@ -169,6 +170,47 @@ App.vod = (function () {
         return items
     }
 
+    function storeResult(listId, result) {
+        const catalog = state.catalogs[listId] || {}
+        if (result.movies) catalog.movies = tag(result.movies, listId)
+        if (result.series) catalog.series = tag(result.series, listId)
+        state.catalogs[listId] = catalog
+    }
+
+    function cacheKey(listId, kind) {
+        return `${listId}:${catalogKey(kind)}`
+    }
+
+    // Kept for the next launch, one entry per kind: a playlist fills both at once.
+    function saveResult(listId, result) {
+        const at = Date.now()
+        if (result.movies) App.cache.set(cacheKey(listId, "movie"), { at, items: result.movies })
+        if (result.series) App.cache.set(cacheKey(listId, "series"), { at, items: result.series })
+    }
+
+    // From the source. Quiet when a saved copy is already showing: a failure then leaves that
+    // copy in place instead of an error.
+    function fetchList(list, kind, quiet) {
+        const generation = generations[list.id] || 0
+        return App.api.loadCatalog(list, kind).then(
+            (result) => {
+                if ((generations[list.id] || 0) !== generation) return []
+                storeResult(list.id, result)
+                saveResult(list.id, result)
+                changed()
+                return state.catalogs[list.id][catalogKey(kind)] || []
+            },
+            (error) => {
+                if (quiet) return null
+                if ((generations[list.id] || 0) === generation)
+                    state.errors[`${list.id}:${kind}`] = error.message || String(error)
+                throw error
+            },
+        )
+    }
+
+    // The saved catalog shows at once and the source is asked again in the background, once
+    // per launch; with nothing saved, the source is asked and waited on.
     function ensureList(list, kind) {
         if (has(list.id, kind)) return Promise.resolve(state.catalogs[list.id][catalogKey(kind)])
         const key = pendingKey(list, kind)
@@ -176,23 +218,28 @@ App.vod = (function () {
 
         const generation = generations[list.id] || 0
         delete state.errors[`${list.id}:${kind}`]
-        const promise = App.api
-            .loadCatalog(list, kind)
-            .then((result) => {
-                delete state.pending[key]
+        function done(value) {
+            delete state.pending[key]
+            changed()
+            return value
+        }
+        const promise = App.cache
+            .get(cacheKey(list.id, kind))
+            .then((saved) => {
                 if ((generations[list.id] || 0) !== generation) return []
-                const catalog = state.catalogs[list.id] || {}
-                if (result.movies) catalog.movies = tag(result.movies, list.id)
-                if (result.series) catalog.series = tag(result.series, list.id)
-                state.catalogs[list.id] = catalog
-                changed()
-                return catalog[catalogKey(kind)] || []
+                if (saved && Array.isArray(saved.items)) {
+                    storeResult(list.id, { [catalogKey(kind)]: saved.items })
+                    if (!state.refreshed[key]) {
+                        state.refreshed[key] = true
+                        fetchList(list, kind, true)
+                    }
+                    return state.catalogs[list.id][catalogKey(kind)]
+                }
+                state.refreshed[key] = true
+                return fetchList(list, kind, false)
             })
-            .catch((error) => {
-                delete state.pending[key]
-                if ((generations[list.id] || 0) === generation)
-                    state.errors[`${list.id}:${kind}`] = error.message || String(error)
-                changed()
+            .then(done, (error) => {
+                done(null)
                 throw error
             })
         state.pending[key] = promise
@@ -411,6 +458,11 @@ App.vod = (function () {
     function forget(listId) {
         generations[listId] = (generations[listId] || 0) + 1
         delete state.catalogs[listId]
+        App.cache.remove(cacheKey(listId, "movie"))
+        App.cache.remove(cacheKey(listId, "series"))
+        Object.keys(state.refreshed).forEach((key) => {
+            if (key === listId || key.indexOf(`${listId}:`) === 0) delete state.refreshed[key]
+        })
         Object.keys(state.pending).forEach((key) => {
             if (key === listId || key.indexOf(`${listId}:`) === 0) delete state.pending[key]
         })

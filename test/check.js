@@ -53,7 +53,7 @@ function load(file) {
         report.fail(`${file} does not load`, error.message)
     }
 }
-;["js/api.js", "js/store.js", "js/vod.js", "js/player.js"].forEach(load)
+;["js/api.js", "js/store.js", "js/cache.js", "js/vod.js", "js/player.js"].forEach(load)
 
 const api = App.api
 const store = App.store
@@ -1516,6 +1516,34 @@ async function vodSuite() {
         partial.length === 3 && problems.length === 1 && problems[0].name === "broken",
         JSON.stringify(problems),
     )
+
+    const asked = count("get_vod_streams")
+    vod.state.catalogs = {}
+    vod.state.refreshed = {}
+    store.state.lists = store.state.lists.filter((list) => {
+        return list.id === "vx"
+    })
+    const working = global.fetch
+    global.fetch = function (url) {
+        calls.push(String(url))
+        return Promise.resolve({ ok: false, status: 503 })
+    }
+    const relaunched = await vod.ensure("movie")
+    await wait(20)
+    check(
+        "vod: the next launch shows the saved catalog at once, even with the panel down",
+        relaunched.length === 3,
+        String(relaunched.length),
+    )
+    check(
+        "vod: and asks the panel again in the background, quietly",
+        count("get_vod_streams") === asked + 1 && vod.status("movie").errors.length === 0,
+        `${count("get_vod_streams") - asked} asks, ${JSON.stringify(vod.status("movie").errors)}`,
+    )
+    global.fetch = working
+    vod.forget("vx")
+    const empty = await App.cache.get("vx:movies")
+    check("vod: forgetting a source drops its saved catalog", empty === null)
 
     store.state.lists = savedLists
     global.fetch = originalFetch
