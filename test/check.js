@@ -1631,6 +1631,38 @@ async function vodSuite() {
     const empty = await App.cache.get("vx:movies")
     check("vod: forgetting a source drops its saved catalog", empty === null)
 
+    const realTracks = player.tracks
+    const realState = player.state
+    let playerState = "IDLE"
+    let reported = { audio: [], text: [], audioIndex: null, textIndex: null }
+    player.tracks = function () {
+        return reported
+    }
+    player.state = function () {
+        return playerState
+    }
+    vod.ui.tracks = null
+    vod.ui.playing = { item: { listId: "x", kind: "episode", id: "e" }, ready: true, hint: null }
+    vod.tracksReady()
+    check("tracks: nothing is kept while no file is open", vod.ui.tracks === null)
+    playerState = "PLAYING"
+    reported = {
+        audio: [{ index: 1, lang: "eng" }],
+        text: [{ index: 2, lang: "eng" }],
+        audioIndex: 1,
+        textIndex: null,
+    }
+    await wait(1100)
+    check(
+        "tracks: once the file is open and reports them, they are read",
+        !!vod.ui.tracks && vod.ui.tracks.text.length === 1,
+        JSON.stringify(vod.ui.tracks),
+    )
+    vod.ui.playing = null
+    vod.ui.tracks = null
+    player.tracks = realTracks
+    player.state = realState
+
     store.state.lists = savedLists
     global.fetch = originalFetch
 }

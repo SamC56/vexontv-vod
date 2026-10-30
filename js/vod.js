@@ -109,6 +109,11 @@ App.vod = (function () {
     const UP_NEXT_MS = 15000
     // The track list is read again once after this if the first read gets nothing.
     const HINT_RETRY_MS = 1500
+    // AVPlay fills its track list a little after playback starts, later still for a file it
+    // has just reopened: the list is read until it has something, for a few seconds.
+    const TRACK_TRIES = 6
+    const TRACK_RETRY_MS = 1000
+    const OPEN_STATES = ["PLAYING", "PAUSED", "READY"]
 
     const state = {
         catalogs: {},
@@ -1315,9 +1320,20 @@ App.vod = (function () {
     }
 
     // Once a title has started: read its tracks and apply the English defaults.
-    function tracksReady() {
-        if (!ui.playing || ui.tracks) return
-        const reported = App.player.tracks()
+    function tracksReady(attempt) {
+        const playing = ui.playing
+        if (!playing || ui.tracks || !playing.ready) return
+        const tries = attempt || 0
+        // A late "started" from the episode before can arrive while nothing is open: only an
+        // open file is asked, and an empty answer is asked again rather than kept.
+        const open = OPEN_STATES.indexOf(App.player.state()) !== -1
+        const reported = open ? App.player.tracks() : { audio: [], text: [] }
+        if (!reported.audio.length && !reported.text.length && tries < TRACK_TRIES) {
+            setTimeout(() => {
+                if (ui.playing === playing) tracksReady(tries + 1)
+            }, TRACK_RETRY_MS)
+            return
+        }
         const hint = ui.playing.hint
         const found = Object.assign({}, reported, {
             audio: withHint(reported.audio, hint && hint.audio),
