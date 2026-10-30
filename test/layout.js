@@ -6,7 +6,7 @@ const { execFileSync } = require("child_process")
 const chrome = require("../tools/chrome.js")
 
 const root = path.join(__dirname, "..")
-const report = require("./report")("layout — the 64px grid, the rail and the preview, in a browser")
+const report = require("./report")("layout — the 64px grid and the preview, in a browser")
 const check = report.check
 
 const VISIBLE_ROWS = 40
@@ -51,7 +51,8 @@ window.addEventListener('load', function () {
                         var bodyStyle = window.getComputedStyle(document.body);
                         var gridSize = bodyStyle.backgroundSize;
                         var gridPosition = bodyStyle.backgroundPosition;
-                        var railWidth = Math.round(document.querySelector('.rail').getBoundingClientRect().width);
+                        // The side menu is gone; the grid still anchors to the --rail measurement.
+                        var railWidth = parseInt(window.getComputedStyle(document.documentElement).getPropertyValue('--rail'), 10);
                         document.body.classList.add('previewing', 'hole');
                         document.body.classList.add('previewing');
                         var backdrop = window.getComputedStyle(document.getElementById('backdrop'));
@@ -117,6 +118,8 @@ window.addEventListener('load', function () {
         { encoding: "utf8", maxBuffer: 32 * 1024 * 1024, stdio: ["ignore", "pipe", "ignore"] },
     )
 
+    const failed = out.match(/<title>DBG ERROR ([^<]*)<\/title>/)
+    if (failed) throw new Error(`the probe failed in the page: ${failed[1]}`)
     const match = out.match(/DBG (\{.*?\})</)
     if (!match) throw new Error("the app returned no measurements (check the title)")
     return JSON.parse(match[1])
@@ -176,9 +179,9 @@ function main() {
             `hole ${data.holeWidth}, card mask ${data.cardMaskPosition}`,
         )
         check(
-            "the grid starts at the rail edge (a line falls right there)",
+            "the grid lines start at the --rail measurement",
             data.gridPosition.indexOf(`${data.railWidth}px 50%`) === 0,
-            `grid at ${data.gridPosition}, rail ${data.railWidth}px`,
+            `grid at ${data.gridPosition}, --rail ${data.railWidth}px`,
         )
         check(
             "the background grid is 64x64 squares (not stretched)",
@@ -196,7 +199,7 @@ function main() {
             `${data.cardMask} / gradiente ${data.cardMaskImage}`,
         )
         check(
-            "the preview hole goes behind the rail, or it would eat the marker",
+            "the preview hole goes behind the screens, or it would cover them",
             parseFloat(data.backdropZ) < 0,
             `z-index ${data.backdropZ}`,
         )

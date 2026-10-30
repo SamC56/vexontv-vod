@@ -1,5 +1,9 @@
 # Publishing to the community packages
 
+> [!NOTE]
+> These are upstream VexonTV's notes. The catalog entry below builds `DvzZDev/VexonTV`, not
+> this fork; VexonTV VOD is built and signed locally (see the README).
+
 VexonTV ships in the [Tizen community packages][community] bundle, which is the app list
 Apps2Samsung installs from. Each app is one JSON file in their `packages/` folder.
 

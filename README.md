@@ -2,192 +2,189 @@
   <img src="docs/banner.png" alt="VexonTV — IPTV player for Tizen TV" width="100%">
 </p>
 
-<h1 align="center">VexonTV</h1>
+<h1 align="center">VexonTV VOD</h1>
 
 <p align="center">
-  <strong>A live TV player for Samsung Tizen TVs.</strong><br>
-  M3U playlists, Xtream Codes and Stalker portals, provider EPG and a remote-first
-  interface. No accounts, no ads.
+  <strong>Live TV, movies and series for Samsung Tizen TVs.</strong><br>
+  A fork of <a href="https://github.com/DvzZDev/VexonTV">DvzZDev/VexonTV</a> that keeps
+  everything it does with live channels and adds the on-demand side it leaves out.
 </p>
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"></a>
-  <a href="https://github.com/DvzZDev/VexonTV/actions/workflows/test.yml"><img src="https://github.com/DvzZDev/VexonTV/actions/workflows/test.yml/badge.svg" alt="tests"></a>
-  <a href="https://github.com/DvzZDev/VexonTV/releases"><img src="https://img.shields.io/github/v/tag/DvzZDev/VexonTV?label=release&color=blue" alt="release"></a>
-  <img src="https://img.shields.io/badge/Tizen-8.0-1428a0.svg" alt="Tizen 8.0">
+  <img src="https://img.shields.io/badge/Tizen-8.0%20%7C%209.0-1428a0.svg" alt="Tizen 8.0 and 9.0">
   <img src="https://img.shields.io/badge/build_step-none-4c1.svg" alt="No build step">
-  <a href="CONTRIBUTING.md"><img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs welcome"></a>
 </p>
 
 ---
 
 ## 📑 What's in here
 
-- [🖼 Screenshots](#-screenshots)
-- [📺 Install on your TV](#-install-on-your-tv)
-- [✨ Why this exists](#-why-this-exists)
-- [📡 What it plays](#-what-it-plays)
+- [✨ What this fork adds](#-what-this-fork-adds)
+- [📺 Using it](#-using-it)
 - [🎮 The remote](#-the-remote)
+- [📡 Sources](#-sources)
+- [📲 Install on your TV](#-install-on-your-tv)
 - [📝 Notes](#-notes)
-- [📄 License](#-license)
 - [🛠 For developers](#-for-developers)
+- [📄 License](#-license)
 
 ---
 
-## 🖼 Screenshots
+## ✨ What this fork adds
 
-| Live TV                                                                | Player                                           |
-| ---------------------------------------------------------------------- | ------------------------------------------------ |
-| ![Browsing channels with the inline preview](docs/screens/browser.png) | ![Full screen playback](docs/screens/player.png) |
+Upstream VexonTV is live-only by design: it drops movies and series while it loads a
+playlist. This fork keeps them and builds the rest of the app around all three.
 
-| Sources                              | Player channel list                                                   |
-| ------------------------------------ | -------------------------------------------------------------- |
-| ![Sources](docs/screens/sources.png) | ![Channel list over the stream](docs/screens/channel-list.png) |
+- **A launch screen.** Live TV, Movies and Series as three large tiles, with Recent,
+  Favorites and Sources underneath and the clock in the corner. There is no side menu: Back
+  from any section returns here.
+- **Movies.** A poster grid by category with sort (recently added, A–Z, rating), search,
+  pages of 60, a details page with plot, cast and runtime, and Resume / Start over.
+- **Series.** The same grid for shows; a show page with seasons beside episodes that opens
+  on the episode to watch next; Up Next into the following episode, across seasons; and
+  **Play random** for shows without a running story, which keeps shuffling through Up Next.
+- **Continue watching.** Selected first in Movies and Series whenever it has something in
+  it. Red on a poster, or a button on the details page, removes a title and forgets its
+  progress.
+- **A player for on-demand.** Scrub with the arrows and jump with OK, pause and the media
+  keys, position saved every 15 seconds, English audio by default, an audio and subtitle
+  picker, and subtitles drawn on screen. MKV files name their own tracks, so subtitles read
+  "English (forced)" rather than "Track 3", and a forced English track comes on by itself.
+- **Live TV changes.** It opens on the categories; UK categories come first; OK on a
+  channel goes straight to full screen; Back returns to that channel; the panels' fake
+  "#### CATEGORY ####" channels are hidden; and the in-player channel list has room for long
+  category names.
+- **The stream's quality** shows for a few seconds when a channel or title starts, for
+  example "1080p · HEVC · 8.2 Mb/s".
+- **Its own package ID**, so it installs beside the original instead of replacing it.
 
-> [!NOTE]
-> Captures of the interface itself, with demo channels: no provider of anyone's behind them.
-> This is how the app looks before you add your own list.
+## 📺 Using it
 
-## 📺 Install on your TV
+| Screen           | What it does                                                                                                                                 |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Launch**       | Live TV, Movies or Series. Recent, Favorites and Sources below. Back here closes the app.                                                    |
+| **Live TV**      | Categories on the left, channels in the middle, a preview on the right. Resting on a channel previews it; OK opens it full screen.         |
+| **Movies**       | Categories, then posters. OK opens the details page: Play or Resume, Start over, Remove from Continue watching.                            |
+| **Series**       | Categories, then shows. A show page lists seasons and episodes with progress and ticks; Play random sits beside Resume.                    |
+| **Sources**      | Add, edit and remove playlists and portals. OK on a source opens Live TV with only its channels.                                            |
 
-A Samsung TV and a PC (or an Android phone) on the same network. About ten minutes, all of
-it clicking: no terminal involved, and no SDK to install.
-
-### 1. 🛠 The TV's developer mode, and your computer's IP
-
-The TV hides that menu, and it asks for your computer's address, so have it ready first.
-
-**Your computer's IP.**
-
-- **On Windows:** Settings → _Network & Internet_ → your connection → _Properties_ →
-  **IPv4 address**. It looks like `192.168.X.X` or `10.0.X.X`.
-- **Or from a terminal,** if that is your thing: `ipconfig` on Windows, `ifconfig` or
-  `ip addr` on Mac and Linux.
-- **It has to be this computer's address, on the same network as the TV.** Cable and Wi-Fi
-  give different addresses, and only the right one works.
-
-**On the TV.**
-
-- **Open the apps screen.** Press _Home_ or _Smart Hub_ on the remote, then go to **Apps**.
-- **Type `12345`.** With that screen open, on the number pad. If your remote has no number
-  buttons, press the **123** button and type it on screen.
-- **Switch developer mode on.** Toggle _Developer mode_ to **On** and enter the IP you just
-  found.
-- **Restart the TV** from the power menu. The mode is not active until it reboots.
-
-> [!TIP]
-> If it still won't connect after the restart, unplug the TV from the wall, wait ten or
-> fifteen seconds and plug it back in. That is what opens the port the installer needs.
-
-> [!IMPORTANT]
-> Ignore the SDK. Samsung's guides tell you to install Tizen Studio first: you do not need
-> it, and Apps2Samsung signs and installs the app for you.
-
-_Steps above adapted from the [Apps2Samsung wiki][devmode]. There is also a
-[video walkthrough][devvideo] of the whole thing._
-
-### 2. ⬇ Install Apps2Samsung
-
-- **Download it** from its [releases page][a2s] — Windows, macOS, Linux or Android — and
-  open it.
-- **Only if you use a terminal:** `winget install --id Apps2Samsung.Apps2Samsung`.
-
-### 3. 📲 Send VexonTV to the TV
-
-- **Open Apps2Samsung.** It finds your TV on the network, or you type its IP.
-- **Pick the Tizen Community catalog** and choose **VexonTV**.
-- **Install.** The first time it will ask you to sign in with a Samsung account, once, to
-  sign the app.
-- **If it complains, believe it.** It tells you when developer mode is off, when the IP is
-  wrong or reversed, and when the TV needs a restart.
-
-### 4. 📋 Add your playlist
-
-Open VexonTV and choose **Add source**. It takes an M3U link, the panel address with your
-username and password, a file from a USB stick, or the whole message pasted in — it works
-the format out by itself.
-
-### 🚨 When it doesn't work
-
-| What you see                       | What to do                                                                                                          |
-| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| No developer window                | You have to be _inside_ the apps screen. Try the numbers again, or the keypad.                                      |
-| Developer mode switched itself off | Samsung expires it after a while. Redo step 1 and restart the TV.                                                   |
-| Apps2Samsung can't find the TV     | Same network, and the IP on the TV has to be the computer's. If it still fails, allow Apps2Samsung in the firewall. |
-| It installs but won't open         | Orsay TVs (before 2015) are not supported by anything here.                                                         |
-
-## ✨ Why this exists
-
-_I started looking for an IPTV player for my own TV and just could not find anything that really fit what I needed. The apps in Samsung's store were either weak or paid, and the free trials ran out within a week. On the community side I found Apps2Samsung, which works as the packaging tool most of these apps are built on, and tried a few of the community sub-apps made with it, but none of them fully convinced me. They had small bugs and interfaces I did not want to look at every night._
-
-- **Live only.** Movies and series are filtered out on load, so what you browse is channels.
-- **Smooth HD and 4K.** The TV decodes the channels itself, and the app never caps the
-  resolution: whatever your TV can handle plays, without stutter.
-- **Made for the remote.** Everything is reachable with the arrows and OK, and the player
-  tells you what each key does.
-- **Any panel.** M3U, Xtream Codes, Stalker, or paste anything and it works the format out.
-- **Nothing in the middle.** No accounts, no ads, no server of ours: your playlists stay on
-  your TV.
-
-## 📡 What it plays
-
-| Source             | What you give it                                                |
-| ------------------ | --------------------------------------------------------------- |
-| **M3U / M3U8**     | a URL, a file from USB, or the playlist text pasted in          |
-| **Xtream Codes**   | panel address, username and password                            |
-| **Stalker portal** | portal address and MAC                                          |
-| **Detect**         | paste whatever your provider sent you; the format is worked out |
-
-> [!NOTE]
-> Stalker is implemented but not yet verified against a live portal: it needs a MAC from a
-> provider.
-
+Movies and series are fetched the first time their section is opened, not at start-up:
+panels often carry tens of thousands of titles.
 
 ## 🎮 The remote
 
-| Key                 | What it does                             |
-| ------------------- | ---------------------------------------- |
-| `CH up` / `CH down` | change channel                           |
-| `Left`              | unfold the channel list                  |
-| `OK`                | pick a channel, press the focused button |
-| `Down`              | the player menu (favorites)              |
-| `Back`              | close the list, leave the player         |
-| `Red`               | save or remove a favorite                |
-| numbers             | jump to that channel                     |
+**Live TV player**
+
+| Key                 | What it does                               |
+| ------------------- | ------------------------------------------ |
+| `CH up` / `CH down` | change channel                             |
+| `Left` or `OK`      | open the channel list; `Left` again for categories |
+| `Down`              | the player menu (favorites)                |
+| `Red`               | save or remove a favorite                  |
+| numbers             | jump to that channel                       |
+| `Back`              | close the list, then leave the player      |
+
+**Movies and episodes**
+
+| Key                     | What it does                                                        |
+| ----------------------- | ------------------------------------------------------------------- |
+| `Left` / `Right`        | move the scrub mark, 10 s a press, faster when held                 |
+| `OK`                    | jump to the mark; with no mark, pause or play                       |
+| `⏪` / `⏩`, `▶`, `⏸`, `■` | rewind, fast-forward, play, pause, stop                             |
+| `Down`                  | audio and subtitle buttons                                          |
+| `Back`                  | steps out: track list, mark, buttons, controls, then the player     |
+
+**Browsing**
+
+| Key    | What it does                                         |
+| ------ | ---------------------------------------------------- |
+| `Red`  | on a poster: remove it from Continue watching        |
+| `Back` | details → grid → launch screen                       |
+
+## 📡 Sources
+
+| Source             | Live TV | Movies and series                                                                 |
+| ------------------ | ------- | --------------------------------------------------------------------------------- |
+| **Xtream Codes**   | ✅      | ✅ categories, ratings, covers, plot and cast, seasons and episodes               |
+| **M3U / M3U8**     | ✅      | ✅ from `/movie/` and `/series/` addresses or video files; episodes from `S01E02`, `S01 E02` or `1x02` in the title |
+| **Stalker portal** | ✅      | not yet                                                                           |
+
+Add a source from **Sources → Add source**: an M3U link, the panel address with username and
+password, a file from USB, or the provider's whole message pasted in.
+
+## 📲 Install on your TV
+
+This fork is not in the Apps2Samsung catalog (that installs upstream VexonTV), so it is built
+and signed on your own computer.
+
+**You need**
+
+- The TV in Developer Mode with your computer's IP as the host. On the TV: Apps, type
+  `12345`, switch Developer Mode on, enter the IP, restart the TV.
+- [Tizen Studio](https://developer.samsung.com/smarttv/develop/getting-started/setting-up-sdk/installing-tv-sdk.html)
+  CLI with the **TV Extensions** and **Samsung Certificate Extension** packages.
+- A Samsung certificate profile that includes the TV's DUID. The TV only accepts apps
+  signed with it.
+- Python 3.
+
+**Build, sign and install**
+
+```bash
+python3 tools/build-wgt.py                                   # -> dist/VexonTV.wgt (unsigned)
+mkdir -p dist/stage && cd dist/stage && unzip -o ../VexonTV.wgt && cd ../..
+tizen package -t wgt -s <profile> -- "$PWD/dist/stage"       # signs it
+mv "dist/stage/VexonTV VOD.wgt" dist/VexonVOD.wgt            # no spaces in the name
+sdb connect <tv-ip>:26101
+tizen install -n VexonVOD.wgt -s <tv-ip>:26101 -- "$PWD/dist"
+tizen run -p vx7vod0fk2.VexonVOD -s <tv-ip>:26101
+```
+
+Tizen Studio's Java has to be on `PATH` for `tizen package`. If `tizen install` says no
+target is connected, run `sdb connect` again and retry. Updates keep the same package ID, so
+they install in place and keep sources, favorites and progress.
+
+**Starting with your own source**
+
+Put a `local-source.json` at the root of the repository and `tools/build-wgt.py` writes it
+into the package, so a fresh install opens with it. Git ignores the file; it never goes into
+a commit.
+
+```json
+{ "type": "xtream", "name": "My panel", "origin": "http://host", "user": "u", "pass": "p" }
+```
 
 ## 📝 Notes
 
-- **Live only, by design.** VOD and series are out of scope.
+- **One stream per account.** Many panels allow one connection at a time. A movie that is
+  refused once is retried after three seconds; if it fails again, stop playback on other
+  devices and press Retry.
+- **Subtitles.** The TV's player reports subtitle tracks without their language. The app
+  reads names and languages from the start of MKV files; MP4 tracks may still show as
+  "Track 1, Track 2".
+- **Up Next** appears two minutes before an episode ends and plays the next one after ten
+  seconds.
 
 ### ✅ Tested on
 
-| Device                                                     | Platform                                                               |
-| ---------------------------------------------------------- | ---------------------------------------------------------------------- |
-| **Samsung Q64D QLED 55" 4K (2024)**, model `TQ55Q64DAUXXC` | Tizen 8.0, the platform these 2024 sets shipped with ([source][specs]) |
-
-Browsing, inline preview, full screen playback, guide and favorites.
-
-> [!WARNING]
-> **Only Tizen 8.0 has been tested**, the platform of the TV above. Other Tizen versions may
-> work, but backwards compatibility is not guaranteed.
-
-## 📄 License
-
-[MIT](LICENSE). Use it, fork it, ship it.
-
-Not affiliated with Samsung or the Tizen Project.
+| Device                                       | Platform  |
+| -------------------------------------------- | --------- |
+| Samsung Q60D QLED 55" (2024), `QE55Q60DAUXXU` | Tizen 9.0 |
+| Samsung Q64D QLED 55" (2024), `TQ55Q64DAUXXC` | Tizen 8.0 (upstream VexonTV) |
 
 ## 🛠 For developers
 
 ```bash
-pnpm install && pnpm test          # the test suites
+pnpm install && pnpm test          # needs Node 20.19+, 22.13+ or 24+
 python3 tools/build-wgt.py         # -> dist/VexonTV.wgt
 ```
 
-Tests, file map and packaging: [docs/DEVELOPING.md](docs/DEVELOPING.md).
-Before opening a pull request: [CONTRIBUTING.md](CONTRIBUTING.md).
+Tests, file map and packaging: [docs/DEVELOPING.md](docs/DEVELOPING.md). The plan this fork
+was built from, with the screen mockups: [docs/movies-series-spec.html](docs/movies-series-spec.html).
 
-[devvideo]: https://www.youtube.com/watch?v=F8kkdIh1TGY
-[a2s]: https://github.com/Apps2Samsung/Apps2Samsung/releases
-[devmode]: https://github.com/Apps2Samsung/Apps2Samsung/wiki/FAQ#-how-to-enable-developer-mode-on-your-tv
-[specs]: https://developer.samsung.com/smarttv/develop/specifications/general-specifications.html
+## 📄 License
+
+[MIT](LICENSE), as upstream: copyright (c) 2026 DvzZDev, with this fork's changes under the
+same terms. The launch-screen icons are Material Design icons (Apache License 2.0, Google).
+
+Not affiliated with Samsung, the Tizen Project or the upstream author.

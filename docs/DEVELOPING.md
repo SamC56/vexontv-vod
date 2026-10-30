@@ -1,4 +1,4 @@
-# Developing VexonTV
+# Developing VexonTV VOD
 
 Notes for whoever works on the app. If you only want to watch TV, the
 [README](../README.md) is all you need.
@@ -36,19 +36,42 @@ them. None of it ships: the app has no idea this exists.
 
 ## Installing by hand
 
+`tools/build-wgt.py` makes an unsigned `.wgt`. The TV only takes it signed with a Samsung
+certificate profile that includes its DUID, and `tizen package` signs a folder, so the
+package is unpacked first:
+
 ```bash
 python3 tools/build-wgt.py
-tizen install -n dist/VexonTV.wgt -t <tv>       # or drop it into Apps2Samsung
-tizen run -p vx7vod0fk2.VexonVOD -t <tv>
+mkdir -p dist/stage && cd dist/stage && unzip -o ../VexonTV.wgt && cd ../..
+export PATH=~/tizen-studio/jdk/Contents/Home/bin:$PATH     # tizen package needs Java
+tizen package -t wgt -s <profile> -- "$PWD/dist/stage"
+mv "dist/stage/VexonTV VOD.wgt" dist/VexonVOD.wgt          # a space in the name fails silently
+sdb connect <tv-ip>:26101
+tizen install -n VexonVOD.wgt -s <tv-ip>:26101 -- "$PWD/dist"
+tizen run -p vx7vod0fk2.VexonVOD -s <tv-ip>:26101
 ```
 
-The package is an unsigned `.wgt`; whoever installs it signs it.
+`tizen install` wants the file name and its folder apart (`-n` and `--`); given a path in
+`-n` it fails at "transferring the package". When it reports no connected target, the
+`sdb` connection dropped: connect again.
+
+### Starting with your own source
+
+A `local-source.json` at the root, ignored by git, is the source a fresh install starts
+with. `tools/build-wgt.py` writes it into the package as `js/local-source.js`, with a script
+tag before `store.js` in the packaged `index.html`; the tree, the tests and the browser on
+`localhost` never see it and keep the free channel list.
+
+```json
+{ "type": "xtream", "name": "My panel", "origin": "http://host", "user": "u", "pass": "p" }
+```
 
 ## Testing without the TV
 
 A desktop browser is useful for the interface: arrows are the D-pad, `Enter` is OK and
 `Escape` is Back. It will **not** play a channel: Chrome doesn't decode MPEG-TS or HLS, and
-AVPlay only exists on the TV. Serve it with `python3 -m http.server 8000`: it loads the
+AVPlay only exists on the TV. Most movies fail too (MKV with AC3 audio or HEVC video), and
+the audio and subtitle menu stays empty: track lists come from AVPlay. Serve it with `python3 -m http.server 8000`: it loads the
 bundled `test/sample.m3u`, which also carries the movies and episodes that prove live TV
 keeps only the channels while the catalog keeps the rest.
 
@@ -83,18 +106,25 @@ MPEG-TS and HLS at 1080p and above in hardware.
 ```
 index.html          app shell and boot splash
 config.xml          Tizen package: id, version, privileges, profile
-css/                tokens, base, lists, forms, player, overlays, media
-js/store.js         state, sources, TV categories, EPG, playback, favorites
-js/api.js           M3U, Xtream, Stalker parsers and the EPG call
-js/player.js        AVPlay (with a video fallback), rect handling, errors
+css/                tokens, base, lists, forms, player, overlays, media, vod
+js/store.js         state, sources, TV categories, EPG, playback, favorites, navigation
+js/api.js           M3U, Xtream, Stalker parsers, movie and series catalogs, the MKV
+                    track reader and the EPG call
+js/vod.js           movies and series: catalogs, browse view, details, progress,
+                    episodes, Up Next, shuffle, tracks and the on-demand player state
+js/player.js        AVPlay (with a video fallback), rect handling, seek, tracks,
+                    stream quality, errors
 js/tv.js            the focus engine: zones, rows, keys, the TV's IME
 js/app.js           focus zones, remote keys, boot
 js/ui.js            root and mounting
-js/ui/kit.js        icons, rows, lists, search, bar
-js/ui/screens/      one file per screen
+js/ui/kit.js        icons, rows, lists, search, bar, clock, quality badge
+js/ui/screens/      one file per screen: start (launch), tv, movies (Movies and Series),
+                    title (movie details), show (seasons and episodes), vodplayer,
+                    player (live), zap, recents, favs, cats, add, overlays
 tools/              brand generator, .wgt packager, README captures, pnpm guard
 test/               the three suites, the reporter and a sample playlist
-docs/               these notes, publishing, the banner and the screenshots
+docs/               these notes, upstream's publishing notes, the banner, the old
+                    screenshots and movies-series-spec.html (the plan this fork followed)
 ```
 
 `htm` is not HTML5, so empty elements (`input`, `br`, `img`) are always self closed or the
@@ -109,3 +139,25 @@ parser swallows their container. A check watches for it.
 - **The TV launcher's loader** cannot be covered from inside the app, because it happens
   before the app exists. Samsung's video splash is the way, and it is left ready in
   `config.xml` to drop in (it needs a small H.264 MP4).
+
+## Movies and series
+
+- **Loaded when asked.** Live channels come from `api.load()` as before; movies and series
+  come from `api.loadCatalog()` the first time their section opens, kept in memory only.
+  A playlist is downloaded once for both kinds; a panel is asked per kind
+  (`get_vod_streams`, `get_series`). Details (`get_vod_info`, `get_series_info`) are fetched
+  when a title is opened and cached for the session.
+- **Sorting entries.** An M3U line is live, a movie or an episode by its address first
+  (`/live/`, `/movie/`, `/series/`), then by a video-file extension, then by `S01E02`-style
+  titles. Group names alone are not trusted: "Cine" is as often a live channel pack.
+  Entries whose name is wrapped in `####` are category headings and are dropped.
+- **Progress** is the one thing saved: `ts.progress`, keyed `listId:kind:id`, the newest
+  300. Watched means past 92% or under three minutes left. Episodes carry their show's key,
+  which is how a show finds its way into Continue watching.
+- **Tracks.** AVPlay on these TVs lists subtitle tracks with no language. Before an MKV
+  opens, `api.loadMkvTracks()` reads up to 256 KB of it (four seconds at most) and parses
+  the Matroska track list; `vod.tracksReady()` lays those names, languages and forced flags
+  over AVPlay's list by order. English audio is chosen when there is any; subtitles come
+  on under foreign audio, or as a forced English track.
+- **Up Next** is decided when an episode starts (the next in order, or a random one in
+  shuffle), so the card and the end of the episode agree.
