@@ -200,6 +200,40 @@ async function movies() {
     )
     typeInto("#vodSearch", "")
     await wait(260)
+    document.getElementById("vodCatsBtn").click()
+    await wait(80)
+    check(
+        "Categories opens the list of movie categories, all ticked",
+        onlyScreen("screen-vodcats") &&
+            document.querySelectorAll("#vodCatList .cat.on").length === 3,
+        `${screens().join(", ")} / ${document.querySelectorAll("#vodCatList .cat.on").length}`,
+    )
+    document.querySelector('#vodCatList .cat[data-group="Cine en casa"]').click()
+    await wait(40)
+    press(10009)
+    await wait(80)
+    check(
+        "Back leaves without saving",
+        onlyScreen("screen-movies") && document.querySelectorAll("#vodGrid .poster").length === 3,
+    )
+    document.getElementById("vodCatsBtn").click()
+    await wait(80)
+    document.querySelector('#vodCatList .cat[data-group="Cine en casa"]').click()
+    document.getElementById("vodCatSave").click()
+    await wait(80)
+    check(
+        "a hidden category leaves the grid and the list",
+        onlyScreen("screen-movies") &&
+            document.querySelectorAll("#vodGrid .poster").length === 2 &&
+            !document.querySelector('#vodCats .vodcat[data-cat="Cine en casa"]'),
+        `${document.querySelectorAll("#vodGrid .poster").length} posters`,
+    )
+    document.getElementById("vodCatsBtn").click()
+    await wait(80)
+    document.getElementById("vodCatAll").click()
+    document.getElementById("vodCatSave").click()
+    await wait(80)
+    check("All brings it back", document.querySelectorAll("#vodGrid .poster").length === 3)
     document.querySelector('#vodSort .seg-btn[data-sort="name"]').click()
     await wait(60)
     check(

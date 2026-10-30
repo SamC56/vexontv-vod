@@ -114,7 +114,7 @@ var App = App || {} // eslint-disable-line no-var -- shared namespace, no module
             },
         })
 
-        zone("vodSort", "#vodSort .seg-btn", {
+        zone("vodSort", "#vodSort .btn", {
             onEdge: function (dir) {
                 if (dir === "right") tv.set("vodSearch", 0, 0)
                 else if (dir === "down") tv.set("vodCats", 0, 0)
@@ -149,6 +149,26 @@ var App = App || {} // eslint-disable-line no-var -- shared namespace, no module
         })
 
         zone("titleActions", "#titleActions .btn")
+
+        zone("vodCatActions", "#vodCatActions .btn", {
+            onEdge: function (dir) {
+                if (dir === "down") tv.set("vodCatList", 0, 0)
+                else if (dir === "right") tv.set("vodCatSearch", 0, 0)
+            },
+        })
+
+        zone("vodCatSearch", "#vodCatSearch", {
+            onEdge: function (dir) {
+                if (dir === "left") tv.set("vodCatActions", 0, 0)
+                else if (dir === "down") tv.set("vodCatList", 0, 0)
+            },
+        })
+
+        zone("vodCatList", "#vodCatList .cat", {
+            onEdge: function (dir) {
+                if (dir === "up") tv.set("vodCatActions", 0, 0)
+            },
+        })
 
         zone("recentsSearch", "#recentsSearch", {
             onEdge: function (dir) {
@@ -301,6 +321,10 @@ var App = App || {} // eslint-disable-line no-var -- shared namespace, no module
             else if (vod.ui.menu) vod.closeMenu()
             else if (vod.ui.osd && !vod.ui.paused) vod.hideOsd()
             else vod.exitPlayer()
+            return true
+        }
+        if (store.state.screen === "vodcats") {
+            App.vod.closeCategories()
             return true
         }
         if (store.state.screen === "title" || store.state.screen === "show") {

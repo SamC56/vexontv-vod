@@ -8,6 +8,7 @@ App.vod = (function () {
         progress: "ts.progress",
         sort: "ts.vod.sort.",
         trackPrefs: "ts.vod.tracks",
+        hidden: "ts.vod.hidden.",
     }
     const MAX_TRACK_PREFS = 200
 
@@ -111,6 +112,7 @@ App.vod = (function () {
         pending: {},
         refreshed: {},
         trackPrefs: {},
+        hidden: { movie: [], series: [] },
         errors: {},
         info: {},
         progress: {},
@@ -145,6 +147,9 @@ App.vod = (function () {
     function init() {
         state.progress = read(KEYS.progress, {})
         state.trackPrefs = read(KEYS.trackPrefs, {})
+        KINDS.forEach((kind) => {
+            state.hidden[kind] = read(KEYS.hidden + kind, []) || []
+        })
     }
 
     function sourcesWithVod() {
@@ -287,10 +292,22 @@ App.vod = (function () {
         return all
     }
 
-    function categories(kind) {
+    function isHidden(kind, group) {
+        return (state.hidden[kind] || []).indexOf(group || "Otros") !== -1
+    }
+
+    // What browsing shows: the catalog less the categories hidden in this section.
+    function browsable(kind) {
+        if (!(state.hidden[kind] || []).length) return items(kind)
+        return items(kind).filter((item) => {
+            return !isHidden(kind, item.group)
+        })
+    }
+
+    function categories(kind, all) {
         const counts = {}
         const lists = {}
-        items(kind).forEach((item) => {
+        ;(all ? items(kind) : browsable(kind)).forEach((item) => {
             const group = item.group || "Otros"
             counts[group] = (counts[group] || 0) + 1
             lists[group] = lists[group] || {}
@@ -322,7 +339,7 @@ App.vod = (function () {
     // What a section shows: one category or all of them, narrowed by the search, in order.
     function view(kind, options) {
         const opts = options || {}
-        let list = items(kind)
+        let list = browsable(kind)
         if (opts.category)
             list = list.filter((item) => {
                 return (item.group || "Otros") === opts.category
@@ -686,7 +703,7 @@ App.vod = (function () {
         rows.push({
             id: "",
             name: kind === "series" ? "All series" : "All movies",
-            count: items(kind).length,
+            count: browsable(kind).length,
         })
         categories(kind).forEach((row) => {
             rows.push({ id: row.name, name: row.name, count: row.count, sources: row.sources })
@@ -716,6 +733,69 @@ App.vod = (function () {
         if (shown.pages > 1) label += ` · page ${shown.index + 1} of ${shown.pages}`
         if (selected === CONTINUE) label += " · RED removes one"
         return { rows, category: selected, page: shown, label, sort: ui.sort, status: status(kind) }
+    }
+
+    // Hiding categories: a draft, kept only on Save, as Live TV does.
+    function openCategories() {
+        ui.catDraft = (state.hidden[ui.kind] || []).slice()
+        ui.catSearch = ""
+        store().set({ screen: "vodcats" })
+        store().focus("vodCatList", 0, 0)
+    }
+
+    function categoriesDraft() {
+        const needle = (ui.catSearch || "").trim().toLowerCase()
+        const draft = ui.catDraft || []
+        const all = categories(ui.kind, true)
+        const rows = all
+            .filter((row) => {
+                return !needle || row.name.toLowerCase().indexOf(needle) !== -1
+            })
+            .map((row) => {
+                return { name: row.name, count: row.count, enabled: draft.indexOf(row.name) === -1 }
+            })
+        const on = all.filter((row) => {
+            return draft.indexOf(row.name) === -1
+        }).length
+        return { rows, on, total: all.length }
+    }
+
+    function toggleHidden(name) {
+        const draft = (ui.catDraft || []).slice()
+        const at = draft.indexOf(name)
+        if (at === -1) draft.push(name)
+        else draft.splice(at, 1)
+        ui.catDraft = draft
+        changed()
+    }
+
+    function setAllHidden(enabled) {
+        ui.catDraft = enabled
+            ? []
+            : categories(ui.kind, true).map((row) => {
+                  return row.name
+              })
+        changed()
+    }
+
+    function setCatSearch(value) {
+        ui.catSearch = value || ""
+        changed()
+    }
+
+    function closeCategories() {
+        ui.catDraft = null
+        store().set({ screen: sectionScreen(ui.kind) })
+        store().focus("vodCats", 0, 0)
+    }
+
+    function saveCategories() {
+        state.hidden[ui.kind] = (ui.catDraft || []).slice()
+        write(KEYS.hidden + ui.kind, state.hidden[ui.kind])
+        if (isHidden(ui.kind, ui.category)) ui.category = ""
+        ui.page = 0
+        closeCategories()
+        store().notify("Categories saved")
     }
 
     function setCategory(id) {
@@ -1358,6 +1438,13 @@ App.vod = (function () {
         formatRuntime,
         openMovies,
         openSeries,
+        openCategories,
+        categoriesDraft,
+        toggleHidden,
+        setAllHidden,
+        setCatSearch,
+        closeCategories,
+        saveCategories,
         sectionScreen,
         episodeLabel,
         nextEpisode,

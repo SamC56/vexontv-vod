@@ -14,6 +14,8 @@ App.api = (function () {
     const YEAR = /\s*[([]((?:19|20)\d{2})[)\]]\s*$/
     // Panels head each category with a fake channel, "#### UK NEWS ####": not something to play.
     const HEADING = /^\s*([#=*~★])\1+.*\1\1\s*$/
+    // Empty pay-per-view slots, "- NO EVENT STREAMING - | ...": a channel with nothing on.
+    const NO_EVENT = /^\W*no event streaming\b/i
     // Scene names put the quality where the episode title would be.
     const RELEASE_TAG = /^(?:\d{3,4}p|4k|uhd|fhd|hdtv|web(?:-?dl|rip)?|x26[45]|hevc|bluray)\b/i
     const TIMEOUT_MS = 60000
@@ -61,7 +63,7 @@ App.api = (function () {
     }
 
     function isHeading(name) {
-        return HEADING.test(name || "")
+        return HEADING.test(name || "") || NO_EVENT.test(name || "")
     }
 
     function classify(url, group, name) {

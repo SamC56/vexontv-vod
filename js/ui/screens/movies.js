@@ -114,6 +114,16 @@ App.uiScreens = App.uiScreens || {}
                             ${sort.label}
                         </button>`
                     })}
+                    <button
+                        class="btn vod-cats-btn"
+                        id="vodCatsBtn"
+                        tabindex="-1"
+                        onClick=${function () {
+                            vod.openCategories()
+                        }}
+                    >
+                        Categories
+                    </button>
                 </div>`}
                 search=${html`<${Search}
                     id="vodSearch"

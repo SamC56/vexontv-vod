@@ -131,7 +131,9 @@ check(
     ["##### 4K ᵁᴴᴰ ³⁸⁴⁰ᴾ #####", true],
     ["== Sports ==", true],
     ["US: CBS 4 (#) BUFFALO HD", false],
-    ["- NO EVENT STREAMING - | 8K EXCLUSIVE | UK: RALLY PPV 17", false],
+    ["- NO EVENT STREAMING - | 8K EXCLUSIVE | UK: RALLY PPV 17", true],
+    ["NO EVENT STREAMING", true],
+    ["Live Event Streaming Now", false],
     ["#1 Hits", false],
     ["BBC One HD", false],
 ].forEach((item) => {

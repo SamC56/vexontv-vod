@@ -21,6 +21,7 @@ App.ui = (function () {
     const Title = screens.title
     const Show = screens.show
     const Start = screens.start
+    const VodCategories = screens.vodCats
     const VodPlayer = screens.vodPlayer
     const Loader = screens.loader
     const Toast = screens.toast
@@ -54,6 +55,7 @@ App.ui = (function () {
                         : null
                 }
                 ${!playing && state.screen === "show" ? html`<${Show} />` : null}
+                ${!playing && state.screen === "vodcats" ? html`<${VodCategories} />` : null}
                 ${!playing && state.screen === "title" ? html`<${Title} />` : null}
                 ${!playing && state.screen === "cats" ? html`<${Categories} />` : null}
                 ${
