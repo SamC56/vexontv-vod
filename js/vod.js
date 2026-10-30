@@ -99,6 +99,9 @@ App.vod = (function () {
     // Many panels allow one stream per account and free it a few seconds after the last one
     // stops: the first refusal is retried once on its own after this long.
     const RETRY_MS = 3000
+    // Up Next: shown this close to an episode's end, and it plays the next one after the count.
+    const UP_NEXT_S = 120
+    const UP_NEXT_MS = 10000
 
     const state = {
         catalogs: {},
@@ -316,7 +319,7 @@ App.vod = (function () {
 
     // An episode remembers its show, which is how a series finds its way into Continue
     // watching without the episode list at hand.
-    function saveProgress(item, position, duration, show) {
+    function saveProgress(item, position, duration, show, more) {
         const entry = {
             pos: Math.max(0, Math.round(position || 0)),
             dur: Math.max(0, Math.round(duration || 0)),
@@ -325,6 +328,8 @@ App.vod = (function () {
         lastAt = entry.at
         entry.done = isWatched(entry.pos, entry.dur)
         if (show) entry.show = keyOf(show)
+        // A finished episode with another after it keeps its show in Continue watching.
+        if (show && more) entry.more = true
         state.progress[keyOf(item)] = entry
 
         const keys = Object.keys(state.progress)
@@ -342,6 +347,48 @@ App.vod = (function () {
         return entry
     }
 
+    // Takes a title out of Continue watching: a film's progress, or every episode of a show.
+    function forgetProgress(item) {
+        const key = keyOf(item)
+        Object.keys(state.progress).forEach((entryKey) => {
+            if (entryKey === key || state.progress[entryKey].show === key)
+                delete state.progress[entryKey]
+        })
+        write(KEYS.progress, state.progress)
+        changed()
+    }
+
+    function hasProgress(item) {
+        const key = keyOf(item)
+        return Object.keys(state.progress).some((entryKey) => {
+            return entryKey === key || state.progress[entryKey].show === key
+        })
+    }
+
+    function itemByKey(key) {
+        const kind = key.split(":")[1]
+        return (
+            items(kind).filter((item) => {
+                return keyOf(item) === key
+            })[0] || null
+        )
+    }
+
+    // Asked first: the progress cannot be brought back.
+    function confirmForget(item, returnZone) {
+        if (!item || !hasProgress(item)) return false
+        const what = item.kind === "series" ? "its episodes' progress" : "where you stopped"
+        store().askConfirm(
+            `Remove “${item.name}” from Continue watching? This forgets ${what}.`,
+            () => {
+                forgetProgress(item)
+                store().notify("Removed from Continue watching")
+            },
+            returnZone,
+        )
+        return true
+    }
+
     function continueWatching(kind) {
         const latest = {}
         Object.keys(state.progress).forEach((key) => {
@@ -353,7 +400,7 @@ App.vod = (function () {
         return items(kind)
             .filter((item) => {
                 const entry = latest[keyOf(item)]
-                return entry && !entry.done
+                return entry && (!entry.done || entry.more)
             })
             .sort((a, b) => {
                 return latest[keyOf(b)].at - latest[keyOf(a)].at
@@ -395,8 +442,12 @@ App.vod = (function () {
         trackMenu: null,
         subtitle: "",
         osd: false,
+        season: null,
+        upNext: null,
+        preferContinue: false,
     }
     let seekTimer = null
+    let upNextTimer = null
     let osdTimer = null
     let subtitleTimer = null
     let lastSaved = 0
@@ -420,12 +471,118 @@ App.vod = (function () {
         return h ? `${h}h ${`0${m}`.slice(-2)}m` : `${m}m`
     }
 
-    function openMovies() {
-        ui.kind = "movie"
-        ui.sort = read(KEYS.sort + ui.kind, "added") || "added"
-        store().set({ screen: "movies" })
+    function sectionScreen(kind) {
+        return kind === "series" ? "series" : "movies"
+    }
+
+    // Movies and Series share the browse screen; each opens with its own sort, from the top.
+    function openSection(kind) {
+        if (ui.kind !== kind) {
+            ui.category = ""
+            ui.page = 0
+            ui.query = ""
+        }
+        ui.kind = kind
+        ui.sort = read(KEYS.sort + kind, "added") || "added"
+        // Continue watching is the first choice whenever there is something in it; the catalog
+        // may still be loading, so browse() settles it once the titles are there.
+        ui.preferContinue = true
+        store().set({ screen: sectionScreen(kind) })
         store().focus("vodCats", 0, 0)
-        ensure(ui.kind)
+        ensure(kind)
+    }
+
+    function openMovies() {
+        openSection("movie")
+    }
+
+    function openSeries() {
+        openSection("series")
+    }
+
+    function episodeLabel(episode) {
+        if (!episode) return ""
+        if (episode.season && episode.episode) return `S${episode.season} · E${episode.episode}`
+        if (episode.episode) return `Episode ${episode.episode}`
+        return episode.season ? `Season ${episode.season}` : ""
+    }
+
+    function sameEpisode(a, b) {
+        return !!a && !!b && a.id === b.id
+    }
+
+    // The next episode, into the next numbered season when this one ends. Specials (season
+    // 0) only lead on to more specials.
+    function nextEpisode(seasons, episode) {
+        const list = seasons || []
+        for (let s = 0; s < list.length; s++) {
+            const episodes = list[s].episodes
+            for (let e = 0; e < episodes.length; e++) {
+                if (!sameEpisode(episodes[e], episode)) continue
+                if (e + 1 < episodes.length) return episodes[e + 1]
+                if (!list[s].number) return null
+                for (let n = s + 1; n < list.length; n++)
+                    if (list[n].number && list[n].episodes.length) return list[n].episodes[0]
+                return null
+            }
+        }
+        return null
+    }
+
+    // Where a show opens: the episode left halfway, else the one after the last finished,
+    // else the first of season 1 (or of whatever there is).
+    function nextToWatch(seasons) {
+        const list = seasons || []
+        let latest = null
+        list.forEach((season) => {
+            season.episodes.forEach((episode) => {
+                const entry = progressOf(episode)
+                if (entry && (!latest || entry.at > latest.entry.at)) latest = { episode, entry }
+            })
+        })
+        if (latest && !latest.entry.done) return latest.episode
+        if (latest) return nextEpisode(list, latest.episode) || latest.episode
+        const first =
+            list.filter((season) => {
+                return season.number && season.episodes.length
+            })[0] ||
+            list.filter((season) => {
+                return season.episodes.length
+            })[0]
+        return first ? first.episodes[0] : null
+    }
+
+    function seasonNumberOf(seasons, episode) {
+        const list = seasons || []
+        for (let s = 0; s < list.length; s++)
+            if (
+                list[s].episodes.some((item) => {
+                    return sameEpisode(item, episode)
+                })
+            )
+                return list[s].number
+        return list.length ? list[0].number : null
+    }
+
+    function episodeSelector(episode) {
+        const key = keyOf(episode).replace(/["\\]/g, "\\$&")
+        return `#showEpisodes .episode[data-key="${key}"]`
+    }
+
+    function selectSeason(number) {
+        ui.season = number
+        changed()
+        store().focus("showEpisodes", 0, 0)
+    }
+
+    // A show's episodes carry its source, so their progress is kept apart from other lists.
+    function tagEpisodes(show, details) {
+        ;(details.seasons || []).forEach((season) => {
+            season.episodes.forEach((episode) => {
+                episode.listId = show.listId
+                episode.kind = "episode"
+            })
+        })
     }
 
     function browse() {
@@ -448,6 +605,11 @@ App.vod = (function () {
             rows.push({ id: row.name, name: row.name, count: row.count, sources: row.sources })
         })
 
+        if (ui.preferContinue && resume.length) {
+            ui.category = CONTINUE
+            ui.page = 0
+            ui.preferContinue = false
+        } else if (ui.preferContinue && items(kind).length) ui.preferContinue = false
         const category = ui.category === CONTINUE && !resume.length ? "" : ui.category
         const known = rows.some((row) => {
             return row.id === category
@@ -465,10 +627,12 @@ App.vod = (function () {
         const count = store().formatCount(shown.total)
         let label = `${name} · ${count} ${shown.total === 1 ? "title" : "titles"}`
         if (shown.pages > 1) label += ` · page ${shown.index + 1} of ${shown.pages}`
+        if (selected === CONTINUE) label += " · RED removes one"
         return { rows, category: selected, page: shown, label, sort: ui.sort, status: status(kind) }
     }
 
     function setCategory(id) {
+        ui.preferContinue = false
         ui.category = id
         ui.page = 0
         changed()
@@ -501,15 +665,24 @@ App.vod = (function () {
 
     function openTitle(item) {
         if (!item) return
+        const show = item.kind === "series"
         ui.title = item
         ui.details = null
         ui.detailsError = null
-        store().set({ screen: "title" })
-        store().focus("titleActions", 0, 0)
+        ui.season = null
+        store().set({ screen: show ? "show" : "title" })
+        store().focus(show ? "showActions" : "titleActions", 0, 0)
         info(item)
             .then((details) => {
                 if (ui.title !== item) return
                 ui.details = details
+                if (show) {
+                    tagEpisodes(item, details)
+                    const next = nextToWatch(details.seasons)
+                    ui.season = seasonNumberOf(details.seasons, next)
+                    if (next && store().state.screen === "show")
+                        store().focus("showEpisodes", 0, 0, episodeSelector(next))
+                }
                 changed()
             })
             .catch((error) => {
@@ -522,7 +695,7 @@ App.vod = (function () {
 
     function backFromTitle() {
         const item = ui.title
-        store().set({ screen: "movies" })
+        store().set({ screen: sectionScreen(ui.kind) })
         if (item) {
             const key = keyOf(item).replace(/["\\]/g, "\\$&")
             const selector = `#vodGrid .poster[data-key="${key}"]`
@@ -535,7 +708,18 @@ App.vod = (function () {
         return entry && !entry.done && entry.pos > 0 ? entry.pos : 0
     }
 
-    function playTitle(item, fromStart) {
+    // An episode plays with its show and seasons at hand: for its progress, its labels and
+    // what comes next.
+    function playEpisode(episode, fromStart) {
+        if (!episode || !ui.title) return
+        playTitle(episode, fromStart, {
+            show: ui.title,
+            seasons: (ui.details && ui.details.seasons) || [],
+            origin: "show",
+        })
+    }
+
+    function playTitle(item, fromStart, context) {
         if (!item) return
         const details = ui.title === item ? ui.details : null
         const url = (details && details.url) || item.url
@@ -546,10 +730,13 @@ App.vod = (function () {
             item,
             url,
             start: fromStart ? 0 : resumePoint(item),
-            origin: store().state.screen,
+            origin: (context && context.origin) || store().state.screen,
+            show: (context && context.show) || null,
+            seasons: (context && context.seasons) || null,
             ready: !mkv,
             hint: null,
         }
+        clearUpNext()
         if (mkv) {
             App.api.loadMkvTracks(url).then((hint) => {
                 if (!ui.playing || ui.playing.item !== item || ui.playing.ready) return
@@ -572,23 +759,70 @@ App.vod = (function () {
         const duration = App.player.duration()
         const position = App.player.position()
         if (!(duration > 0) || !(position > 0)) return null
-        return saveProgress(playing.item, position, duration)
+        return saveProgress(playing.item, position, duration, playing.show, hasNext(playing))
+    }
+
+    function hasNext(playing) {
+        return !!(playing && playing.show && nextEpisode(playing.seasons, playing.item))
     }
 
     // Called by the player screen every second while a title plays.
     function tick() {
+        const playing = ui.playing
         const position = App.player.position()
-        if (ui.playing && !ui.paused && position - lastSaved >= SAVE_EVERY_S) {
+        if (playing && !ui.paused && position - lastSaved >= SAVE_EVERY_S) {
             lastSaved = position
             saveCurrent()
         }
+        const duration = App.player.duration()
+        const nearEnd = duration > 0 && position > 0 && duration - position <= UP_NEXT_S
+        if (playing && playing.show && nearEnd && !ui.upNext && !playing.upNextDone && !ui.error) {
+            const next = nextEpisode(playing.seasons, playing.item)
+            if (next) startUpNext(next)
+            else ui.playing = Object.assign({}, playing, { upNextDone: true })
+        }
+    }
+
+    function startUpNext(episode) {
+        clearUpNext()
+        ui.upNext = { episode, deadline: Date.now() + UP_NEXT_MS }
+        upNextTimer = setTimeout(playNext, UP_NEXT_MS)
+        changed()
+        store().focus("vodUpNext", 0, 0)
+    }
+
+    function clearUpNext() {
+        if (upNextTimer) clearTimeout(upNextTimer)
+        upNextTimer = null
+        ui.upNext = null
+    }
+
+    // Cancel: this episode plays on to its end, and the card does not come back for it.
+    function dismissUpNext() {
+        if (!ui.playing) return
+        clearUpNext()
+        ui.playing = Object.assign({}, ui.playing, { upNextDone: true })
+        changed()
+        store().focus("vodIdle", 0, 0)
+    }
+
+    function playNext() {
+        const playing = ui.playing
+        if (!playing || !playing.show) return
+        const next = ui.upNext ? ui.upNext.episode : nextEpisode(playing.seasons, playing.item)
+        clearUpNext()
+        if (!next) return
+        if (!playing.ended) saveCurrent()
+        playTitle(next, false, { show: playing.show, seasons: playing.seasons, origin: "show" })
     }
 
     function exitPlayer() {
         if (!ui.playing) return
         if (!ui.playing.ended) saveCurrent()
         const origin = ui.playing.origin
+        const episode = ui.playing.show ? ui.playing.item : null
         clearSeek()
+        clearUpNext()
         resetTracks()
         if (osdTimer) clearTimeout(osdTimer)
         osdTimer = null
@@ -598,6 +832,12 @@ App.vod = (function () {
         if (origin === "title" && ui.title) {
             store().set({ screen: "title" })
             store().focus("titleActions", 0, 0)
+        } else if (origin === "show" && ui.title) {
+            // Back on the show, on the episode that was playing, in its season.
+            if (episode) ui.season = seasonNumberOf(ui.details && ui.details.seasons, episode)
+            store().set({ screen: "show" })
+            if (episode) store().focus("showEpisodes", 0, 0, episodeSelector(episode))
+            else store().focus("showActions", 0, 0)
         } else backFromTitle()
     }
 
@@ -605,9 +845,11 @@ App.vod = (function () {
         const playing = ui.playing
         if (!playing) return
         const duration = App.player.duration()
-        if (duration > 0) saveProgress(playing.item, duration, duration)
+        if (duration > 0)
+            saveProgress(playing.item, duration, duration, playing.show, hasNext(playing))
         ui.playing = Object.assign({}, playing, { ended: true })
-        exitPlayer()
+        if (hasNext(playing)) playNext()
+        else exitPlayer()
     }
 
     function playFailed(message) {
@@ -929,6 +1171,10 @@ App.vod = (function () {
         info,
         isWatched,
         progressOf,
+        forgetProgress,
+        hasProgress,
+        itemByKey,
+        confirmForget,
         saveProgress,
         continueWatching,
         forget,
@@ -937,6 +1183,15 @@ App.vod = (function () {
         formatTime,
         formatRuntime,
         openMovies,
+        openSeries,
+        sectionScreen,
+        episodeLabel,
+        nextEpisode,
+        nextToWatch,
+        selectSeason,
+        playEpisode,
+        dismissUpNext,
+        playNext,
         browse,
         setCategory,
         setSort,

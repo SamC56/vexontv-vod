@@ -53,78 +53,6 @@ App.uiKit = (function () {
         </svg>`
     }
 
-    const iconList = svg(
-        html`<path
-            d="M3 6h18M3 12h18M3 18h12"
-            stroke="currentColor"
-            stroke-width="1.8"
-            fill="none"
-            stroke-linecap="round"
-        />`,
-        24,
-    )
-    const iconTv = svg(
-        html`<rect
-                x="2.5"
-                y="5"
-                width="19"
-                height="13"
-                rx="2"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.8"
-            /><path
-                d="M8.5 21h7"
-                stroke="currentColor"
-                stroke-width="1.8"
-                stroke-linecap="round"
-            />`,
-        24,
-    )
-    const iconFilm = svg(
-        html`<rect
-                x="3"
-                y="4.5"
-                width="18"
-                height="15"
-                rx="2"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.8"
-            /><path
-                d="M7.5 4.5v15M16.5 4.5v15M3 9.5h4.5M3 14.5h4.5M16.5 9.5H21M16.5 14.5H21"
-                stroke="currentColor"
-                stroke-width="1.8"
-            />`,
-        24,
-    )
-    const iconClock = svg(
-        html`<circle
-                cx="12"
-                cy="12"
-                r="8.5"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.8"
-            /><path
-                d="M12 7.5V12l3 2"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.8"
-                stroke-linecap="round"
-            />`,
-        24,
-    )
-    const iconStar = svg(
-        html`<path
-            d="M12 4.5l2.3 4.8 5.2.7-3.8 3.6.9 5.2-4.6-2.5-4.6 2.5.9-5.2-3.8-3.6 5.2-.7z"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.8"
-            stroke-linejoin="round"
-        />`,
-        24,
-    )
     const iconSearch = svg(
         html`<circle
                 cx="11"
@@ -266,7 +194,7 @@ App.uiKit = (function () {
         return program.title + span
     }
 
-    // Rail clock: the system time, refreshed by the minute. A clock that ticks every
+    // The clock: the system time, refreshed by the minute. A clock that ticks every
     // second is a distraction on a TV.
     function timeText() {
         const now = new Date()
@@ -287,143 +215,12 @@ App.uiKit = (function () {
         return state[0]
     }
 
-    // Sidebar: the brand, the four sections, a shortcut to each source and, at the
-    // bottom, the clock and the count. Anchored to the grid: 64px sections, 56px sources.
-    function Rail(props) {
-        const items = [
-            {
-                id: "navHome",
-                label: "Sources",
-                icon: iconList,
-                screens: ["home"],
-                action: function () {
-                    store.goHome()
-                },
-            },
-            {
-                id: "navTv",
-                label: "Live TV",
-                icon: iconTv,
-                screens: ["tv", "cats"],
-                action: function () {
-                    store.openTv()
-                },
-            },
-            {
-                id: "navMovies",
-                label: "Movies",
-                icon: iconFilm,
-                screens: ["movies", "title"],
-                action: function () {
-                    App.vod.openMovies()
-                },
-            },
-            {
-                id: "navRecents",
-                label: "Recent",
-                icon: iconClock,
-                screens: ["recents"],
-                action: function () {
-                    store.openRecents()
-                },
-            },
-            {
-                id: "navFavs",
-                label: "Favorites",
-                icon: iconStar,
-                screens: ["favs"],
-                action: function () {
-                    store.openFavorites()
-                },
-            },
-        ]
-        const nav = useRef(null)
-        const clock = useClock()
-        const stats = store.stats()
-        const sources = store.state.lists.slice(0, 3)
-
-        useEffect(() => {
-            const rail = nav.current
-            if (!rail) return
-            const element = rail.querySelector(".rail-btn.active")
-            const height = element ? Math.round(element.offsetHeight * 0.62) : 0
-            rail.style.setProperty("--rail-mark-h", `${height}px`)
-            rail.style.setProperty(
-                "--rail-mark-y",
-                element
-                    ? `${element.offsetTop + Math.round((element.offsetHeight - height) / 2)}px`
-                    : "0px",
-            )
-            // The marker stretches as it travels: you see the trip, not a jump.
-            rail.classList.add("moving")
-            const timer = setTimeout(() => {
-                rail.classList.remove("moving")
-            }, 300)
-            return function () {
-                clearTimeout(timer)
-            }
-        }, [props.screen])
-
-        return html`<nav class="rail" ref=${nav}>
-            <span class="rail-glow" aria-hidden="true"></span>
-            <div class="brand" aria-hidden="true">
-                <img class="brand-img" src="brand.png" alt="" />
-                <span class="wordmark">
-                    <span class="wordmark-name">VexonTV</span>
-                    <span class="wordmark-tag">IPTV Player</span>
-                </span>
-            </div>
-            <div class="rail-nav">
-                ${items.map((item) => {
-                    const active = item.screens.indexOf(props.screen) !== -1
-                    return html`<button
-                        id=${item.id}
-                        class=${`rail-btn${active ? " active" : ""}`}
-                        tabindex="-1"
-                        onClick=${item.action}
-                    >
-                        ${item.icon}<span>${item.label}</span>
-                    </button>`
-                })}
-            </div>
-            ${
-                sources.length
-                    ? html`<div class="rail-block">
-                          <p class="rail-title">Sources</p>
-                          ${sources.map((list) => {
-                              return html`<button
-                                  class=${`rail-src${
-                                      props.screen === "tv" && store.state.tvSource === list.id
-                                          ? " selected"
-                                          : ""
-                                  }`}
-                                  tabindex="-1"
-                                  data-list=${list.id}
-                                  onClick=${function () {
-                                      store.openSource(list.id)
-                                  }}
-                              >
-                                  <span class="rail-src-name">${list.name}</span>
-                                  <span class="rail-src-kind">${store.listLabel(list)}</span>
-                              </button>`
-                          })}
-                      </div>`
-                    : null
-            }
-            <div class="rail-foot">
-                <p class="rail-clock" id="railClock">${clock}</p>
-                <p class="rail-counts" id="railCounts">${stats.counts}</p>
-            </div>
-        </nav>`
-    }
-
     function ChannelRow(props) {
         const channel = props.channel
         const listId = props.listId || channel.listId
         const now = programText(store.programOf(channel))
         function open() {
-            if (props.detail) store.selectPreview(channel)
-            else store.play(channel, listId, props.source)
+            store.play(channel, listId, props.source)
         }
         return html`<button
             class="row channel"
@@ -554,6 +351,32 @@ App.uiKit = (function () {
         </div>`
     }
 
+    // A moment after playback starts, the stream's quality in a corner; gone after a while.
+    const QUALITY_DELAY_MS = 1200
+    const QUALITY_SHOW_MS = 4000
+
+    function QualityBadge(props) {
+        const state = useState("")
+        const label = state[0]
+        const setLabel = state[1]
+        useEffect(() => {
+            setLabel("")
+            if (!props.playing) return
+            let hide = null
+            const show = setTimeout(() => {
+                setLabel(App.player.quality())
+                hide = setTimeout(() => {
+                    setLabel("")
+                }, QUALITY_SHOW_MS)
+            }, QUALITY_DELAY_MS)
+            return function () {
+                clearTimeout(show)
+                if (hide) clearTimeout(hide)
+            }
+        }, [props.playing, props.watchKey])
+        return label ? html`<p class="quality-badge" id="qualityBadge">${label}</p>` : null
+    }
+
     function Bar(props) {
         return html`<header class="bar">
             <div class="bar-text">
@@ -579,8 +402,9 @@ App.uiKit = (function () {
         logoStyle,
         programText,
         iconCheck,
-        Rail,
+        useClock,
         Bar,
+        QualityBadge,
         Search,
         ChannelRow,
         ChannelList,

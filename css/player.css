@@ -224,9 +224,10 @@ body.playing {
     position: absolute;
     inset: 0 auto 0 0;
     display: grid;
-    grid-template-columns: minmax(200px, 28%) 1fr;
-    width: 46%;
-    min-width: 620px;
+    /* Room for the panel's long category names ("UK| SKY CINEMA HD/RAW") beside the channels. */
+    grid-template-columns: minmax(360px, 40%) 1fr;
+    width: 62%;
+    min-width: 900px;
     background: #080808;
     border-right: 1px solid var(--line-2);
     z-index: 20;
@@ -293,8 +294,14 @@ body.playing {
 }
 
 .row.zapcat .row-name {
-    font-size: 19px;
+    display: -webkit-box;
+    overflow: hidden;
+    font-size: 21px;
+    line-height: 1.25;
+    white-space: normal;
     color: var(--text-2);
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
 }
 .row.zapcat.selected {
     background: var(--surface-2);
@@ -403,4 +410,23 @@ body.playing {
     flex-direction: column;
     align-items: flex-end;
     gap: 12px;
+}
+
+/* The stream's quality, shown for a moment when it starts. */
+.quality-badge {
+    position: absolute;
+    top: 5%;
+    right: 5%;
+    z-index: 4;
+    padding: 10px 20px;
+    border-radius: 999px;
+    background: rgba(5, 5, 5, 0.78);
+    box-shadow: inset 0 0 0 1px var(--line-2);
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    font-variant-numeric: tabular-nums;
+    color: var(--text);
+    pointer-events: none;
+    animation: fade var(--dur) var(--ease-out);
 }

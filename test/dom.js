@@ -130,7 +130,7 @@ async function leavePlayer() {
     }
 }
 
-// Movies with the remote: the rail entry, the grid, details, play, seek, pause, resume, the end.
+// Movies with the remote: the launch tile, the grid, details, play, seek, pause, resume, the end.
 async function movies() {
     const vod = window.App.vod
     const store = window.App.store
@@ -138,9 +138,11 @@ async function movies() {
     vod.init()
     store.state.lists = [{ id: "vm", name: "Pelis", kind: "m3u", source: "text", text: sampleM3u }]
 
-    document.getElementById("navMovies").click()
+    store.goStart()
+    await wait(60)
+    document.getElementById("startMovies").click()
     await wait(120)
-    check("Movies opens from the rail", onlyScreen("screen-movies"), screens().join(", "))
+    check("Movies opens from the launch screen", onlyScreen("screen-movies"), screens().join(", "))
     check(
         "the grid shows the playlist's movies and leaves the channels out",
         document.querySelectorAll("#vodGrid .poster").length === 3,
@@ -255,7 +257,15 @@ async function movies() {
                 ]
             },
             getCurrentStreamInfo: function () {
-                return [{ index: audioTrack, type: "AUDIO", extra_info: "{}" }]
+                return [
+                    {
+                        index: 0,
+                        type: "VIDEO",
+                        extra_info:
+                            '{"fourCC":"HEVC","Width":"1920","Height":"1080","Bit_rate":"8200000"}',
+                    },
+                    { index: audioTrack, type: "AUDIO", extra_info: "{}" },
+                ]
             },
             setSelectTrack: function (type, index) {
                 selected.push(`${type}:${index}`)
@@ -318,6 +328,12 @@ async function movies() {
         selected.indexOf("AUDIO:2") !== -1 &&
             document.getElementById("vodAudioBtn").textContent.indexOf("English") !== -1,
         selected.join(),
+    )
+    await wait(1000)
+    check(
+        "a moment after it starts, the stream's quality shows in a corner",
+        (document.getElementById("qualityBadge") || {}).textContent === "1080p · HEVC · 8.2 Mb/s",
+        (document.getElementById("qualityBadge") || {}).textContent,
     )
     check(
         "and under English audio the subtitles stay off",
@@ -524,6 +540,238 @@ async function movies() {
     window.webapis = undefined
 }
 
+// Series with the remote: the launch tile, a show, its seasons, Up Next, the last episode.
+async function series() {
+    const vod = window.App.vod
+    const store = window.App.store
+    let avTime = 0
+    let avState = "IDLE"
+    let listener = null
+    const opened = []
+    window.webapis = {
+        avplay: {
+            open: function (url) {
+                opened.push(url)
+                avTime = 0
+            },
+            setDisplayRect: function () {},
+            setDisplayMethod: function () {},
+            setListener: function (value) {
+                listener = value
+            },
+            prepareAsync: function (ok) {
+                avState = "READY"
+                ok()
+            },
+            play: function () {
+                avState = "PLAYING"
+            },
+            pause: function () {
+                avState = "PAUSED"
+            },
+            getState: function () {
+                return avState
+            },
+            getCurrentTime: function () {
+                return avTime
+            },
+            getDuration: function () {
+                return 3000000
+            },
+            seekTo: function (ms, ok) {
+                avTime = ms
+                if (ok) ok()
+            },
+            stop: function () {
+                avState = "IDLE"
+            },
+            close: function () {},
+        },
+    }
+    const subtitle = () => {
+        return (document.getElementById("vodSub") || {}).textContent || ""
+    }
+    const lastOpened = () => {
+        return opened[opened.length - 1] || ""
+    }
+
+    store.goStart()
+    await wait(60)
+    document.getElementById("startSeries").click()
+    await wait(150)
+    check("Series opens from the launch screen", onlyScreen("screen-series"), screens().join(", "))
+    const shows = Array.prototype.map.call(
+        document.querySelectorAll("#vodGrid .poster-name"),
+        (el) => {
+            return el.textContent
+        },
+    )
+    check(
+        "the grid lists the playlist's shows, one poster each",
+        shows.length === 3 && shows.indexOf("El Ministerio") !== -1,
+        shows.join("|"),
+    )
+    const poster = Array.prototype.filter.call(
+        document.querySelectorAll("#vodGrid .poster"),
+        (el) => {
+            return el.textContent.indexOf("El Ministerio") !== -1
+        },
+    )[0]
+    poster.click()
+    await wait(150)
+    check("a show opens its page", onlyScreen("screen-show"), screens().join(", "))
+    check(
+        "with its seasons, season 1 chosen",
+        document.querySelectorAll("#showSeasons .season").length === 2 &&
+            document.querySelector("#showSeasons .selected .row-name").textContent === "Season 1",
+    )
+    check(
+        "and its episodes in order, focus on the first to watch",
+        document.querySelectorAll("#showEpisodes .episode").length === 2 &&
+            !!focused() &&
+            focused().dataset.key.indexOf("905") !== -1 &&
+            document.getElementById("showPlay").textContent.trim() === "Play S1 · E1",
+        focused() ? focused().dataset.key : "(nothing)",
+    )
+
+    press(13)
+    await wait(150)
+    check(
+        "OK plays the episode, named by its show",
+        onlyScreen("screen-vodplayer") &&
+            document.getElementById("vodName").textContent === "El Ministerio" &&
+            subtitle() === "S1 · E1",
+        `${screens().join(", ")} / ${subtitle()}`,
+    )
+    avTime = 2900000
+    await wait(1200)
+    check(
+        "near the end, Up Next offers the next episode with Play now focused",
+        !!document.getElementById("vodUpNext") &&
+            document.getElementById("vodUpNext").textContent.indexOf("S1 · E2") !== -1 &&
+            !!focused() &&
+            focused().id === "vodUpNextPlay",
+        focused() ? focused().id : "(nothing)",
+    )
+    press(13)
+    await wait(150)
+    check(
+        "Play now goes straight to it",
+        subtitle() === "S1 · E2" &&
+            lastOpened().indexOf("904") !== -1 &&
+            !document.getElementById("vodUpNext"),
+        `${subtitle()} / ${lastOpened()}`,
+    )
+    check(
+        "and the episode before is marked watched",
+        vod.progressOf({ listId: "vm", kind: "episode", id: opened[opened.length - 2] }).done ===
+            true,
+    )
+    avTime = 2900000
+    await wait(1200)
+    press(10009)
+    await wait(60)
+    check(
+        "Back cancels Up Next and the episode plays on",
+        !document.getElementById("vodUpNext") && onlyScreen("screen-vodplayer"),
+    )
+    await wait(1200)
+    check("and it does not come back for this episode", !document.getElementById("vodUpNext"))
+    listener.onstreamcompleted()
+    await wait(150)
+    check(
+        "at the end the next season starts on its own",
+        subtitle() === "S2 · E1 · Capítulo uno" && lastOpened().indexOf("903") !== -1,
+        `${subtitle()} / ${lastOpened()}`,
+    )
+    listener.onstreamcompleted()
+    await wait(150)
+    check(
+        "after the last episode it returns to the show, in that season, on that episode",
+        onlyScreen("screen-show") &&
+            document.querySelector("#showSeasons .selected .row-name").textContent === "Season 2" &&
+            !!focused() &&
+            focused().dataset.key.indexOf("903") !== -1,
+        `${screens().join(", ")} / ${focused() ? focused().dataset.key : "(nothing)"}`,
+    )
+    check(
+        "and that episode is ticked",
+        !!document.querySelector("#showEpisodes .episode-time.done"),
+    )
+    press(37)
+    await wait(40)
+    check(
+        "left from the episodes lands on the season showing",
+        !!focused() &&
+            focused().classList.contains("season") &&
+            focused().classList.contains("selected"),
+    )
+    press(38)
+    await wait(40)
+    press(13)
+    await wait(60)
+    check(
+        "choosing season 1 shows its episodes, both ticked",
+        document.querySelectorAll("#showEpisodes .episode-time.done").length === 2 &&
+            document.querySelector("#showSeasons .selected .row-name").textContent === "Season 1",
+    )
+    press(10009)
+    await wait(80)
+    check("Back returns to the series grid", onlyScreen("screen-series"), screens().join(", "))
+    press(10009)
+    await wait(80)
+    check("and Back again to the launch screen", onlyScreen("screen-start"), screens().join(", "))
+
+    const film = vod.items("movie")[0]
+    vod.saveProgress(film, 600, 6000)
+    document.getElementById("startMovies").click()
+    await wait(150)
+    check(
+        "a section opens on Continue watching when there is something in it",
+        document.querySelector("#vodCats .vodcat.selected .row-name").textContent ===
+            "Continue watching" &&
+            document.getElementById("moviesMeta").textContent.indexOf("RED removes one") !== -1,
+        (document.querySelector("#vodCats .vodcat.selected .row-name") || {}).textContent,
+    )
+    store.focus("vodGrid", 0, 0)
+    store.emit()
+    await wait(60)
+    press(403)
+    await wait(60)
+    check(
+        "Red on a poster asks before removing it",
+        !!document.getElementById("confirm") &&
+            document.getElementById("confirmText").textContent.indexOf(film.name) !== -1,
+    )
+    document.getElementById("confirmOk").click()
+    await wait(80)
+    check(
+        "and once accepted its progress is gone, and so is the row",
+        !vod.progressOf(film) &&
+            onlyScreen("screen-movies") &&
+            !document.querySelector("#vodCats .vodcat.pinned"),
+        screens().join(", "),
+    )
+
+    vod.saveProgress(film, 600, 6000)
+    vod.openTitle(film)
+    await wait(120)
+    document.getElementById("titleForget").click()
+    await wait(60)
+    document.getElementById("confirmOk").click()
+    await wait(80)
+    check(
+        "the details page removes it too, and stays open",
+        !vod.progressOf(film) &&
+            onlyScreen("screen-title") &&
+            !document.getElementById("titleForget") &&
+            !!focused() &&
+            focused().id === "titlePlay",
+        focused() ? focused().id : "(nothing)",
+    )
+    window.webapis = undefined
+}
+
 async function run() {
     const indexSource = fs.readFileSync(path.join(root, "index.html"), "utf8")
     const scripts = Array.from(indexSource.matchAll(/<script src="([^"]+)"/g)).map((m) => {
@@ -545,26 +793,49 @@ async function run() {
             return !splash || splash.classList.contains("off")
         })(),
     )
+    check("it boots on the launch screen", onlyScreen("screen-start"), screens().join(", "))
+    check(
+        "with Live TV, Movies and Series, and no side menu",
+        Array.prototype.map
+            .call(document.querySelectorAll("#startTiles .start-tile-label"), (el) => {
+                return el.textContent
+            })
+            .join("|") === "Live TV|Movies|Series" && !document.querySelector(".rail"),
+    )
+    check(
+        "the launch screen carries the clock",
+        /^\d\d:\d\d$/.test((document.getElementById("startClock") || {}).textContent || ""),
+    )
+    check(
+        "and an icon on each tile",
+        document.querySelectorAll("#startTiles .start-tile-icon svg").length === 3,
+    )
+    check(
+        "the focus starts on Live TV",
+        !!focused() && focused().id === "startLive",
+        focused() ? focused().id : "(nothing)",
+    )
+    // The first frame's focus pass may still be pending this soon after boot: no remote is
+    // that quick, so the test waits for it before its first key.
+    await wait(150)
+    // Down here, right on the TV: jsdom gives every element a row of its own.
+    press(40)
+    await wait(40)
+    check("the next tile is Movies", !!focused() && focused().id === "startMovies")
+    press(38)
+    await wait(40)
+    for (let i = 0; i < 3; i++) press(40)
+    await wait(40)
+    check(
+        "below the tiles: Recent, Favorites and Sources",
+        !!focused() && focused().id === "startRecents",
+        focused() ? focused().id : "(nothing)",
+    )
+    document.getElementById("startSources").click()
+    await wait(80)
     check("home screen mounted", !!document.getElementById("screen-home"))
     check("and it is the only screen mounted", onlyScreen("screen-home"), screens().join(", "))
-    check(
-        "the rail has its five sections",
-        document.querySelectorAll(".rail .rail-btn").length === 5,
-    )
-    check(
-        "the rail carries clock and count at the bottom",
-        (function () {
-            const clock = document.getElementById("railClock")
-            const counts = document.getElementById("railCounts")
-            return (
-                !!clock &&
-                /^\d\d:\d\d$/.test(clock.textContent) &&
-                !!counts &&
-                counts.textContent.indexOf("source") !== -1
-            )
-        })(),
-        (document.getElementById("railClock") || {}).textContent,
-    )
+    check("there is no side menu in a section either", !document.querySelector(".rail"))
     check(
         "on boot the factory public source is there",
         document.querySelectorAll("#sourceList .row.source").length === 1 &&
@@ -585,9 +856,6 @@ async function run() {
         document.querySelectorAll("#typeList .type").length === 4,
     )
     checkClasses("the home uses the classes the CSS styles", [
-        [".rail .brand", "marca"],
-        [".rail .wordmark", "marca de texto"],
-        [".rail .rail-btn.active", "rail activo"],
         [".bar h1", "titular"],
         ["#listCounts.meta", "resumen"],
         ["#typeList .type", "filtro de tipo"],
@@ -617,9 +885,10 @@ async function run() {
     press(37)
     check("left leads to the type filter", !!focused() && focused().classList.contains("type"))
     press(37)
-    check("left again reaches the rail", !!focused() && focused().classList.contains("rail-btn"))
-    press(39)
-    check("right returns to the filter", !!focused() && focused().classList.contains("type"))
+    check(
+        "left at the edge stays on the filter",
+        !!focused() && focused().classList.contains("type"),
+    )
     press(39)
     check("right again returns to the sources", !!focused() && focused().classList.contains("row"))
 
@@ -652,28 +921,10 @@ async function run() {
     document.getElementById("formSave").click()
     await wait(80)
     check("the source is added and it returns home", !!document.getElementById("screen-home"))
-    check(
-        "the rail has a shortcut to that source",
-        (function () {
-            const row = document.querySelector(".rail-src[data-list]")
-            const list = window.App.store.state.lists[0]
-            return !!row && !!list && row.textContent.indexOf(list.name) !== -1
-        })(),
-        (document.querySelector(".rail-src[data-list]") || {}).textContent,
-    )
-    window.App.tv.set("rail", 4, 0)
-    await wait(40)
-    press(40)
-    await wait(60)
-    check(
-        "and the remote goes down from Favorites to the source shortcut",
-        !!focused() && focused().classList.contains("rail-src"),
-        focused() ? focused().className : "(nothing)",
-    )
-    press(13)
+    document.querySelector("#sourceList .row.source").click()
     await wait(150)
     check(
-        "and OK enters the TV of that source",
+        "OK on a source enters the TV of that source",
         window.App.store.state.screen === "tv" && !!window.App.store.state.tvSource,
         `${window.App.store.state.screen} / tvSource=${window.App.store.state.tvSource}`,
     )
@@ -920,11 +1171,11 @@ async function run() {
     check("on jumping the number is cleared", !document.getElementById("numBuffer"))
 
     window.App.tv.set("tvChannels", 0, 0)
-    await wait(80)
-    press(13)
-    await wait(150)
+    await wait(300)
+    check("passing over a channel does not open it straight away", !window.App.store.state.preview)
+    await wait(700)
     check(
-        "OK on a channel previews without leaving the TV",
+        "resting on a channel previews it without leaving the TV",
         !!document.getElementById("screen-tv") && !document.getElementById("screen-player"),
         screens().join(", "),
     )
@@ -954,12 +1205,10 @@ async function run() {
         window.App.store.state.preview ? window.App.store.state.preview.name : "(no preview)",
     )
 
-    window.App.tv.set("tvPreview", 0, 0)
-    await wait(60)
     press(13)
     await wait(120)
     check(
-        "OK on top of the preview opens fullscreen",
+        "OK on the channel opens it full screen",
         !!document.getElementById("screen-player"),
         screens().join(", "),
     )
@@ -1146,8 +1395,16 @@ async function run() {
         `${beforeChUp} -> ${window.App.store.state.playing.channel.name}`,
     )
 
+    const watching = window.App.store.state.playing.channel
     press(10009)
     await wait(80)
+    check(
+        "Back lands on the channel that was playing, in its category, not at the top",
+        !!focused() &&
+            focused().dataset.url === watching.url &&
+            window.App.store.state.catName === (watching.group || "Otros"),
+        `${focused() ? focused().dataset.url : "(nothing)"} / ${window.App.store.state.catName}`,
+    )
     check(
         "back leaves the player, to the TV with the three columns",
         !!document.getElementById("screen-tv") && !!document.querySelector(".browse-preview"),
@@ -1178,20 +1435,28 @@ async function run() {
     press(10009)
     await wait(80)
     check(
-        "and another Back returns to sources",
-        window.App.store.state.screen === "home",
+        "and another Back returns to the launch screen",
+        window.App.store.state.screen === "start",
         `screen=${window.App.store.state.screen}`,
     )
+    window.App.store.goHome()
+    await wait(80)
 
-    document.getElementById("navTv").click()
+    window.App.store.goStart()
+    await wait(60)
+    document.getElementById("startLive").click()
     await wait(120)
     check("the TV section exists", !!document.getElementById("screen-tv"))
     check("and the sources one is no longer mounted", onlyScreen("screen-tv"), screens().join(", "))
-    window.App.tv.set("rail", 1, 0)
-    press(39)
+    check(
+        "Live TV opens with the focus on the categories",
+        !!focused() && focused().classList.contains("tvcat"),
+        focused() ? focused().className : "(nothing)",
+    )
+    window.App.tv.set("tvActions", 0, 0)
     await wait(60)
     check(
-        "from the rail right enters through the button, not through the search box",
+        "the Categories button opens the bar",
         !!focused() && focused().id === "catsBtn",
         focused() ? focused().id : "(nothing)",
     )
@@ -1342,14 +1607,14 @@ async function run() {
         `${document.querySelectorAll("#tvCats .tvcat").length} categorías`,
     )
 
-    document.getElementById("navRecents").click()
+    window.App.store.openRecents()
     await wait(60)
     check(
         "recent lists the last watched",
         document.querySelectorAll("#recentsList .channel").length >= 1,
         `${document.querySelectorAll("#recentsList .channel").length} rows`,
     )
-    document.getElementById("navFavs").click()
+    window.App.store.openFavorites()
     await wait(60)
     check("the favorites are listed", document.querySelectorAll("#favList .channel").length === 1)
     checkClasses("favorites uses the classes the CSS styles", [
@@ -1664,20 +1929,8 @@ async function run() {
     document.getElementById("formCancel").click()
     await wait(80)
 
-    const rail = document.querySelector(".rail")
-    document.getElementById("navHome").click()
-    await wait(80)
-    const markHome = rail.style.getPropertyValue("--rail-mark-y")
-    document.getElementById("navTv").click()
-    await wait(80)
-    const markTv = rail.style.getPropertyValue("--rail-mark-y")
-    check(
-        "the rail marker follows the active section",
-        markHome !== "" && markTv !== "" && markHome !== markTv,
-        `${markHome} -> ${markTv}`,
-    )
-
     await movies()
+    await series()
 
     check("without errors after the whole session", errors.length === 0, errors.join(" | "))
 

@@ -76,7 +76,9 @@ App.uiScreens = App.uiScreens || {}
             else if (!vod.items(vod.ui.kind).length)
                 message = status.errors.length
                     ? status.errors[0].message
-                    : "None of your sources has movies. Xtream panels and playlists with films do."
+                    : vod.ui.kind === "series"
+                      ? "None of your sources has series. Xtream panels and playlists with episodes do."
+                      : "None of your sources has movies. Xtream panels and playlists with films do."
             else if (vod.ui.query) message = "No title matches your search."
             return html`<div class="vod-grid" id="vodGrid"><p class="empty">${message}</p></div>`
         }
@@ -87,12 +89,15 @@ App.uiScreens = App.uiScreens || {}
         </div>`
     }
 
+    // Movies and Series: the same screen, told apart by the section that opened it.
     App.uiScreens.movies = function Movies() {
         const view = vod.browse()
         const status = view.status
-        return html`<section class="screen" id="screen-movies">
+        const series = vod.ui.kind === "series"
+        const noun = series ? "series" : "movies"
+        return html`<section class="screen" id=${series ? "screen-series" : "screen-movies"}>
             <${Bar}
-                title="Movies"
+                title=${series ? "Series" : "Movies"}
                 titleId="moviesTitle"
                 meta=${view.label}
                 metaId="moviesMeta"
@@ -115,7 +120,8 @@ App.uiScreens = App.uiScreens || {}
                     countId="vodSearchCount"
                     scope="vod"
                     value=${vod.ui.query}
-                    placeholder="Search movies"
+                    placeholder=${`Search ${noun}`}
+                    resetKey=${noun}
                     count=${vod.ui.query ? store.formatCount(view.page.total) : ""}
                     onInput=${function (value) {
                         vod.setQuery(value)
@@ -129,7 +135,7 @@ App.uiScreens = App.uiScreens || {}
                             ? html`<div class="row pending">
                                   <span class="pending-dot"></span>
                                   <span class="row-main">
-                                      <span class="row-name">Loading movies</span>
+                                      <span class="row-name">Loading ${noun}</span>
                                       <span class="row-sub"
                                           >${status.loading === 1 ? "1 source" : `${status.loading} sources`}…</span
                                       >

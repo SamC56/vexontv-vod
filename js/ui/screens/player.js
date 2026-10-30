@@ -136,6 +136,10 @@ App.uiScreens = App.uiScreens || {}
                       </div>`
                     : null
             }
+            <${kit.QualityBadge}
+                playing=${state.playStatus === "playing"}
+                watchKey=${channel.url}
+            />
             ${state.zapOpen ? html`<${App.uiScreens.zap} />` : null}
             <div
                 class=${`overlay${

@@ -9,7 +9,6 @@ App.ui = (function () {
     const screens = App.uiScreens
 
     const useEffect = kit.useEffect
-    const Rail = kit.Rail
     const Home = screens.home
     const TvScreen = screens.tv
     const Recents = screens.recents
@@ -20,6 +19,8 @@ App.ui = (function () {
     const Player = screens.player
     const Movies = screens.movies
     const Title = screens.title
+    const Show = screens.show
+    const Start = screens.start
     const VodPlayer = screens.vodPlayer
     const Loader = screens.loader
     const Toast = screens.toast
@@ -38,15 +39,21 @@ App.ui = (function () {
 
         const state = store.state
         const playing = state.screen === "player" || state.screen === "vodplayer"
-        return html`<div class=${`app${playing ? " playing" : ""}`}>
+        const launch = state.screen === "start"
+        return html`<div class=${`app${playing ? " playing" : ""}${launch ? " launch" : ""}`}>
             <div class="backdrop" id="backdrop" aria-hidden="true"></div>
-            <${Rail} screen=${state.screen} />
             <main class="main">
+                ${launch ? html`<${Start} />` : null}
                 ${!playing && state.screen === "home" ? html`<${Home} />` : null}
                 ${!playing && state.screen === "tv" ? html`<${TvScreen} />` : null}
                 ${!playing && state.screen === "recents" ? html`<${Recents} />` : null}
                 ${!playing && state.screen === "favs" ? html`<${Favs} />` : null}
-                ${!playing && state.screen === "movies" ? html`<${Movies} />` : null}
+                ${
+                    !playing && (state.screen === "movies" || state.screen === "series")
+                        ? html`<${Movies} />`
+                        : null
+                }
+                ${!playing && state.screen === "show" ? html`<${Show} />` : null}
                 ${!playing && state.screen === "title" ? html`<${Title} />` : null}
                 ${!playing && state.screen === "cats" ? html`<${Categories} />` : null}
                 ${

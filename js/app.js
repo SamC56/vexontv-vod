@@ -17,36 +17,27 @@ var App = App || {} // eslint-disable-line no-var -- shared namespace, no module
     }
 
     function defineZones() {
-        zone("rail", ".rail .rail-btn, .rail .rail-src", {
+        zone("startTiles", "#startTiles .start-tile", {
             onEdge: function (dir) {
-                if (dir !== "right") return
-                const screen = store.state.screen
-                if (screen === "home") tv.set("types", 0, 0)
-                else if (screen === "tv") tv.set("tvActions", 0, 0)
-                else if (screen === "recents") tv.set("recentsSearch", 0, 0)
-                else if (screen === "favs") tv.set("favsSearch", 0, 0)
-                else if (screen === "movies") tv.set("vodCats", 0, 0)
-                else if (screen === "title") tv.set("titleActions", 0, 0)
-                else if (screen === "cats") tv.set("catActions", 0, 0)
-                else if (screen === "add") tv.set(store.state.addType ? "fields" : "addTypes", 0, 0)
-                else if (screen === "edit") tv.set("fields", 0, 0)
-                else if (screen === "player")
-                    tv.set(store.state.playError ? "playError" : "overlay", 0, 0)
-                else tv.set("sources", 0, 0)
+                if (dir === "down") tv.set("startLinks", 0, 0)
+            },
+        })
+
+        zone("startLinks", "#startLinks .btn", {
+            onEdge: function (dir) {
+                if (dir === "up") tv.set("startTiles", 0, 0)
             },
         })
 
         zone("homeActions", "#homeActions .btn", {
             onEdge: function (dir) {
                 if (dir === "down") tv.set("types", 0, 0)
-                else if (dir === "left" || dir === "up") tv.set("rail", 0, 0)
             },
         })
 
         zone("types", "#typeList .type", {
             onEdge: function (dir) {
-                if (dir === "left") tv.set("rail", 0, 0)
-                else if (dir === "right") tv.set("sources", 0, 0)
+                if (dir === "right") tv.set("sources", 0, 0)
                 else if (dir === "up") tv.set("homeActions", 0, 0)
             },
         })
@@ -83,7 +74,6 @@ var App = App || {} // eslint-disable-line no-var -- shared namespace, no module
                     if (dir === "left") tv.set("sources", editRow, 0)
                     else if (dir === "up") showEdit(Math.max(0, editRow - 1))
                     else if (dir === "down") showEdit(Math.min(buttons.length - 1, editRow + 1))
-                    else if (dir === "right") tv.set("rail", 0, 0)
                 },
             },
         )
@@ -92,7 +82,6 @@ var App = App || {} // eslint-disable-line no-var -- shared namespace, no module
             onEdge: function (dir) {
                 if (dir === "down") tv.set("tvSearch", 0, 0)
                 else if (dir === "right") tv.set("tvSearch", 0, 0)
-                else if (dir === "left") tv.set("rail", 0, 0)
             },
         })
 
@@ -108,7 +97,6 @@ var App = App || {} // eslint-disable-line no-var -- shared namespace, no module
             onEdge: function (dir) {
                 if (dir === "up") tv.set("tvSearch", 0, 0)
                 else if (dir === "right") tv.set("tvChannels", 0, 0)
-                else if (dir === "left") tv.set("rail", 0, 0)
             },
         })
 
@@ -128,8 +116,7 @@ var App = App || {} // eslint-disable-line no-var -- shared namespace, no module
 
         zone("vodSort", "#vodSort .seg-btn", {
             onEdge: function (dir) {
-                if (dir === "left") tv.set("rail", 0, 0)
-                else if (dir === "right") tv.set("vodSearch", 0, 0)
+                if (dir === "right") tv.set("vodSearch", 0, 0)
                 else if (dir === "down") tv.set("vodCats", 0, 0)
             },
         })
@@ -145,7 +132,6 @@ var App = App || {} // eslint-disable-line no-var -- shared namespace, no module
             onEdge: function (dir) {
                 if (dir === "up") tv.set("vodSort", 0, 0)
                 else if (dir === "right") tv.set("vodGrid", 0, 0)
-                else if (dir === "left") tv.set("rail", 0, 0)
             },
         })
 
@@ -162,37 +148,29 @@ var App = App || {} // eslint-disable-line no-var -- shared namespace, no module
             },
         })
 
-        zone("titleActions", "#titleActions .btn", {
-            onEdge: function (dir) {
-                if (dir === "left") tv.set("rail", 0, 0)
-            },
-        })
+        zone("titleActions", "#titleActions .btn")
 
         zone("recentsSearch", "#recentsSearch", {
             onEdge: function (dir) {
-                if (dir === "up") tv.set("rail", 0, 0)
-                else if (dir === "down") tv.set("recentsList", 0, 0)
+                if (dir === "down") tv.set("recentsList", 0, 0)
             },
         })
 
         zone("recentsList", "#recentsList .channel", {
             onEdge: function (dir) {
                 if (dir === "up") tv.set("recentsSearch", 0, 0)
-                else if (dir === "left") tv.set("rail", 0, 0)
             },
         })
 
         zone("favsSearch", "#favsSearch", {
             onEdge: function (dir) {
-                if (dir === "up") tv.set("rail", 0, 0)
-                else if (dir === "down") tv.set("favsList", 0, 0)
+                if (dir === "down") tv.set("favsList", 0, 0)
             },
         })
 
         zone("favsList", "#favList .channel", {
             onEdge: function (dir) {
                 if (dir === "up") tv.set("favsSearch", 0, 0)
-                else if (dir === "left") tv.set("rail", 0, 0)
             },
         })
 
@@ -200,7 +178,6 @@ var App = App || {} // eslint-disable-line no-var -- shared namespace, no module
             onEdge: function (dir) {
                 if (dir === "down") tv.set("cats", 0, 0)
                 else if (dir === "right") tv.set("catSearch", 0, 0)
-                else if (dir === "left" || dir === "up") tv.set("rail", 0, 0)
             },
         })
 
@@ -215,20 +192,14 @@ var App = App || {} // eslint-disable-line no-var -- shared namespace, no module
         zone("cats", "#catList .cat", {
             onEdge: function (dir) {
                 if (dir === "up") tv.set("catSearch", 0, 0)
-                else if (dir === "left") tv.set("rail", 0, 0)
             },
         })
 
-        zone("addTypes", "#addTypes .typecard", {
-            onEdge: function (dir) {
-                if (dir === "left") tv.set("rail", 0, 0)
-            },
-        })
+        zone("addTypes", "#addTypes .typecard")
 
         zone("fields", "#sourceForm input:not(.file), #sourceForm textarea, #sourceForm .pick", {
             onEdge: function (dir) {
                 if (dir === "down") tv.set("formActions", 0, 0)
-                else if (dir === "left") tv.set("rail", 0, 0)
             },
         })
 
@@ -279,6 +250,33 @@ var App = App || {} // eslint-disable-line no-var -- shared namespace, no module
 
         zone("vodTracks", "#vodTracks .vod-track-opt")
 
+        zone("vodUpNext", "#vodUpNext .btn")
+
+        zone("showActions", "#showActions .btn", {
+            onEdge: function (dir) {
+                if (dir === "down") tv.set("showEpisodes", 0, 0)
+            },
+        })
+
+        zone("showSeasons", "#showSeasons .season", {
+            onEdge: function (dir) {
+                if (dir === "right") tv.set("showEpisodes", 0, 0)
+                else if (dir === "up") tv.set("showActions", 0, 0)
+            },
+        })
+
+        // Left goes back to the season that is showing, not to the top of the list.
+        zone("showEpisodes", "#showEpisodes .episode", {
+            onEdge: function (dir) {
+                if (dir === "up") tv.set("showActions", 0, 0)
+                else if (dir === "left") {
+                    const seasons = ui.qsa("#showSeasons .season")
+                    const at = seasons.indexOf(document.querySelector("#showSeasons .selected"))
+                    tv.set("showSeasons", Math.max(0, at), 0)
+                }
+            },
+        })
+
         zone("confirm", "#confirm .btn")
     }
 
@@ -297,23 +295,25 @@ var App = App || {} // eslint-disable-line no-var -- shared namespace, no module
         }
         if (store.state.screen === "vodplayer") {
             const vod = App.vod
-            if (vod.ui.trackMenu) vod.closeTracks()
+            if (vod.ui.upNext) vod.dismissUpNext()
+            else if (vod.ui.trackMenu) vod.closeTracks()
             else if (vod.ui.seek) vod.cancelSeek()
             else if (vod.ui.menu) vod.closeMenu()
             else if (vod.ui.osd && !vod.ui.paused) vod.hideOsd()
             else vod.exitPlayer()
             return true
         }
-        if (store.state.screen === "title") {
+        if (store.state.screen === "title" || store.state.screen === "show") {
             App.vod.backFromTitle()
             return true
         }
-        if (store.state.screen === "edit") {
+        // Adding or editing a source belongs to Sources; everything else returns to the start.
+        if (store.state.screen === "edit" || store.state.screen === "add") {
             store.goHome()
             return true
         }
-        if (store.state.screen !== "home") {
-            store.goHome()
+        if (store.state.screen !== "start") {
+            store.goStart()
             return true
         }
         try {
@@ -333,6 +333,11 @@ var App = App || {} // eslint-disable-line no-var -- shared namespace, no module
         }
 
         if (!element) return
+
+        if ((state.screen === "movies" || state.screen === "series") && element.dataset.key) {
+            App.vod.confirmForget(App.vod.itemByKey(element.dataset.key), "vodCats")
+            return
+        }
 
         if (state.screen === "home") {
             const list = element.dataset.list ? store.listById(element.dataset.list) : null
@@ -367,7 +372,7 @@ var App = App || {} // eslint-disable-line no-var -- shared namespace, no module
             return code !== tv.KEY.ENTER && code !== tv.KEY.LEFT && code !== tv.KEY.RIGHT
         }
         // The audio and subtitle menu is ordinary focus: the arrows and OK move through it.
-        if (vod.ui.trackMenu || vod.ui.menu) {
+        if (vod.ui.upNext || vod.ui.trackMenu || vod.ui.menu) {
             const navigation = [tv.KEY.UP, tv.KEY.DOWN, tv.KEY.LEFT, tv.KEY.RIGHT, tv.KEY.ENTER]
             return navigation.indexOf(code) === -1
         }
@@ -456,7 +461,7 @@ var App = App || {} // eslint-disable-line no-var -- shared namespace, no module
         defineZones()
         tv.listen(onKey, { onFocus: store.focusChanged })
         ui.render()
-        store.goHome()
+        store.goStart()
     }
 
     document.addEventListener("DOMContentLoaded", start)

@@ -66,12 +66,23 @@ App.store = (function () {
     }
 
     const PROGRESS_MS = 250
+    const PREVIEW_MS = 800
+
+    // Categories this viewer wants first: panels prefix them by country, "UK| GENERAL".
+    const FIRST_GROUPS = /^\s*UK\s*[|:\-]/i
+
+    function byPreference(a, b) {
+        return (
+            Number(FIRST_GROUPS.test(b)) - Number(FIRST_GROUPS.test(a)) || a.localeCompare(b, "en")
+        )
+    }
 
     let listeners = []
     let loadTick = null
     let toastSeq = 0
     let toastTimer = null
     let digitsTimer = null
+    let previewTimer = null
 
     function subscribe(fn) {
         listeners.push(fn)
@@ -149,7 +160,8 @@ App.store = (function () {
         if (screen === "recents") return "recentsList"
         if (screen === "favs") return "favsList"
         if (screen === "home") return "sources"
-        if (screen === "movies") return "vodCats"
+        if (screen === "start") return "startTiles"
+        if (screen === "movies" || screen === "series") return "vodCats"
         return null
     }
 
@@ -693,7 +705,7 @@ App.store = (function () {
         state.catDraft = null
         set({ screen: "tv" })
         notify("Categories saved")
-        focus("tvSearch")
+        focus("tvCats")
     }
 
     function setCatSearch(value) {
@@ -705,9 +717,16 @@ App.store = (function () {
         focus("sources")
     }
 
+    // The launch screen: Live TV, Movies and Series. Back from any section comes here.
+    function goStart() {
+        set({ screen: "start" })
+        focus("startTiles")
+    }
+
     function openTv() {
+        // Categories first: pick one, then a channel in it.
         set({ screen: "tv", tvSource: null, preview: null })
-        focus("tvSearch")
+        focus("tvCats")
         const todo = state.lists
             .filter((list) => {
                 return !state.channels[list.id] && !state.pending[list.id]
@@ -723,7 +742,7 @@ App.store = (function () {
     function openSource(listId) {
         if (!listById(listId)) return
         set({ screen: "tv", tvSource: listId, preview: null })
-        focus("tvSearch")
+        focus("tvCats")
         if (!state.channels[listId] && !state.pending[listId]) {
             loadWithNotice([listId], listById(listId).name)
         }
@@ -927,11 +946,22 @@ App.store = (function () {
         emit()
     }
 
+    // A channel the focus rests on in Live TV plays in the preview; OK opens it full screen.
+    // Only once the focus stays: scrolling past channels does not open each one.
     function focusChanged(element) {
+        if (previewTimer) clearTimeout(previewTimer)
+        previewTimer = null
         if (!element || !element.dataset || !element.dataset.url) return
         const channel = channelByUrl(element.dataset.url, element.dataset.list)
         if (!channel) return
         loadProgramFor(channel)
+        const inList = element.parentNode && element.parentNode.id === "tvChannels"
+        if (state.screen === "tv" && inList) {
+            previewTimer = setTimeout(() => {
+                previewTimer = null
+                if (state.screen === "tv") selectPreview(channel)
+            }, PREVIEW_MS)
+        }
     }
 
     function play(channel, listId, list) {
@@ -1073,6 +1103,7 @@ App.store = (function () {
 
     function exitPlayer() {
         const origin = state.playing ? state.playing.origin : null
+        const channel = state.playing ? state.playing.channel : null
         state.playing = null
         state.nowProgram = null
         state.nextProgram = null
@@ -1080,6 +1111,15 @@ App.store = (function () {
         state.playError = null
         state.zapOpen = false
         state.menuFocus = false
+        // Back in Live TV: on the channel that was playing, in its category, even after a
+        // change of channel from the player's list.
+        if (origin && origin.screen === "tv" && channel && channel.url) {
+            const group = channel.group || "Otros"
+            const url = channel.url.replace(/["\\]/g, "\\$&")
+            set({ screen: "tv", catName: group, preview: channel })
+            focus("tvChannels", 0, 0, `#tvChannels .channel[data-url="${url}"]`)
+            return
+        }
         if (origin && origin.screen) {
             set({ screen: origin.screen })
             focus(origin.zone)
@@ -1105,15 +1145,17 @@ App.store = (function () {
         emit()
     }
 
-    function askConfirm(message, onAccept) {
-        set({ confirm: { message, onAccept, returnScreen: state.screen } })
+    // returnZone: where the focus goes when the dialog closes, on the screen that asked.
+    function askConfirm(message, onAccept, returnZone) {
+        set({ confirm: { message, onAccept, returnScreen: state.screen, returnZone } })
         focus("confirm", 0, 0)
     }
 
     function closeConfirm() {
-        const screen = state.confirm ? state.confirm.returnScreen : null
+        const confirm = state.confirm || {}
         set({ confirm: null })
-        if (screen === "edit") focus("fields")
+        if (confirm.returnZone) focus(confirm.returnZone, 0, 0)
+        else if (confirm.returnScreen === "edit") focus("fields")
         else goHome()
     }
 
@@ -1153,9 +1195,7 @@ App.store = (function () {
         })
 
         const needle = searchOf("tv").trim().toLowerCase()
-        const names = Object.keys(counts).sort((a, b) => {
-            return a.localeCompare(b, "en")
-        })
+        const names = Object.keys(counts).sort(byPreference)
         const rows = names.map((name) => {
             return { name, count: counts[name], sources: Object.keys(lists[name]).length }
         })
@@ -1263,6 +1303,7 @@ App.store = (function () {
         updateList,
         removeList,
         goHome,
+        goStart,
         openTv,
         openRecents,
         openFavorites,

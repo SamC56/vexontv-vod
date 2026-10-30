@@ -303,6 +303,37 @@ App.player = (function () {
         return out
     }
 
+    const CODECS = { H264: "H.264", AVC: "H.264", AVC1: "H.264", HEVC: "HEVC", H265: "HEVC" }
+
+    function resolution(height) {
+        if (height >= 2000) return "4K"
+        return height > 0 ? `${height}p` : ""
+    }
+
+    // What is on screen now, in words: "1080p · HEVC · 8.2 Mb/s". Whatever the engine leaves
+    // out is left out; nothing known gives "".
+    function quality() {
+        const AV = avplay()
+        let height = 0
+        let codec = ""
+        let bitrate = 0
+        if (AV) {
+            try {
+                ;(AV.getCurrentStreamInfo() || []).forEach((track) => {
+                    if (track.type !== "VIDEO") return
+                    const info = trackInfo(track.extra_info)
+                    height = parseInt(info.Height || info.height, 10) || 0
+                    const fourCC = String(info.fourCC || "").toUpperCase()
+                    codec = CODECS[fourCC] || fourCC
+                    bitrate = parseInt(info.Bit_rate || info.bitrate, 10) || 0
+                })
+            } catch {}
+        } else if (video && video.videoHeight) height = video.videoHeight
+        const parts = [resolution(height), codec]
+        if (bitrate > 0) parts.push(`${(bitrate / 1000000).toFixed(1)} Mb/s`)
+        return parts.filter(Boolean).join(" · ")
+    }
+
     function selectTrack(type, index) {
         const AV = avplay()
         if (!AV) return false
@@ -379,6 +410,7 @@ App.player = (function () {
         duration,
         seekTo,
         tracks,
+        quality,
         selectTrack,
         silenceSubtitles,
         state,

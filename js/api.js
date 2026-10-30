@@ -12,6 +12,8 @@ App.api = (function () {
     const EPISODE_X = /^(.*?)[\s._-]*\b(\d{1,2})x(\d{2,3})\b(.*)$/i
     const SEASON_ONLY = /^(.*?)[\s._-]*\bS(\d{1,2})\s*$/i
     const YEAR = /\s*[([]((?:19|20)\d{2})[)\]]\s*$/
+    // Panels head each category with a fake channel, "#### UK NEWS ####": not something to play.
+    const HEADING = /^\s*([#=*~★])\1+.*\1\1\s*$/
     // Scene names put the quality where the episode title would be.
     const RELEASE_TAG = /^(?:\d{3,4}p|4k|uhd|fhd|hdtv|web(?:-?dl|rip)?|x26[45]|hevc|bluray)\b/i
     const TIMEOUT_MS = 60000
@@ -58,7 +60,12 @@ App.api = (function () {
         }
     }
 
+    function isHeading(name) {
+        return HEADING.test(name || "")
+    }
+
     function classify(url, group, name) {
+        if (isHeading(name)) return "heading"
         if (MOVIE_PATH.test(url)) return "movie"
         if (SERIES_PATH.test(url)) return "episode"
         // Group names are not trusted on their own: "Cine" is as often a live channel pack.
@@ -187,7 +194,8 @@ App.api = (function () {
                 id: entry.url,
                 season: parsed ? parsed.season : season ? Number(season[2]) : null,
                 episode: parsed ? parsed.episode : null,
-                title: (parsed && parsed.title) || entry.name,
+                // "Show S01E02" says nothing past its number: the label is enough.
+                title: parsed ? parsed.title : entry.name,
                 logo: entry.logo,
                 url: entry.url,
             })
@@ -353,7 +361,9 @@ App.api = (function () {
             })
             .then((list) => {
                 if (!list || !list.length) throw new Error("The playlist has no live channels")
-                streams = list
+                streams = list.filter((stream) => {
+                    return !isHeading(stream.name)
+                })
                 if (onProgress) onProgress({ label: "Preparing", count: streams.length })
                 return streams.map((stream) => {
                     return {
@@ -870,16 +880,20 @@ App.api = (function () {
                                     ? data.js.data
                                     : (data && data.js) || []
                             if (!rows.length) throw new Error("The portal returned no channels")
-                            return rows.map((row) => {
-                                return {
-                                    name: row.name || "Canal",
-                                    group: genres[String(row.tv_genre_id)] || "Otros",
-                                    logo: row.logo || row.tv_icon || "",
-                                    cmd: row.cmd || row.cmds || "",
-                                    streamId: String(row.id || ""),
-                                    url: "",
-                                }
-                            })
+                            return rows
+                                .filter((row) => {
+                                    return !isHeading(row.name)
+                                })
+                                .map((row) => {
+                                    return {
+                                        name: row.name || "Canal",
+                                        group: genres[String(row.tv_genre_id)] || "Otros",
+                                        logo: row.logo || row.tv_icon || "",
+                                        cmd: row.cmd || row.cmds || "",
+                                        streamId: String(row.id || ""),
+                                        url: "",
+                                    }
+                                })
                         })
                 })
         })
@@ -1005,6 +1019,7 @@ App.api = (function () {
         parseMkvTracks,
         loadMkvTracks,
         classify,
+        isHeading,
         parseEpisode,
         parseTitle,
         seasonsOf,

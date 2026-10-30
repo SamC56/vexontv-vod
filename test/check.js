@@ -125,6 +125,25 @@ check(
     api.parseM3u(source("test/sample.m3u")).length === 9,
 )
 
+;[
+    ["#### UK NEWS ####", true],
+    ["### UK GENERAL HEVC/HD ###", true],
+    ["##### 4K ᵁᴴᴰ ³⁸⁴⁰ᴾ #####", true],
+    ["== Sports ==", true],
+    ["US: CBS 4 (#) BUFFALO HD", false],
+    ["- NO EVENT STREAMING - | 8K EXCLUSIVE | UK: RALLY PPV 17", false],
+    ["#1 Hits", false],
+    ["BBC One HD", false],
+].forEach((item) => {
+    check(`isHeading ${JSON.stringify(item[0])}`, api.isHeading(item[0]) === item[1])
+})
+check(
+    "a playlist's category headings are not channels",
+    api.parseM3u(
+        '#EXTM3U\n#EXTINF:-1 group-title="UK| NEWS",#### UK NEWS ####\nhttp://h/live/u/p/1.ts\n#EXTINF:-1 group-title="UK| NEWS",Sky News\nhttp://h/live/u/p/2.ts\n',
+    ).length === 1,
+)
+
 const classifyCases = [
     ["https://panel.example/live/u/p/1.ts", "Cine", "Movistar Cine", "live"],
     ["https://cdn.example/cine/stream.m3u8", "Cine", "Cine 24h", "live"],
@@ -364,6 +383,56 @@ check(
         audioIndex: 1,
     }).text === 5,
 )
+
+const ep = (id, season, episode) => {
+    return { id, season, episode, listId: "sx", kind: "episode" }
+}
+const special = ep("sp", 0, 1)
+const e11 = ep("e11", 1, 1)
+const e12 = ep("e12", 1, 2)
+const e21 = ep("e21", 2, 1)
+const showSeasons = [
+    { number: 0, episodes: [special] },
+    { number: 1, episodes: [e11, e12] },
+    { number: 2, episodes: [e21] },
+]
+check("nextEpisode: the next in the season", vod.nextEpisode(showSeasons, e11) === e12)
+check("nextEpisode: into the next season", vod.nextEpisode(showSeasons, e12) === e21)
+check("nextEpisode: none after the last", vod.nextEpisode(showSeasons, e21) === null)
+check(
+    "nextEpisode: specials do not lead into season 1",
+    vod.nextEpisode(showSeasons, special) === null,
+)
+check(
+    "episodeLabel",
+    vod.episodeLabel(e21) === "S2 · E1" && vod.episodeLabel({ episode: 3 }) === "Episode 3",
+)
+global.localStorage.removeItem("ts.progress")
+vod.init()
+check(
+    "nextToWatch: a new show opens on season 1, not the specials",
+    vod.nextToWatch(showSeasons) === e11,
+)
+vod.saveProgress(e11, 600, 2800, { listId: "sx", kind: "series", id: "show" }, true)
+check("nextToWatch: the episode left halfway", vod.nextToWatch(showSeasons) === e11)
+vod.saveProgress(e11, 2790, 2800, { listId: "sx", kind: "series", id: "show" }, true)
+check("nextToWatch: after a finished one, the next", vod.nextToWatch(showSeasons) === e12)
+vod.saveProgress(e12, 2790, 2800, { listId: "sx", kind: "series", id: "show" }, true)
+check("nextToWatch: across the season", vod.nextToWatch(showSeasons) === e21)
+check(
+    "a finished episode with more after it keeps the show in Continue watching",
+    vod.progressOf(e12).done === true && vod.progressOf(e12).more === true,
+)
+const showKey = { listId: "sx", kind: "series", id: "show" }
+check("hasProgress sees a show through its episodes", vod.hasProgress(showKey))
+vod.saveProgress({ listId: "sx", kind: "movie", id: "film" }, 100, 6000)
+vod.forgetProgress(showKey)
+check(
+    "forgetProgress takes every episode of the show and leaves the rest",
+    !vod.hasProgress(showKey) && !!vod.progressOf({ listId: "sx", kind: "movie", id: "film" }),
+)
+global.localStorage.removeItem("ts.progress")
+vod.state.progress = {}
 
 check(
     "language names read either code",
@@ -629,6 +698,30 @@ check(
     })(),
     JSON.stringify(store.tvCategories().rows),
 )
+check(
+    "UK categories come first, the rest A–Z after",
+    (function () {
+        const saved = store.state.channels.l2
+        store.state.channels.l2 = saved.concat([
+            { name: "BBC One", group: "UK| GENERAL", url: "uk1" },
+            { name: "Sky News", group: "UK| NEWS", url: "uk2" },
+            { name: "Canal 4K", group: "4K| UHD", url: "k1" },
+        ])
+        store.state.groups.l2 = store.groupNames(store.state.channels.l2)
+        store.state.flat = null
+        const names = store
+            .tvCategories()
+            .rows.map((row) => {
+                return row.name
+            })
+            .join("|")
+        store.state.channels.l2 = saved
+        store.state.groups.l2 = store.groupNames(saved)
+        store.state.flat = null
+        return names.indexOf("UK| GENERAL|UK| NEWS|") === 0 && names.indexOf("4K| UHD") !== -1
+    })(),
+)
+
 const shared = store.tvCategories().rows.filter((row) => {
     return row.name === "Deportes"
 })[0]

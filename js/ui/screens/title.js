@@ -73,6 +73,20 @@ App.uiScreens = App.uiScreens || {}
                                   </button>`
                                 : null
                         }
+                        ${
+                            vod.hasProgress(item)
+                                ? html`<button
+                                      class="btn"
+                                      id="titleForget"
+                                      tabindex="-1"
+                                      onClick=${function () {
+                                          vod.confirmForget(item, "titleActions")
+                                      }}
+                                  >
+                                      Remove from Continue watching
+                                  </button>`
+                                : null
+                        }
                     </div>
                     ${
                         resume

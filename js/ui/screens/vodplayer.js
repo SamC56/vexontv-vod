@@ -87,6 +87,13 @@ App.uiScreens = App.uiScreens || {}
 
         if (!playing) return null
         const item = playing.item
+        // An episode is named by its show, with the season, number and title under it.
+        const name = playing.show ? playing.show.name : item.name
+        const subtitle = playing.show
+            ? [vod.episodeLabel(item), item.title].filter(Boolean).join(" · ")
+            : [item.year, item.group].filter(Boolean).join(" · ")
+        const upNext = ui.upNext
+        const countdown = upNext ? Math.max(0, Math.ceil((upNext.deadline - Date.now()) / 1000)) : 0
         const duration = time.duration
         const position = ui.seek ? ui.seek.target : time.position || playing.start || 0
         const ratio = duration > 0 ? Math.min(1, position / duration) : 0
@@ -121,7 +128,7 @@ App.uiScreens = App.uiScreens || {}
                     ? html`<div class="player-status" id="vodStatus">
                           <div class="spinner"></div>
                           <p class="player-status-text">
-                              ${playing.start ? `Resuming “${item.name}”…` : `Opening “${item.name}”…`}
+                              ${playing.start ? `Resuming “${name}”…` : `Opening “${name}”…`}
                           </p>
                       </div>`
                     : null
@@ -131,7 +138,7 @@ App.uiScreens = App.uiScreens || {}
                     ? html`<div class="player-error" id="vodError">
                           <div class="play-card">
                               <p class="play-why" id="vodErrorWhy">${ui.error}</p>
-                              <h1 class="play-name">${item.name}</h1>
+                              <h1 class="play-name">${name}</h1>
                               <p class="play-hint">
                                   Your provider may allow one stream at a time: stop it on other
                                   devices, then retry.
@@ -162,6 +169,10 @@ App.uiScreens = App.uiScreens || {}
                       </div>`
                     : null
             }
+            <${kit.QualityBadge}
+                playing=${status === "playing" && !ui.error}
+                watchKey=${`${playing.url}#${playing.attempt || 0}`}
+            />
             ${
                 ui.subtitle
                     ? html`<p class=${`vod-subtitle${visible ? " raised" : ""}`} id="vodSubtitle">
@@ -175,8 +186,8 @@ App.uiScreens = App.uiScreens || {}
             }
             <div class=${`overlay vod-osd${visible ? " visible" : ""}`} id="vodOsd">
                 <div class="vod-osd-title">
-                    <h1 id="vodName">${item.name}</h1>
-                    <p class="ov-group">${[item.year, item.group].filter(Boolean).join(" · ")}</p>
+                    <h1 id="vodName">${name}</h1>
+                    <p class="ov-group" id="vodSub">${subtitle}</p>
                 </div>
                 <div class="vod-track" id="vodTrack">
                     <span class="vod-track-fill" style=${`width:${ratio * 100}%`}></span>
@@ -230,6 +241,48 @@ App.uiScreens = App.uiScreens || {}
                 </div>
                 ${ui.paused ? html`<p class="vod-paused" id="vodPaused">Paused</p>` : null}
             </div>
+            ${
+                upNext
+                    ? html`<div class="vod-up-next" id="vodUpNext">
+                          <p class="vod-up-next-label" id="vodUpNextLabel">
+                              Up next in ${countdown}s
+                          </p>
+                          <p class="vod-up-next-name">
+                              ${vod.episodeLabel(upNext.episode)}${
+                                  upNext.episode.title ? ` · ${upNext.episode.title}` : ""
+                              }
+                          </p>
+                          <span class="vod-up-next-bar"
+                              ><span
+                                  class="vod-up-next-fill"
+                                  style=${`width:${Math.round((1 - countdown / 10) * 100)}%`}
+                              ></span
+                          ></span>
+                          <div class="vod-up-next-actions">
+                              <button
+                                  class="btn primary"
+                                  id="vodUpNextPlay"
+                                  tabindex="-1"
+                                  onClick=${function () {
+                                      vod.playNext()
+                                  }}
+                              >
+                                  Play now
+                              </button>
+                              <button
+                                  class="btn"
+                                  id="vodUpNextCancel"
+                                  tabindex="-1"
+                                  onClick=${function () {
+                                      vod.dismissUpNext()
+                                  }}
+                              >
+                                  Cancel
+                              </button>
+                          </div>
+                      </div>`
+                    : null
+            }
             ${
                 ui.trackMenu
                     ? html`<div class="vod-tracks" id="vodTracks">
