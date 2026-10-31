@@ -207,8 +207,11 @@ App.vod = (function () {
     // Kept for the next launch, one entry per kind: a playlist fills both at once.
     function saveResult(listId, result) {
         const at = Date.now()
-        if (result.movies) App.cache.set(cacheKey(listId, "movie"), { at, items: result.movies })
-        if (result.series) App.cache.set(cacheKey(listId, "series"), { at, items: result.series })
+        // An empty list is never kept: it would stand in for the whole catalog next launch.
+        if (result.movies && result.movies.length)
+            App.cache.set(cacheKey(listId, "movie"), { at, items: result.movies })
+        if (result.series && result.series.length)
+            App.cache.set(cacheKey(listId, "series"), { at, items: result.series })
     }
 
     // From the source. Quiet when a saved copy is already showing: a failure then leaves that
@@ -250,7 +253,8 @@ App.vod = (function () {
             .get(cacheKey(list.id, kind))
             .then((saved) => {
                 if ((generations[list.id] || 0) !== generation) return []
-                if (saved && Array.isArray(saved.items)) {
+                // An empty copy (saved before empty ones were refused) counts as none.
+                if (saved && Array.isArray(saved.items) && saved.items.length) {
                     storeResult(list.id, { [catalogKey(kind)]: saved.items })
                     if (!state.refreshed[key]) {
                         state.refreshed[key] = true

@@ -19,6 +19,8 @@ App.api = (function () {
     // Scene names put the quality where the episode title would be.
     const RELEASE_TAG = /^(?:\d{3,4}p|4k|uhd|fhd|hdtv|web(?:-?dl|rip)?|x26[45]|hevc|bluray)\b/i
     const TIMEOUT_MS = 60000
+    // A busy panel (its one connection streaming) can answer a catalog with nothing at all.
+    const EMPTY_RETRY_MS = 3000
     const STALKER_UA =
         "Mozilla/5.0 (QtEmbedded; U; Linux; C) AppleWebKit/533.3 (KHTML, like Gecko) MAG200 stbapp ver: 2 rev: 250 Safari/533.3"
 
@@ -428,6 +430,28 @@ App.api = (function () {
         }`
     }
 
+    // A whole catalog. An empty or broken answer is asked once more and then is an error, never
+    // an empty section: saved, it would hide every title until the next good answer.
+    function catalogList(base, action, what) {
+        function ask() {
+            return withTimeout(fetchJson(`${base}&action=${action}`), "The panel is not responding")
+        }
+        function full(list) {
+            return Array.isArray(list) && list.length > 0
+        }
+        return ask().then((list) => {
+            if (full(list)) return list
+            return new Promise((resolve) => {
+                setTimeout(resolve, EMPTY_RETRY_MS)
+            })
+                .then(ask)
+                .then((again) => {
+                    if (full(again)) return again
+                    throw new Error(`The panel sent no ${what}. Try again in a moment.`)
+                })
+        })
+    }
+
     function loadXtreamMovies(portal, onProgress) {
         const base = xtreamBase(portal)
         let groups = {}
@@ -436,13 +460,9 @@ App.api = (function () {
             .then((names) => {
                 groups = names
                 if (onProgress) onProgress({ label: "Downloading" })
-                return withTimeout(
-                    fetchJson(`${base}&action=get_vod_streams`),
-                    "The panel is not responding",
-                )
+                return catalogList(base, "get_vod_streams", "movies")
             })
-            .then((list) => {
-                const streams = Array.isArray(list) ? list : []
+            .then((streams) => {
                 if (onProgress) onProgress({ label: "Preparing", count: streams.length })
                 return streams.map((stream) => {
                     const id = String(stream.stream_id)
@@ -471,13 +491,9 @@ App.api = (function () {
             .then((names) => {
                 groups = names
                 if (onProgress) onProgress({ label: "Downloading" })
-                return withTimeout(
-                    fetchJson(`${base}&action=get_series`),
-                    "The panel is not responding",
-                )
+                return catalogList(base, "get_series", "series")
             })
-            .then((list) => {
-                const shows = Array.isArray(list) ? list : []
+            .then((shows) => {
                 if (onProgress) onProgress({ label: "Preparing", count: shows.length })
                 return shows.map((show) => {
                     const parsed = parseTitle(show.name || "")

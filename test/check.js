@@ -1626,6 +1626,37 @@ async function vodSuite() {
         count("get_vod_streams") === asked + 1 && vod.status("movie").errors.length === 0,
         `${count("get_vod_streams") - asked} asks, ${JSON.stringify(vod.status("movie").errors)}`,
     )
+    // A busy panel answering an empty list must not replace the saved catalog.
+    vod.state.catalogs = {}
+    vod.state.refreshed = {}
+    global.fetch = function (url) {
+        const address = String(url)
+        calls.push(address)
+        if (address.indexOf("get_vod_streams") !== -1) return reply([])
+        return working(url)
+    }
+    const beforeEmpty = count("get_vod_streams")
+    const busy = await vod.ensure("movie")
+    await wait(3300)
+    const kept = await App.cache.get("vx:movies")
+    check(
+        "vod: an empty answer is asked again and never saved over the catalog",
+        busy.length === 3 &&
+            count("get_vod_streams") === beforeEmpty + 2 &&
+            kept.items.length === 3 &&
+            vod.items("movie").length === 3,
+        `${busy.length} shown, ${count("get_vod_streams") - beforeEmpty} asks, ${kept.items.length} kept`,
+    )
+    vod.state.catalogs = {}
+    vod.state.refreshed = {}
+    await App.cache.set("vx:movies", { at: 1, items: [] })
+    const none = await vod.ensure("movie")
+    const emptyError = (vod.status("movie").errors[0] || {}).message || ""
+    check(
+        "vod: an empty saved copy counts as none, and an empty panel is an error",
+        none.length === 0 && /sent no movies/.test(emptyError),
+        emptyError,
+    )
     global.fetch = working
     vod.forget("vx")
     const empty = await App.cache.get("vx:movies")
