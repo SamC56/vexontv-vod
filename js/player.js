@@ -60,6 +60,24 @@ App.player = (function () {
         lastRect = null
     }
 
+    // Moves the picture while it plays: a rect in the 1920x1080 grid, or null for full screen.
+    function fit(rect) {
+        lastRect = rect || null
+        if (avplay()) {
+            try {
+                setRect()
+            } catch {}
+            return
+        }
+        if (!video) return
+        const scale = (window.innerWidth || 1920) / 1920
+        video.style.position = rect ? "absolute" : ""
+        video.style.left = rect ? `${rect.x * scale}px` : ""
+        video.style.top = rect ? `${rect.y * scale}px` : ""
+        video.style.width = rect ? `${rect.w * scale}px` : ""
+        video.style.height = rect ? `${rect.h * scale}px` : ""
+    }
+
     // AVPlay measures the display rect in the TV's 1920x1080 grid, whatever the viewport.
     function setRect(rect) {
         if (rect) lastRect = rect
@@ -415,6 +433,7 @@ App.player = (function () {
         silenceSubtitles,
         state,
         clearRect,
+        fit,
         resize,
         describe,
         hardware,

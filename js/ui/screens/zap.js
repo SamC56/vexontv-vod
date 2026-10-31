@@ -6,12 +6,22 @@ App.uiScreens = App.uiScreens || {}
     const store = App.store
     const html = kit.html
     const clock = kit.clock
+    const useEffect = kit.useEffect
 
     function ZapPanel() {
         const state = store.state
         const categories = store.zapCategories()
         const channels = store.zapChannels().slice(0, 200)
         const playing = state.playing && state.playing.channel ? state.playing.channel.url : ""
+
+        // The open category sits in the middle of its list, not hundreds of rows down out of view.
+        useEffect(() => {
+            const box = document.getElementById("zapCats")
+            const row = box && box.querySelector(".zapcat.selected")
+            if (!row) return
+            const offset = row.getBoundingClientRect().top - box.getBoundingClientRect().top
+            box.scrollTop += offset - (box.clientHeight - row.offsetHeight) / 2
+        }, [state.zapCategory, categories.length])
 
         return html`<div class="zap" id="zapPanel">
             <div class="zap-cats" id="zapCats">
@@ -32,7 +42,9 @@ App.uiScreens = App.uiScreens || {}
             </div>
             <div class="zap-list" id="zapChannels">
                 <p class="zap-head" id="zapHead">
-                    <span>${state.zapCategory}</span>
+                    <span
+                        >${state.zapCategory || (store.zapLoading() ? "Loading channels…" : "")}</span
+                    >
                     <span class="zap-hint">OK watch · BACK close</span>
                 </p>
                 ${channels.map((channel) => {

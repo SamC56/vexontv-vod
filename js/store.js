@@ -801,11 +801,13 @@ App.store = (function () {
         if (tab) state.favTab = tab
         set({ screen: "favs" })
         focus("favTabs", 0, ["live", "movie", "series"].indexOf(state.favTab))
+        if (state.favTab === "live") loadCategoryGuide(state.favorites)
     }
 
     function setFavTab(tab) {
         set({ favTab: tab })
         focus(tab === "live" ? "favsList" : "favGrid", 0, 0)
+        if (tab === "live") loadCategoryGuide(state.favorites)
     }
 
     function openAdd() {
@@ -1019,6 +1021,9 @@ App.store = (function () {
         state.nextProgram = nextOf(channel)
         state.preview = channel
         pushRecent(channel, listId)
+        // Ready for when the channel list opens.
+        if (listId && !state.channels[listId] && !state.pending[listId])
+            ensureChannels(listId).catch(() => {})
 
         if (!channel.url && channel.cmd && listKind(list_) === "stalker") {
             set({ screen: "player" })
@@ -1068,7 +1073,33 @@ App.store = (function () {
         set({ menuFocus: on })
     }
 
+    // Channels not loaded yet (a favorite played before Live TV was opened): loaded now,
+    // and the list fills in once they are here.
+    function loadForZap() {
+        const missing = state.lists.filter((list) => {
+            return !state.channels[list.id]
+        })
+        if (!missing.length) return
+        Promise.all(
+            missing.map((list) => {
+                return ensureChannels(list.id).catch(() => {
+                    return null
+                })
+            }),
+        ).then(() => {
+            if (state.zapOpen && !state.zapCategory) openZap()
+            else emit()
+        })
+    }
+
+    function zapLoading() {
+        return state.lists.some((list) => {
+            return !state.channels[list.id] && !!state.pending[list.id]
+        })
+    }
+
     function openZap() {
+        loadForZap()
         const rows = tvCategories().rows
         const playing = state.playing && state.playing.channel ? state.playing.channel.group : ""
         const current = playing || state.zapCategory || state.catName
@@ -1485,6 +1516,7 @@ App.store = (function () {
         setMenuFocus,
         zapCategories,
         zapChannels,
+        zapLoading,
         setZapCategory,
         zapTo,
         exitPlayer,

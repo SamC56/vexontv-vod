@@ -37,7 +37,7 @@ Upstream VexonTV is live-only by design: it drops movies and series while it loa
 playlist. This fork keeps them and builds the rest of the app around all three.
 
 - **A launch screen.** Live TV, Movies and Series as three large tiles, with Recent,
-  Favorites and Sources underneath and the clock in the corner. There is no side menu: Back
+  Favourites and Sources underneath and the clock in the corner. There is no side menu: Back
   from any section returns here.
 - **Movies.** A poster grid by category with sort (recently added, A–Z, rating), search,
   pages of 60, a details page with plot, cast and runtime, and Resume / Start over.
@@ -63,7 +63,7 @@ playlist. This fork keeps them and builds the rest of the app around all three.
 
 | Screen           | What it does                                                                                                                                 |
 | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Launch**       | Live TV, Movies or Series. Recent, Favorites and Sources below. Back here closes the app.                                                    |
+| **Launch**       | Live TV, Movies or Series. Recent, Favourites and Sources below. Back here closes the app.                                                    |
 | **Live TV**      | Categories on the left, channels in the middle, a preview on the right. Resting on a channel previews it; OK opens it full screen.         |
 | **Movies**       | Categories, then posters. OK opens the details page: Play or Resume, Start over, Remove from Continue watching.                            |
 | **Series**       | Categories, then shows. A show page lists seasons and episodes with progress and ticks; Play random sits beside Resume.                    |
@@ -80,8 +80,8 @@ panels often carry tens of thousands of titles.
 | ------------------- | ------------------------------------------ |
 | `CH up` / `CH down` | change channel                             |
 | `Left` or `OK`      | open the channel list; `Left` again for categories |
-| `Down`              | the player menu (favorites)                |
-| `Red`               | save or remove a favorite                  |
+| `Down`              | the player menu (favourites)                |
+| `Red`               | save or remove a favourite                  |
 | numbers             | jump to that channel                       |
 | `Back`              | close the list, then leave the player      |
 
@@ -157,7 +157,7 @@ tizen run -p vx7vod0fk2.VexonVOD -s <tv-ip>:26101
 
 Tizen Studio's Java has to be on `PATH` for `tizen package`. If `tizen install` says no
 target is connected, run `sdb connect` again and retry. Updates keep the same package ID, so
-they install in place and keep sources, favorites and progress.
+they install in place and keep sources, favourites and progress.
 
 **Starting with your own source**
 

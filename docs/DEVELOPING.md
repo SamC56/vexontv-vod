@@ -112,7 +112,7 @@ MPEG-TS and HLS at 1080p and above in hardware.
 index.html          app shell and boot splash
 config.xml          Tizen package: id, version, privileges, profile
 css/                tokens, base, lists, forms, player, overlays, media, vod
-js/store.js         state, sources, TV categories, EPG, playback, favorites, navigation
+js/store.js         state, sources, TV categories, EPG, playback, favourites, navigation
 js/api.js           M3U, Xtream, Stalker parsers, movie and series catalogs, the MKV
                     track reader and the EPG call
 js/vod.js           movies and series: catalogs, browse view, details, progress,

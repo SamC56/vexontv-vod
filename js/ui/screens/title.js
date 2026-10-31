@@ -81,11 +81,11 @@ App.uiScreens = App.uiScreens || {}
                             onClick=${function () {
                                 const added = vod.toggleFavorite(item)
                                 store.notify(
-                                    added ? "Added to favorites" : "Removed from favorites",
+                                    added ? "Added to favourites" : "Removed from favourites",
                                 )
                             }}
                         >
-                            ${vod.isFavorite(item) ? "Remove from favorites" : "Add to favorites"}
+                            ${vod.isFavorite(item) ? "Remove from favourites" : "Add to favourites"}
                         </button>
                         ${
                             vod.hasProgress(item)

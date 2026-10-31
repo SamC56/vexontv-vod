@@ -35,7 +35,7 @@ App.uiScreens = App.uiScreens || {}
               : count(titles.length, "show", "shows")
         return html`<section class="screen" id="screen-favs">
             <${Bar}
-                title="Favorites"
+                title="Favourites"
                 meta=${meta}
                 metaId="favsMeta"
                 titleId="favsTitle"
@@ -60,7 +60,7 @@ App.uiScreens = App.uiScreens || {}
                               countId="favsSearchCount"
                               scope="favorites"
                               resetKey="favorites"
-                              placeholder="Search favorites"
+                              placeholder="Search favourites"
                               count=${view.count}
                               onInput=${function (value) {
                                   store.setSearch("favorites", value)
@@ -84,7 +84,7 @@ App.uiScreens = App.uiScreens || {}
                                         />`
                                     })
                                   : html`<p class="empty">
-                                        Press the red key on a poster, or Add to favorites on its
+                                        Press the red key on a poster, or Add to favourites on its
                                         page, and it will show up here.
                                     </p>`
                           }

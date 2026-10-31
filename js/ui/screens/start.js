@@ -84,7 +84,7 @@ App.uiScreens = App.uiScreens || {}
             },
             {
                 id: "startFavs",
-                label: "Favorites",
+                label: "Favourites",
                 action: function () {
                     store.openFavorites()
                 },

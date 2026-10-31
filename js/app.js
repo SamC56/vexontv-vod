@@ -182,30 +182,47 @@ var App = App || {} // eslint-disable-line no-var -- shared namespace, no module
             },
         })
 
+        // Live, Movies, Series and (on Live) the search box are one row; Down from any of them
+        // goes to the favorites themselves.
+        function toFavorites() {
+            const live = store.state.favTab === "live"
+            const selector = live ? "#favList .channel" : "#favGrid .poster"
+            if (!document.querySelector(selector)) return
+            tv.set(live ? "favsList" : "favGrid", 0, 0)
+        }
+
         zone("favTabs", "#favTabs .btn", {
             onEdge: function (dir) {
-                if (dir !== "down") return
-                if (store.state.favTab === "live") tv.set("favsSearch", 0, 0)
-                else tv.set("favGrid", 0, 0)
+                if (dir === "right" && store.state.favTab === "live") tv.set("favsSearch", 0, 0)
+                else if (dir === "down") toFavorites()
             },
         })
 
         zone("favsSearch", "#favsSearch", {
             onEdge: function (dir) {
-                if (dir === "down") tv.set("favsList", 0, 0)
-                else if (dir === "up") tv.set("favTabs", 0, 0)
+                if (dir === "down") toFavorites()
+                else if (dir === "left") {
+                    const tabs = ui.qsa("#favTabs .btn")
+                    if (tabs.length) tv.setOn("favTabs", tabs[tabs.length - 1])
+                }
             },
         })
 
+        function toOpenTab() {
+            const on = document.querySelector("#favTabs .seg-btn.on")
+            if (on) tv.setOn("favTabs", on)
+            else tv.set("favTabs", 0, 0)
+        }
+
         zone("favGrid", "#favGrid .poster", {
             onEdge: function (dir) {
-                if (dir === "up") tv.set("favTabs", 0, 0)
+                if (dir === "up") toOpenTab()
             },
         })
 
         zone("favsList", "#favList .channel", {
             onEdge: function (dir) {
-                if (dir === "up") tv.set("favsSearch", 0, 0)
+                if (dir === "up") toOpenTab()
             },
         })
 
@@ -257,15 +274,22 @@ var App = App || {} // eslint-disable-line no-var -- shared namespace, no module
             },
         })
 
+        // Across the two lists the focus lands on the open category and the playing channel.
         zone("zapCats", "#zapCats .zapcat", {
             onEdge: function (dir) {
-                if (dir === "right") tv.set("zapChannels", 0, 0)
+                if (dir !== "right") return
+                const playing = document.querySelector("#zapChannels .zapch.playing")
+                if (playing) tv.setOn("zapChannels", playing)
+                else tv.set("zapChannels", 0, 0)
             },
         })
 
         zone("zapChannels", "#zapChannels .zapch", {
             onEdge: function (dir) {
-                if (dir === "left") tv.set("zapCats", 0, 0)
+                if (dir !== "left") return
+                const open = document.querySelector("#zapCats .zapcat.selected")
+                if (open) tv.setOn("zapCats", open)
+                else tv.set("zapCats", 0, 0)
             },
         })
 
@@ -368,7 +392,7 @@ var App = App || {} // eslint-disable-line no-var -- shared namespace, no module
 
         if (state.screen === "player" && state.playing) {
             const added = store.toggleFavorite(state.playing.channel, state.playing.listId)
-            store.notify(added ? "Added to favorites" : "Removed from favorites")
+            store.notify(added ? "Added to favourites" : "Removed from favourites")
             return
         }
 
@@ -397,14 +421,14 @@ var App = App || {} // eslint-disable-line no-var -- shared namespace, no module
                 return
             }
             const added = vod.toggleFavorite(item)
-            store.notify(added ? "Added to favorites" : "Removed from favorites")
+            store.notify(added ? "Added to favourites" : "Removed from favourites")
             return
         }
 
         if (state.screen === "home") {
             const list = element.dataset.list ? store.listById(element.dataset.list) : null
             if (!list) return
-            store.askConfirm(`Delete “${list.name}”? Favorites are kept.`, () => {
+            store.askConfirm(`Delete “${list.name}”? Favourites are kept.`, () => {
                 store.removeList(list.id)
                 store.notify("Source deleted")
                 store.goHome()
@@ -418,7 +442,7 @@ var App = App || {} // eslint-disable-line no-var -- shared namespace, no module
         const channel = store.channelByUrl(url, listId)
         if (!channel) return
         const saved = store.toggleFavorite(channel, listId)
-        store.notify(saved ? "Added to favorites" : "Removed from favorites")
+        store.notify(saved ? "Added to favourites" : "Removed from favourites")
     }
 
     // Films and episodes: the arrows seek, OK and the media keys play and pause.

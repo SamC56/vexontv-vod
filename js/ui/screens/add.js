@@ -91,7 +91,7 @@ App.uiScreens = App.uiScreens || {}
         }
 
         function remove() {
-            store.askConfirm(`Delete “${list.name}”? Favorites are kept.`, () => {
+            store.askConfirm(`Delete “${list.name}”? Favourites are kept.`, () => {
                 store.removeList(list.id)
                 store.notify("Source deleted")
                 store.goHome()

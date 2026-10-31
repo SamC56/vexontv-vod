@@ -998,14 +998,14 @@ async function series() {
     document.getElementById("titleFav").click()
     await wait(60)
     check(
-        "Add to favorites on a film's page saves it",
+        "Add to favourites on a film's page saves it",
         vod.isFavorite(film) &&
             document.getElementById("titleFav").textContent.indexOf("Remove") !== -1,
     )
     store.openFavorites("movie")
     await wait(80)
     check(
-        "Favorites has a Movies tab with it",
+        "Favourites has a Movies tab with it",
         onlyScreen("screen-favs") &&
             document.querySelector("#favTabs .seg-btn.on").textContent.trim() === "Movies" &&
             document.querySelectorAll("#favGrid .poster").length === 1,
@@ -1017,16 +1017,61 @@ async function series() {
     press(10009)
     await wait(80)
     check(
-        "and Back returns to Favorites, on it",
+        "and Back returns to Favourites, on it",
         onlyScreen("screen-favs") && !!focused() && focused().classList.contains("poster"),
         `${screens().join(", ")} / ${focused() ? focused().className : "(nothing)"}`,
     )
     press(403)
     await wait(60)
     check(
-        "Red on it takes it out of favorites",
+        "Red on it takes it out of favourites",
         !vod.isFavorite(film) && document.querySelectorAll("#favGrid .poster").length === 0,
     )
+    // Live, Movies, Series and Search are one row; Down from any goes to the favorites.
+    const favChannel = { name: "Favorite test", url: "http://fav.test/1.ts", group: "Test" }
+    const favList = (store.state.lists[0] || {}).id
+    store.toggleFavorite(favChannel, favList)
+    store.openFavorites("live")
+    await wait(80)
+    // jsdom gives every element a row of its own, so the tabs are reached one by one here.
+    window.App.tv.setOn("favTabs", document.querySelector('#favTabs [data-tab="series"]'))
+    await wait(40)
+    press(39)
+    await wait(40)
+    check(
+        "in Favourites, Right from Series goes to the search box",
+        !!focused() && focused().id === "favsSearch",
+        focused() ? focused().id || focused().dataset.tab : "(nothing)",
+    )
+    press(40)
+    await wait(40)
+    check(
+        "Down from the search box goes to the saved channels",
+        !!focused() && focused().classList.contains("channel"),
+        focused() ? focused().className : "(nothing)",
+    )
+    press(38)
+    await wait(40)
+    const backOn = focused() ? focused().dataset.tab : ""
+    window.App.tv.setOn("favTabs", document.querySelector('#favTabs [data-tab="series"]'))
+    await wait(40)
+    press(40)
+    await wait(40)
+    check(
+        "Up returns to the open tab, and Down from any tab goes to the channels too",
+        backOn === "live" && !!focused() && focused().classList.contains("channel"),
+        focused() ? focused().className : "(nothing)",
+    )
+    window.App.tv.set("favsSearch", 0, 0)
+    await wait(40)
+    press(37)
+    await wait(40)
+    check(
+        "Left from the search box goes to Series, the tab beside it",
+        !!focused() && focused().dataset.tab === "series",
+        focused() ? focused().dataset.tab || focused().id : "(nothing)",
+    )
+    store.toggleFavorite(favChannel, favList)
     window.webapis = undefined
 }
 
@@ -1085,7 +1130,7 @@ async function run() {
     for (let i = 0; i < 3; i++) press(40)
     await wait(40)
     check(
-        "below the tiles: Recent, Favorites and Sources",
+        "below the tiles: Recent, Favourites and Sources",
         !!focused() && focused().id === "startRecents",
         focused() ? focused().id : "(nothing)",
     )
@@ -1536,7 +1581,7 @@ async function run() {
     press(40)
     await wait(60)
     check(
-        "down selects the favorites button",
+        "down selects the favourites button",
         !!focused() && focused().id === "ovFav",
         focused() ? focused().id : "(nothing)",
     )
@@ -1617,7 +1662,7 @@ async function run() {
         document.getElementById("playerOverlay").classList.contains("visible"),
     )
     check(
-        "with the favorites button focused",
+        "with the favourites button focused",
         !!focused() && focused().id === "ovFav" && !!focused().closest("#ovActions"),
         focused() ? focused().id : "(nothing)",
     )
@@ -1628,7 +1673,7 @@ async function run() {
     press(13)
     await wait(120)
     check(
-        "OK with the menu focused presses the focused button (favorites)",
+        "OK with the menu focused presses the focused button (favourites)",
         window.App.store.isFavorite(
             window.App.store.state.playing.listId,
             window.App.store.state.playing.channel.url,
@@ -1649,6 +1694,23 @@ async function run() {
     press(37)
     await wait(150)
     check("and left unfolds the channel list", !!document.getElementById("zapPanel"))
+    const playingRow = document.querySelector("#zapChannels .zapch.playing")
+    if (playingRow) window.App.tv.setOn("zapChannels", playingRow)
+    await wait(40)
+    press(37)
+    await wait(60)
+    check(
+        "Left from the channels lands on the open category, not the first",
+        !!focused() && focused().classList.contains("selected"),
+        focused() ? focused().textContent.trim().slice(0, 40) : "(nothing)",
+    )
+    press(39)
+    await wait(60)
+    check(
+        "and Right goes back to the playing channel",
+        !!focused() && focused().classList.contains("playing"),
+        focused() ? focused().textContent.trim().slice(0, 40) : "(nothing)",
+    )
     press(10009)
     await wait(120)
     check(
@@ -2172,7 +2234,7 @@ async function run() {
     )
     check("the player has a key legend", !!document.getElementById("ovKeys"))
     const legend = (document.getElementById("ovKeys").textContent || "").replace(/\s+/g, " ")
-    ;["channel", "LEFT or OK", "favorites", "exit", "favorite", "jump"].forEach((key) => {
+    ;["channel", "LEFT or OK", "favourites", "exit", "favourite", "jump"].forEach((key) => {
         check(`the legend explains "${key}"`, legend.indexOf(key) !== -1, legend.slice(0, 80))
     })
     await wait(4200)

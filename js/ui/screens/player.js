@@ -12,6 +12,8 @@ App.uiScreens = App.uiScreens || {}
     const useRef = kit.useRef
     const clock = kit.clock
     const OVERLAY_MS = 5000
+    // Between the channel list, the shrunk picture and the edge of the screen, in TV pixels.
+    const ZAP_GAP = 40
 
     App.uiScreens.player = function Player() {
         const state = store.state
@@ -35,9 +37,25 @@ App.uiScreens = App.uiScreens || {}
             }
         }, [])
 
+        // With the channel list open the picture shrinks into the space beside it, 16:9.
+        function besideZap() {
+            const panel = state.zapOpen ? document.getElementById("zapPanel") : null
+            if (!panel) return null
+            const scale = 1920 / (window.innerWidth || 1920)
+            const x = panel.getBoundingClientRect().right * scale + ZAP_GAP
+            const w = 1920 - x - ZAP_GAP
+            if (w < 240) return null
+            const h = (w * 9) / 16
+            return { x, y: (1080 - h) / 2, w, h }
+        }
+
         useEffect(() => {
-            if (state.playing) player.play(state.playing.channel.url)
+            if (state.playing) player.play(state.playing.channel.url, besideZap())
         }, [state.playing])
+
+        useEffect(() => {
+            player.fit(besideZap())
+        }, [state.zapOpen])
 
         useEffect(() => {
             document.body.classList.add("playing")
@@ -210,9 +228,9 @@ App.uiScreens = App.uiScreens || {}
                     <p class="ov-keys" id="ovKeys">
                         <span class="ov-key">CH UP/DOWN</span><span>channel</span>
                         <span class="ov-key">LEFT or OK</span><span>channel list</span>
-                        <span class="ov-key">DOWN</span><span>favorites</span>
+                        <span class="ov-key">DOWN</span><span>favourites</span>
                         <span class="ov-key">BACK</span><span>exit</span>
-                        <span class="ov-key">RED</span><span>favorite</span>
+                        <span class="ov-key">RED</span><span>favourite</span>
                         <span class="ov-key">NUMBERS</span><span>jump</span>
                     </p>
                 </div>
@@ -230,7 +248,7 @@ App.uiScreens = App.uiScreens || {}
                                       show()
                                   }}
                               >
-                                  ${saved ? "Remove from favorites" : "Add to favorites"}
+                                  ${saved ? "Remove from favourites" : "Add to favourites"}
                               </button>
                               <button
                                   class="btn"
