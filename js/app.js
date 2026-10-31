@@ -499,6 +499,10 @@ var App = App || {} // eslint-disable-line no-var -- shared namespace, no module
         if (code === tv.KEY.ENTER && store.commitDigits()) return true
         if (store.state.screen !== "player") return false
 
+        if (code === tv.KEY.GREEN || code === tv.KEY.PREVIOUS) {
+            store.swapChannel()
+            return true
+        }
         if (code === tv.KEY.CH_UP) {
             store.zap(1)
             return true

@@ -66,6 +66,8 @@ App.store = (function () {
         favTab: "live",
         sleepUntil: 0,
         stillWatching: null,
+        // The channel watched before this one, to swap back to: { channel, listId, zapping }.
+        previous: null,
     }
 
     const PROGRESS_MS = 250
@@ -94,6 +96,8 @@ App.store = (function () {
     let digitsTimer = null
     let previewTimer = null
     let sleepTimer = null
+    // The channel left with Back, so the next one played can swap back to it.
+    let lastWatched = null
     let lastKeyAt = Date.now()
     let stillCheck = null
     let stillTick = null
@@ -1012,6 +1016,15 @@ App.store = (function () {
                 ? state.playing.origin
                 : { screen: state.screen, zone: zoneFor(state.screen) }
 
+        const before = state.playing
+            ? {
+                  channel: state.playing.channel,
+                  listId: state.playing.listId,
+                  zapping: state.zapping,
+              }
+            : lastWatched
+        if (before && before.channel && before.channel.url !== channel.url) state.previous = before
+        lastWatched = null
         state.playing = { channel, listId, origin }
         state.playStatus = "opening"
         state.playError = null
@@ -1170,9 +1183,24 @@ App.store = (function () {
         play(channel, channel.listId || state.playing.listId, state.zapping)
     }
 
+    // Swaps with the channel watched before; pressed again, it swaps back.
+    function swapChannel() {
+        const previous = state.previous
+        if (!previous || !previous.channel || state.screen !== "player") {
+            notify("No previous channel yet")
+            return
+        }
+        // From the player menu too: the menu closes, or the bar stayed up with nothing focused.
+        state.menuFocus = false
+        play(previous.channel, previous.listId, previous.zapping)
+        if (state.zapOpen) closeZap()
+    }
+
     function exitPlayer() {
         const origin = state.playing ? state.playing.origin : null
         const channel = state.playing ? state.playing.channel : null
+        if (state.playing)
+            lastWatched = { channel, listId: state.playing.listId, zapping: state.zapping }
         state.playing = null
         state.nowProgram = null
         state.nextProgram = null
@@ -1514,6 +1542,7 @@ App.store = (function () {
         openZap,
         closeZap,
         setMenuFocus,
+        swapChannel,
         zapCategories,
         zapChannels,
         zapLoading,

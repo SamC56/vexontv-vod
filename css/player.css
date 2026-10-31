@@ -412,6 +412,14 @@ body.playing {
     gap: 12px;
 }
 
+/* Channel names run long ("1VIP: SKY SPORTS F1 4K & 3840P"). */
+#ovPrev {
+    max-width: 520px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 /* The stream's quality, shown for a moment when it starts. */
 .quality-badge {
     position: absolute;

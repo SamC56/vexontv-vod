@@ -9,6 +9,8 @@ App.tv = (function () {
         ENTER: 13,
         BACK: 10009,
         RED: 403,
+        GREEN: 404,
+        PREVIOUS: 10190,
         CH_UP: 427,
         CH_DOWN: 428,
         PLAY_PAUSE: 10252,
@@ -216,6 +218,8 @@ App.tv = (function () {
             if (typeof tizen !== "undefined") {
                 tizen.tvinputdevice.registerKeyBatch([
                     "ColorF0Red",
+                    "ColorF1Green",
+                    "PreviousChannel",
                     "ChannelUp",
                     "ChannelDown",
                     "MediaPlayPause",

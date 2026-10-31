@@ -1725,6 +1725,57 @@ async function run() {
         window.App.store.state.playing.channel.name !== beforeChUp,
         `${beforeChUp} -> ${window.App.store.state.playing.channel.name}`,
     )
+    const afterChUp = window.App.store.state.playing.channel.name
+    press(404)
+    await wait(150)
+    check(
+        "Green swaps back to the channel watched before",
+        window.App.store.state.playing.channel.name === beforeChUp,
+        `${afterChUp} -> ${window.App.store.state.playing.channel.name}`,
+    )
+    press(10190)
+    await wait(150)
+    check(
+        "and the previous-channel key swaps again",
+        window.App.store.state.playing.channel.name === afterChUp,
+        window.App.store.state.playing.channel.name,
+    )
+    press(40)
+    await wait(80)
+    check(
+        "the player menu offers Back to that channel",
+        !!document.getElementById("ovPrev") &&
+            document.getElementById("ovPrev").textContent.indexOf(beforeChUp) !== -1,
+        (document.getElementById("ovPrev") || {}).textContent,
+    )
+    document.getElementById("ovPrev").click()
+    await wait(150)
+    check(
+        "and it swaps too, closing the menu",
+        window.App.store.state.playing.channel.name === beforeChUp &&
+            !window.App.store.state.menuFocus &&
+            !document.getElementById("ovActions"),
+        window.App.store.state.playing.channel.name,
+    )
+    await wait(5200)
+    check(
+        "and the bar hides again on its own",
+        !document.getElementById("playerOverlay").classList.contains("visible"),
+        document.getElementById("playerOverlay").className,
+    )
+    press(40)
+    await wait(80)
+    check(
+        "Down opens the menu again, focused, after a swap",
+        !!document.getElementById("ovActions") &&
+            !!focused() &&
+            focused().parentNode.id === "ovActions",
+        focused() ? focused().id : "(nothing)",
+    )
+    press(38)
+    await wait(60)
+    press(427)
+    await wait(150)
 
     const watching = window.App.store.state.playing.channel
     press(10009)
@@ -2234,7 +2285,15 @@ async function run() {
     )
     check("the player has a key legend", !!document.getElementById("ovKeys"))
     const legend = (document.getElementById("ovKeys").textContent || "").replace(/\s+/g, " ")
-    ;["channel", "LEFT or OK", "favourites", "exit", "favourite", "jump"].forEach((key) => {
+    ;[
+        "channel",
+        "LEFT or OK",
+        "favourites",
+        "exit",
+        "favourite",
+        "previous channel",
+        "jump",
+    ].forEach((key) => {
         check(`the legend explains "${key}"`, legend.indexOf(key) !== -1, legend.slice(0, 80))
     })
     await wait(4200)

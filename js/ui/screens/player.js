@@ -231,6 +231,7 @@ App.uiScreens = App.uiScreens || {}
                         <span class="ov-key">DOWN</span><span>favourites</span>
                         <span class="ov-key">BACK</span><span>exit</span>
                         <span class="ov-key">RED</span><span>favourite</span>
+                        <span class="ov-key">GREEN</span><span>previous channel</span>
                         <span class="ov-key">NUMBERS</span><span>jump</span>
                     </p>
                 </div>
@@ -250,6 +251,20 @@ App.uiScreens = App.uiScreens || {}
                               >
                                   ${saved ? "Remove from favourites" : "Add to favourites"}
                               </button>
+                              ${
+                                  state.previous
+                                      ? html`<button
+                                            class="btn"
+                                            id="ovPrev"
+                                            tabindex="-1"
+                                            onClick=${function () {
+                                                store.swapChannel()
+                                            }}
+                                        >
+                                            Back to ${state.previous.channel.name}
+                                        </button>`
+                                      : null
+                              }
                               <button
                                   class="btn"
                                   id="ovSleep"
