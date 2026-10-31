@@ -1472,6 +1472,17 @@ async function run() {
     )
     check("and it is the only one mounted", onlyScreen("screen-player"), screens().join(", "))
     check(
+        "the player's buttons stay hidden until Down reaches them",
+        !document.getElementById("ovActions") &&
+            document.getElementById("playerOverlay").classList.contains("visible"),
+    )
+    await wait(5200)
+    check(
+        "with no key pressed, the channel bar hides after five seconds",
+        !document.getElementById("playerOverlay").classList.contains("visible"),
+        document.getElementById("playerOverlay").className,
+    )
+    check(
         "the player has the surface where AVPlay renders the video",
         (function () {
             const surface = document.getElementById("avPlayer")

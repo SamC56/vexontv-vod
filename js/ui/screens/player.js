@@ -62,8 +62,16 @@ App.uiScreens = App.uiScreens || {}
             document.addEventListener("keydown", pulse)
             return function () {
                 document.removeEventListener("keydown", pulse)
+                if (timer.current) clearTimeout(timer.current)
             }
         }, [])
+
+        // The key that opened the channel went to the screen before, so the bar's countdown
+        // starts with each channel rather than waiting for the next key.
+        const watchUrl = state.playing ? state.playing.channel.url : ""
+        useEffect(() => {
+            if (watchUrl) show()
+        }, [watchUrl])
 
         function show() {
             setOverlay(true)
@@ -208,30 +216,36 @@ App.uiScreens = App.uiScreens || {}
                         <span class="ov-key">NUMBERS</span><span>jump</span>
                     </p>
                 </div>
-                <div class="ov-actions" id="ovActions">
-                    <button
-                        class=${`btn${saved ? " saved" : ""}`}
-                        id="ovFav"
-                        tabindex="-1"
-                        onClick=${function () {
-                            store.toggleFavorite(channel, state.playing.listId)
-                            show()
-                        }}
-                    >
-                        ${saved ? "Remove from favorites" : "Add to favorites"}
-                    </button>
-                    <button
-                        class="btn"
-                        id="ovSleep"
-                        tabindex="-1"
-                        onClick=${function () {
-                            store.cycleSleep()
-                            show()
-                        }}
-                    >
-                        ${store.sleepLabel()}
-                    </button>
-                </div>
+                <!-- The buttons only once Down reaches them: the gold of a saved favorite read as
+                     focus while nothing was focused. -->
+                ${
+                    state.menuFocus
+                        ? html`<div class="ov-actions" id="ovActions">
+                              <button
+                                  class=${`btn${saved ? " saved" : ""}`}
+                                  id="ovFav"
+                                  tabindex="-1"
+                                  onClick=${function () {
+                                      store.toggleFavorite(channel, state.playing.listId)
+                                      show()
+                                  }}
+                              >
+                                  ${saved ? "Remove from favorites" : "Add to favorites"}
+                              </button>
+                              <button
+                                  class="btn"
+                                  id="ovSleep"
+                                  tabindex="-1"
+                                  onClick=${function () {
+                                      store.cycleSleep()
+                                      show()
+                                  }}
+                              >
+                                  ${store.sleepLabel()}
+                              </button>
+                          </div>`
+                        : null
+                }
             </div>
         </section>`
     }
