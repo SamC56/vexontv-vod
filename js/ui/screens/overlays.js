@@ -79,4 +79,38 @@ App.uiScreens = App.uiScreens || {}
             </div>
         </div>`
     }
+
+    App.uiScreens.stillWatching = function StillWatching() {
+        const left = store.stillSecondsLeft()
+        return html`<div class="modal" id="stillWatching">
+            <div class="modal-card still-card">
+                <h2 class="still-title">Are you still watching?</h2>
+                <p class="still-text" id="stillText">
+                    Playback stops in <span id="stillLeft">${left}</span> s unless you answer.
+                </p>
+                <div class="actions">
+                    <button
+                        class="btn primary"
+                        id="stillKeep"
+                        tabindex="-1"
+                        onClick=${function () {
+                            store.keepWatching()
+                        }}
+                    >
+                        Keep watching
+                    </button>
+                    <button
+                        class="btn"
+                        id="stillStop"
+                        tabindex="-1"
+                        onClick=${function () {
+                            store.stopWatching()
+                        }}
+                    >
+                        Stop
+                    </button>
+                </div>
+            </div>
+        </div>`
+    }
 })()

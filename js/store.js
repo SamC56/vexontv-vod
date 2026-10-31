@@ -65,12 +65,18 @@ App.store = (function () {
         pendingZone: null,
         favTab: "live",
         sleepUntil: 0,
+        stillWatching: null,
     }
 
     const PROGRESS_MS = 250
     const PREVIEW_MS = 800
     // The sleep timer's steps, in minutes; one more press turns it off.
     const SLEEP_STEPS = [30, 60, 90]
+    // Playing this long without a key press asks whether anyone is still there, and stops
+    // playback when nobody answers within STILL_ANSWER_MS.
+    const STILL_IDLE_MS = 2 * 60 * 60 * 1000
+    const STILL_ANSWER_MS = 60000
+    const STILL_CHECK_MS = 30000
 
     // Categories this viewer wants first: panels prefix them by country, "UK| GENERAL".
     const FIRST_GROUPS = /^\s*UK\s*[|:\-]/i
@@ -88,6 +94,9 @@ App.store = (function () {
     let digitsTimer = null
     let previewTimer = null
     let sleepTimer = null
+    let lastKeyAt = Date.now()
+    let stillCheck = null
+    let stillTick = null
 
     function subscribe(fn) {
         listeners.push(fn)
@@ -158,6 +167,7 @@ App.store = (function () {
         state.recent = read(KEYS.recent, []) || []
         state.filter = read(KEYS.filter, "all") || "all"
         seedDefault()
+        startStillWatching()
     }
 
     function zoneFor(screen) {
@@ -1191,6 +1201,76 @@ App.store = (function () {
         notify("The sleep timer stopped playback")
     }
 
+    // Every key press counts as someone watching.
+    function touched() {
+        lastKeyAt = Date.now()
+    }
+
+    function watching() {
+        if (state.screen === "player") return true
+        return state.screen === "vodplayer" && !!App.vod && !App.vod.ui.paused
+    }
+
+    function checkStillWatching() {
+        if (state.stillWatching) return
+        if (!watching()) {
+            // Paused or browsing is not watching: the two hours start again with playback.
+            lastKeyAt = Date.now()
+            return
+        }
+        if (Date.now() - lastKeyAt < STILL_IDLE_MS) return
+        const zone = App.tv && App.tv.currentZone()
+        const focused = App.tv && App.tv.focusedElement()
+        set({
+            stillWatching: {
+                until: Date.now() + STILL_ANSWER_MS,
+                zone,
+                selector: focused && focused.id ? `#${focused.id}` : null,
+            },
+        })
+        focus("stillWatching", 0, 0)
+        stillTick = setInterval(() => {
+            if (!state.stillWatching) return
+            if (Date.now() >= state.stillWatching.until) stopWatching()
+            else emit()
+        }, 1000)
+    }
+
+    function stillSecondsLeft() {
+        if (!state.stillWatching) return 0
+        return Math.max(0, Math.ceil((state.stillWatching.until - Date.now()) / 1000))
+    }
+
+    function closeStillWatching() {
+        if (stillTick) clearInterval(stillTick)
+        stillTick = null
+        const asked = state.stillWatching
+        state.stillWatching = null
+        lastKeyAt = Date.now()
+        return asked
+    }
+
+    function keepWatching() {
+        const asked = closeStillWatching()
+        if (asked && asked.zone) focus(asked.zone, 0, 0, asked.selector)
+        emit()
+    }
+
+    // Nobody answered: playback stops as the sleep timer stops it.
+    function stopWatching() {
+        closeStillWatching()
+        if (state.screen === "vodplayer" && App.vod) App.vod.exitPlayer()
+        else if (state.screen === "player") exitPlayer()
+        goStart()
+        notify("Playback stopped: nobody was watching")
+    }
+
+    function startStillWatching() {
+        if (stillCheck) clearInterval(stillCheck)
+        lastKeyAt = Date.now()
+        stillCheck = setInterval(checkStillWatching, STILL_CHECK_MS)
+    }
+
     function notify(message) {
         toastSeq++
         state.toast = { message, id: toastSeq }
@@ -1374,6 +1454,12 @@ App.store = (function () {
         cycleSleep,
         sleepLabel,
         sleepNow: sleep,
+        touched,
+        checkStillWatching,
+        stillSecondsLeft,
+        keepWatching,
+        stopWatching,
+        STILL_IDLE_MS,
         openAdd,
         chooseType,
         openEdit,

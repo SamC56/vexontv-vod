@@ -240,5 +240,8 @@ App.tv = (function () {
         rows,
         listen,
         focusedElement,
+        currentZone: function () {
+            return current
+        },
     }
 })()

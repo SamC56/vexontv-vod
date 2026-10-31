@@ -221,3 +221,22 @@ body.previewing {
     background-color: transparent;
     background-image: none;
 }
+
+.still-card {
+    text-align: center;
+}
+
+.still-title {
+    margin: 0 0 12px;
+    font-size: 34px;
+    font-weight: 600;
+}
+
+.still-text {
+    margin: 0;
+    color: var(--text-2);
+}
+
+.still-card .actions {
+    justify-content: center;
+}

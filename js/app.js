@@ -313,6 +313,7 @@ var App = App || {} // eslint-disable-line no-var -- shared namespace, no module
         })
 
         zone("confirm", "#confirm .btn")
+        zone("stillWatching", "#stillWatching .btn")
     }
 
     function back() {
@@ -449,6 +450,13 @@ var App = App || {} // eslint-disable-line no-var -- shared namespace, no module
     }
 
     function onKey(code) {
+        store.touched()
+        // The question takes every key: Back answers yes, the arrows and OK pick a button.
+        if (store.state.stillWatching) {
+            if (code === tv.KEY.BACK || code === 27) store.keepWatching()
+            const moves = [tv.KEY.UP, tv.KEY.DOWN, tv.KEY.LEFT, tv.KEY.RIGHT, tv.KEY.ENTER]
+            return moves.indexOf(code) === -1
+        }
         if (store.state.screen === "vodplayer" && code !== tv.KEY.BACK && code !== 27)
             return vodKey(code)
         if (code >= 48 && code <= 57) {

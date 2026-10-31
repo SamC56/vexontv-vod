@@ -27,6 +27,7 @@ App.ui = (function () {
     const Toast = screens.toast
     const NumBuffer = screens.numBuffer
     const Confirm = screens.confirm
+    const StillWatching = screens.stillWatching
 
     function Root() {
         useEffect(() => {
@@ -72,6 +73,7 @@ App.ui = (function () {
             ${state.numBuffer ? html`<${NumBuffer} value=${state.numBuffer} />` : null}
             ${state.loading ? html`<${Loader} />` : null}
             ${state.confirm ? html`<${Confirm} />` : null}
+            ${state.stillWatching ? html`<${StillWatching} />` : null}
             ${state.toast ? html`<${Toast} message=${state.toast.message} />` : null}
         </div>`
     }

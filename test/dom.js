@@ -868,6 +868,54 @@ async function series() {
         "which keeps shuffling",
         vod.ui.playing.shuffle === true && vod.ui.playing.item.id !== shuffled.id,
     )
+    // Two hours without a key press, by moving the clock rather than waiting.
+    const realNow = window.Date.now
+    let ahead = 0
+    window.Date.now = function () {
+        return realNow() + ahead
+    }
+    function idleTwoHours() {
+        ahead += store.STILL_IDLE_MS + 1000
+        store.checkStillWatching()
+    }
+    vod.setPaused(true)
+    idleTwoHours()
+    await wait(80)
+    check("paused for two hours, nobody is asked", !document.getElementById("stillWatching"))
+    vod.setPaused(false)
+    store.touched()
+    idleTwoHours()
+    await wait(80)
+    check(
+        "two hours playing without a key asks whether anyone is still watching",
+        !!document.getElementById("stillWatching") &&
+            !!focused() &&
+            focused().id === "stillKeep" &&
+            /60 s/.test(document.getElementById("stillText").textContent),
+        focused() ? focused().id : "(nothing)",
+    )
+    press(13)
+    await wait(80)
+    check(
+        "Keep watching closes it and playback goes on",
+        !document.getElementById("stillWatching") && onlyScreen("screen-vodplayer"),
+        screens().join(", "),
+    )
+    idleTwoHours()
+    await wait(80)
+    press(10009)
+    await wait(80)
+    check(
+        "Back answers it too, without leaving the player",
+        !document.getElementById("stillWatching") && onlyScreen("screen-vodplayer"),
+        screens().join(", "),
+    )
+    store.checkStillWatching()
+    await wait(80)
+    check(
+        "and the two hours start again after an answer",
+        !document.getElementById("stillWatching"),
+    )
     store.sleepNow()
     await wait(100)
     check(
@@ -877,6 +925,21 @@ async function series() {
             (document.querySelector(".toast") || {}).textContent.indexOf("sleep timer") !== -1,
         screens().join(", "),
     )
+    vod.playTitle(shuffled, true)
+    await wait(200)
+    idleTwoHours()
+    await wait(80)
+    ahead += 61000
+    await wait(1200)
+    check(
+        "with no answer in a minute, playback stops and the launch screen shows",
+        onlyScreen("screen-start") &&
+            !vod.ui.playing &&
+            !document.getElementById("stillWatching") &&
+            (document.querySelector(".toast") || {}).textContent.indexOf("nobody") !== -1,
+        `${screens().join(", ")} / ${(document.querySelector(".toast") || {}).textContent}`,
+    )
+    window.Date.now = realNow
     await leavePlayer()
     press(10009)
     await wait(80)
