@@ -223,7 +223,7 @@ App.uiKit = (function () {
             store.play(channel, listId, props.source)
         }
         return html`<button
-            class="row channel"
+            class=${`row channel${props.moving ? " moving" : ""}`}
             data-url=${channel.url}
             data-list=${listId}
             tabindex="-1"
@@ -265,6 +265,7 @@ App.uiKit = (function () {
                     showGroup=${view.showGroup}
                     detail=${props.detail}
                     saved=${store.isFavorite(listOf(channel), channel.url)}
+                    moving=${props.moving === `${listOf(channel)}|${channel.url}`}
                 />`
             })}
         </div>`

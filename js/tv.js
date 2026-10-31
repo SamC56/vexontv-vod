@@ -42,8 +42,55 @@ App.tv = (function () {
         return out
     }
 
+    // onHold: OK held down on an item of the zone; a short press still selects it.
     function define(name, items, options) {
-        zones[name] = { items, onEdge: options && options.onEdge }
+        zones[name] = {
+            items,
+            onEdge: options && options.onEdge,
+            onHold: options && options.onHold,
+        }
+    }
+
+    const HOLD_MS = 700
+    // Repeats of a held key come every 50-100 ms; a press after a longer gap is a new one,
+    // in case a keyup went missing.
+    const REPEAT_GAP_MS = 400
+    let holdTimer = null
+    let holding = false
+    let lastOkAt = 0
+
+    // While OK stays down its repeats are ignored, so a hold does not also act as a press.
+    function repeatOfHeldOk(event) {
+        if (event.keyCode !== KEY.ENTER) return false
+        const now = Date.now()
+        const repeat = holding && now - lastOkAt < REPEAT_GAP_MS
+        lastOkAt = now
+        if (holding && !repeat) {
+            holding = false
+            if (holdTimer) clearTimeout(holdTimer)
+            holdTimer = null
+        }
+        return repeat
+    }
+
+    // The TV repeats keydown while OK is held: the first one starts the wait, keyup ends it.
+    function pressOk(zone) {
+        if (holding) return
+        holding = true
+        const element = focusedElement()
+        holdTimer = setTimeout(() => {
+            holdTimer = null
+            if (element) zone.onHold(element)
+        }, HOLD_MS)
+    }
+
+    function releaseOk(event) {
+        if (event.keyCode !== KEY.ENTER || !holding) return
+        holding = false
+        if (!holdTimer) return
+        clearTimeout(holdTimer)
+        holdTimer = null
+        select()
     }
 
     // Rows are grouped by offsetTop: what a TV layout needs, and what jsdom lacks.
@@ -178,6 +225,7 @@ App.tv = (function () {
     }
 
     function handle(event) {
+        if (repeatOfHeldOk(event)) return
         if (typing()) {
             const field = document.activeElement
             if (event.keyCode === KEY.UP || event.keyCode === KEY.DOWN) {
@@ -204,7 +252,8 @@ App.tv = (function () {
                 move("right")
                 break
             case KEY.ENTER:
-                select()
+                if (zones[current] && zones[current].onHold) pressOk(zones[current])
+                else select()
                 break
         }
     }
@@ -214,6 +263,7 @@ App.tv = (function () {
         onKey = handler
         onFocus = (options && options.onFocus) || null
         document.addEventListener("keydown", handle)
+        document.addEventListener("keyup", releaseOk)
         try {
             if (typeof tizen !== "undefined") {
                 tizen.tvinputdevice.registerKeyBatch([

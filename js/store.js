@@ -68,6 +68,8 @@ App.store = (function () {
         stillWatching: null,
         // The channel watched before this one, to swap back to: { channel, listId, zapping }.
         previous: null,
+        // A favourite being reordered: { scope: "live" | "movie" | "series", key, original }.
+        moving: null,
     }
 
     const PROGRESS_MS = 250
@@ -915,6 +917,75 @@ App.store = (function () {
         return false
     }
 
+    function liveKey(saved) {
+        return `${saved.listId}|${saved.url}`
+    }
+
+    // Holding OK on a favourite picks it up; the arrows move it, OK drops it, Back puts all
+    // of them back where they were.
+    function startMove(scope, key) {
+        if (scope === "live" && searchOf("favorites").trim()) {
+            notify("Clear the search to reorder")
+            return
+        }
+        const source = scope === "live" ? state.favorites : App.vod.state.favorites
+        set({ moving: { scope, key, original: source.slice() } })
+    }
+
+    function moveBy(delta) {
+        const moving = state.moving
+        if (!moving) return
+        if (moving.scope !== "live") {
+            App.vod.moveFavorite(moving.key, delta)
+            focusMoving()
+            emit()
+            return
+        }
+        const from = state.favorites.findIndex((saved) => {
+            return liveKey(saved) === moving.key
+        })
+        if (from === -1) return
+        const to = Math.max(0, Math.min(state.favorites.length - 1, from + delta))
+        if (to !== from) {
+            const next = state.favorites.slice()
+            const picked = next.splice(from, 1)[0]
+            next.splice(to, 0, picked)
+            state.favorites = next
+            write(KEYS.favorites, state.favorites)
+        }
+        focus("favsList", to, 0)
+        emit()
+    }
+
+    function focusMoving() {
+        const moving = state.moving
+        if (!moving) return
+        if (moving.scope === "live") {
+            const at = state.favorites.findIndex((saved) => {
+                return liveKey(saved) === moving.key
+            })
+            focus("favsList", Math.max(0, at), 0)
+        } else {
+            const key = moving.key.replace(/["\\]/g, "\\$&")
+            focus("favGrid", 0, 0, `#favGrid .poster[data-key="${key}"]`)
+        }
+    }
+
+    function endMove(keep) {
+        const moving = state.moving
+        if (!moving) return
+        if (!keep) {
+            if (moving.scope === "live") {
+                state.favorites = moving.original
+                write(KEYS.favorites, state.favorites)
+            } else App.vod.setFavorites(moving.original)
+        }
+        focusMoving()
+        state.moving = null
+        emit()
+        if (keep) notify("Moved")
+    }
+
     function pushRecent(channel, listId) {
         state.recent = [asSaved(channel, listId)]
             .concat(
@@ -1543,6 +1614,10 @@ App.store = (function () {
         closeZap,
         setMenuFocus,
         swapChannel,
+        startMove,
+        moveBy,
+        endMove,
+        liveKey,
         zapCategories,
         zapChannels,
         zapLoading,

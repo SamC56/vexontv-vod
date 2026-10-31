@@ -22,12 +22,13 @@ App.uiScreens = App.uiScreens || {}
     }
 
     // Saved channels, films and shows, a tab each. Red adds and removes wherever a channel or
-    // a poster has the focus.
+    // a poster has the focus; holding OK on one picks it up to reorder.
     App.uiScreens.favs = function Favs() {
         const tab = store.state.favTab || "live"
         const live = tab === "live"
         const view = live ? store.visibleFavorites() : null
         const titles = live ? [] : vod.favorites(tab)
+        const moving = store.state.moving
         const meta = live
             ? view.label
             : tab === "movie"
@@ -72,7 +73,11 @@ App.uiScreens = App.uiScreens || {}
             ${
                 live
                     ? html`${view.total ? null : html`<p class="empty">Mark channels with the red key while you watch them and they will show up here.</p>`}
-                          <${ChannelList} id="favList" view=${view} />`
+                          <${ChannelList}
+                              id="favList"
+                              view=${view}
+                              moving=${moving && moving.scope === "live" ? moving.key : null}
+                          />`
                     : html`<div class="vod-grid fav-grid" id="favGrid">
                           ${
                               titles.length
@@ -81,6 +86,7 @@ App.uiScreens = App.uiScreens || {}
                                             key=${vod.keyOf(item)}
                                             item=${item}
                                             from="favs"
+                                            moving=${!!moving && moving.key === vod.keyOf(item)}
                                         />`
                                     })
                                   : html`<p class="empty">
@@ -89,6 +95,14 @@ App.uiScreens = App.uiScreens || {}
                                     </p>`
                           }
                       </div>`
+            }
+            ${
+                moving
+                    ? html`<p class="move-hint" id="moveHint">
+                          <span class="ov-key">${live ? "UP/DOWN" : "ARROWS"}</span>move
+                          <span class="ov-key">OK</span>place <span class="ov-key">BACK</span>cancel
+                      </p>`
+                    : null
             }
         </section>`
     }

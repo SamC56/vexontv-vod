@@ -94,10 +94,27 @@ window.addEventListener("error", (event) => {
     errors.push(`window.error: ${(event.error && event.error.stack) || event.message}`)
 })
 
-function press(keyCode) {
-    const event = new window.KeyboardEvent("keydown", { bubbles: true })
+function key(type, keyCode) {
+    const event = new window.KeyboardEvent(type, { bubbles: true })
     Object.defineProperty(event, "keyCode", { value: keyCode })
     document.dispatchEvent(event)
+}
+
+// Down and up, as the remote sends them.
+function press(keyCode) {
+    key("keydown", keyCode)
+    key("keyup", keyCode)
+}
+
+// OK held down: the TV repeats keydown until the key comes back up.
+async function holdOk(ms) {
+    const until = Date.now() + ms
+    key("keydown", 13)
+    while (Date.now() < until) {
+        await wait(60)
+        key("keydown", 13)
+    }
+    key("keyup", 13)
 }
 
 function focused() {
@@ -1071,6 +1088,134 @@ async function series() {
         !!focused() && focused().dataset.tab === "series",
         focused() ? focused().dataset.tab || focused().id : "(nothing)",
     )
+
+    // Reordering: holding OK picks a favourite up, the arrows move it, OK places, Back cancels.
+    const favB = { name: "Favourite B", url: "http://fav.test/2.ts", group: "Test" }
+    const favC = { name: "Favourite C", url: "http://fav.test/3.ts", group: "Test" }
+    store.toggleFavorite(favB, favList)
+    store.toggleFavorite(favC, favList)
+    store.setFavTab("live")
+    await wait(80)
+    const order = () => {
+        return store.state.favorites.map((saved) => {
+            return saved.url
+        })
+    }
+    const before = order()
+    const picked = before[0]
+    window.App.tv.set("favsList", 0, 0)
+    await wait(40)
+    await holdOk(900)
+    await wait(60)
+    check(
+        "holding OK on a favourite channel picks it up, without playing it",
+        store.state.screen === "favs" &&
+            !!store.state.moving &&
+            !!document.querySelector("#favList .channel.moving") &&
+            !!document.getElementById("moveHint"),
+        `${store.state.screen} / ${JSON.stringify(store.state.moving && store.state.moving.key)}`,
+    )
+    press(40)
+    await wait(60)
+    check(
+        "Down moves it a place down, and the focus goes with it",
+        order()[1] === picked && !!focused() && focused().dataset.url === picked,
+        `${order().join(" ")} / ${focused() ? focused().dataset.url : "(nothing)"}`,
+    )
+    press(10009)
+    await wait(60)
+    check(
+        "Back cancels: every favourite is back where it was",
+        order().join() === before.join() &&
+            !store.state.moving &&
+            !document.getElementById("moveHint") &&
+            store.state.screen === "favs",
+        order().join(" "),
+    )
+    window.App.tv.set("favsList", 0, 0)
+    await wait(40)
+    await holdOk(900)
+    await wait(60)
+    press(40)
+    await wait(40)
+    press(40)
+    await wait(40)
+    press(13)
+    await wait(60)
+    const saved = JSON.parse(window.localStorage.getItem("ts.favorites") || "[]").map((entry) => {
+        return entry.url
+    })
+    check(
+        "OK places it there, and the new order is kept",
+        order()[2] === picked && !store.state.moving && saved[2] === picked,
+        `${order().join(" ")} / saved ${saved.join(" ")}`,
+    )
+    store.setSearch("favorites", "Favourite")
+    await wait(60)
+    window.App.tv.set("favsList", 0, 0)
+    await wait(40)
+    await holdOk(900)
+    await wait(60)
+    check(
+        "with a search typed, it asks to clear it first",
+        !store.state.moving &&
+            (document.querySelector(".toast") || {}).textContent.indexOf("Clear the search") !== -1,
+    )
+    store.setSearch("favorites", "")
+    await wait(40)
+    window.App.tv.set("favsList", 0, 0)
+    await wait(40)
+    press(13)
+    await wait(150)
+    check("a short OK still plays the channel", store.state.screen === "player", store.state.screen)
+    press(10009)
+    await wait(120)
+    store.toggleFavorite(favB, favList)
+    store.toggleFavorite(favC, favList)
+
+    const films = vod.items("movie").slice(0, 2)
+    films.forEach((item) => {
+        if (!vod.isFavorite(item)) vod.toggleFavorite(item)
+    })
+    store.openFavorites("movie")
+    await wait(80)
+    const filmOrder = () => {
+        return vod.favorites("movie").map((item) => {
+            return vod.keyOf(item)
+        })
+    }
+    const filmsBefore = filmOrder()
+    window.App.tv.set("favGrid", 0, 0)
+    await wait(40)
+    await holdOk(900)
+    await wait(60)
+    check(
+        "holding OK on a poster picks it up",
+        store.state.screen === "favs" && !!document.querySelector("#favGrid .poster.moving"),
+        store.state.screen,
+    )
+    press(39)
+    await wait(60)
+    press(13)
+    await wait(60)
+    check(
+        "Right and OK move it a place along",
+        filmOrder()[1] === filmsBefore[0] &&
+            !store.state.moving &&
+            !!focused() &&
+            focused().dataset.key === filmsBefore[0],
+        `${filmsBefore.join(" ")} -> ${filmOrder().join(" ")}`,
+    )
+    window.App.tv.set("favGrid", 0, 0)
+    await wait(40)
+    press(13)
+    await wait(120)
+    check("a short OK still opens the poster's page", store.state.screen === "title")
+    press(10009)
+    await wait(80)
+    films.forEach((item) => {
+        if (vod.isFavorite(item)) vod.toggleFavorite(item)
+    })
     store.toggleFavorite(favChannel, favList)
     window.webapis = undefined
 }

@@ -218,11 +218,20 @@ var App = App || {} // eslint-disable-line no-var -- shared namespace, no module
             onEdge: function (dir) {
                 if (dir === "up") toOpenTab()
             },
+            onHold: function (element) {
+                store.startMove(store.state.favTab, element.dataset.key)
+            },
         })
 
         zone("favsList", "#favList .channel", {
             onEdge: function (dir) {
                 if (dir === "up") toOpenTab()
+            },
+            onHold: function (element) {
+                store.startMove(
+                    "live",
+                    store.liveKey({ listId: element.dataset.list, url: element.dataset.url }),
+                )
             },
         })
 
@@ -473,8 +482,35 @@ var App = App || {} // eslint-disable-line no-var -- shared namespace, no module
         return true
     }
 
+    // Posters in a row of the favourites grid, for Up and Down while one is being moved.
+    function gridColumns() {
+        const posters = ui.qsa("#favGrid .poster")
+        if (!posters.length) return 1
+        const top = posters[0].offsetTop
+        return Math.max(
+            1,
+            posters.filter((poster) => {
+                return poster.offsetTop === top
+            }).length,
+        )
+    }
+
+    // While a favourite is picked up the arrows move it, OK drops it and Back cancels.
+    function moveKey(code) {
+        const grid = store.state.moving.scope !== "live"
+        const step = grid ? gridColumns() : 1
+        if (code === tv.KEY.BACK || code === 27) store.endMove(false)
+        else if (code === tv.KEY.ENTER) store.endMove(true)
+        else if (code === tv.KEY.UP) store.moveBy(-step)
+        else if (code === tv.KEY.DOWN) store.moveBy(step)
+        else if (grid && code === tv.KEY.LEFT) store.moveBy(-1)
+        else if (grid && code === tv.KEY.RIGHT) store.moveBy(1)
+        return true
+    }
+
     function onKey(code) {
         store.touched()
+        if (store.state.moving) return moveKey(code)
         // The question takes every key: Back answers yes, the arrows and OK pick a button.
         if (store.state.stillWatching) {
             if (code === tv.KEY.BACK || code === 27) store.keepWatching()

@@ -536,6 +536,41 @@ App.vod = (function () {
         return added
     }
 
+    // Moves one favourite among those of its kind, keeping the others where they are;
+    // returns where it landed in its kind's list.
+    function moveFavorite(key, delta) {
+        const found = state.favorites.filter((saved) => {
+            return keyOf(saved) === key
+        })[0]
+        if (!found) return -1
+        const slots = []
+        state.favorites.forEach((saved, index) => {
+            if (saved.kind === found.kind) slots.push(index)
+        })
+        const list = slots.map((index) => {
+            return state.favorites[index]
+        })
+        const from = list.indexOf(found)
+        const to = Math.max(0, Math.min(list.length - 1, from + delta))
+        if (to === from) return from
+        list.splice(from, 1)
+        list.splice(to, 0, found)
+        const next = state.favorites.slice()
+        slots.forEach((index, n) => {
+            next[index] = list[n]
+        })
+        state.favorites = next
+        write(KEYS.favorites, state.favorites)
+        changed()
+        return to
+    }
+
+    function setFavorites(list) {
+        state.favorites = list.slice()
+        write(KEYS.favorites, state.favorites)
+        changed()
+    }
+
     // The catalog's own copy when it is loaded, the saved one until then.
     function favorites(kind) {
         return state.favorites
@@ -1596,6 +1631,8 @@ App.vod = (function () {
         toggleWatched,
         episodeByKey,
         favorites,
+        moveFavorite,
+        setFavorites,
         itemByKey,
         confirmForget,
         saveProgress,

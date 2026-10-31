@@ -29,7 +29,7 @@ App.uiScreens = App.uiScreens || {}
         const progress = vod.progressOf(item)
         const ratio = progress && progress.dur > 0 ? Math.min(1, progress.pos / progress.dur) : 0
         return html`<div
-            class="poster"
+            class=${`poster${props.moving ? " moving" : ""}`}
             data-key=${vod.keyOf(item)}
             tabindex="-1"
             onClick=${function () {
