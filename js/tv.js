@@ -52,9 +52,9 @@ App.tv = (function () {
     }
 
     const HOLD_MS = 700
-    // Repeats of a held key come every 50-100 ms; a press after a longer gap is a new one,
-    // in case a keyup went missing.
-    const REPEAT_GAP_MS = 400
+    // A held key repeats after a first pause of about half a second, then every 50-100 ms; a
+    // press after a longer gap than that is a new one, in case a keyup went missing.
+    const REPEAT_GAP_MS = 1500
     let holdTimer = null
     let holding = false
     let lastOkAt = 0

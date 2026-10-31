@@ -106,13 +106,15 @@ function press(keyCode) {
     key("keyup", keyCode)
 }
 
-// OK held down: the TV repeats keydown until the key comes back up.
+// OK held down: the TV waits about half a second, then repeats keydown every 50-100 ms
+// until the key comes back up.
 async function holdOk(ms) {
     const until = Date.now() + ms
     key("keydown", 13)
+    await wait(550)
     while (Date.now() < until) {
-        await wait(60)
         key("keydown", 13)
+        await wait(60)
     }
     key("keyup", 13)
 }
@@ -1652,6 +1654,97 @@ async function run() {
         })(),
         window.App.store.state.preview ? window.App.store.state.preview.name : "(no preview)",
     )
+
+    const openCategory = window.App.store.state.catName
+    const restingOn = focused()
+    press(37)
+    await wait(60)
+    check(
+        "Left from the channels lands on the open category",
+        !!focused() && focused().dataset.group === openCategory,
+        focused() ? focused().dataset.group : "(nothing)",
+    )
+    const other = Array.prototype.filter.call(
+        document.querySelectorAll("#tvCats .tvcat"),
+        (row) => {
+            return row.dataset.group !== openCategory
+        },
+    )[0]
+    window.App.tv.setOn("tvCats", other)
+    await wait(40)
+    press(39)
+    await wait(90)
+    check(
+        "Right on a category opens it, with the focus on its first channel",
+        window.App.store.state.catName === other.dataset.group &&
+            !!focused() &&
+            focused().classList.contains("channel"),
+        `${window.App.store.state.catName} / ${focused() ? focused().className : "(nothing)"}`,
+    )
+    // Categories reorder as favourites do: hold OK, move, OK places, Back cancels.
+    const catNames = () => {
+        return Array.prototype.map.call(document.querySelectorAll("#tvCats .tvcat"), (row) => {
+            return row.dataset.group
+        })
+    }
+    const catsBefore = catNames()
+    window.App.tv.set("tvCats", 0, 0)
+    await wait(40)
+    await holdOk(900)
+    await wait(60)
+    check(
+        "holding OK on a category picks it up",
+        !!document.querySelector("#tvCats .tvcat.moving") &&
+            !!document.getElementById("moveHint") &&
+            window.App.store.state.catName === other.dataset.group,
+        window.App.store.state.catName,
+    )
+    press(40)
+    await wait(60)
+    check(
+        "Down moves it below the next one, the focus with it",
+        catNames()[1] === catsBefore[0] && !!focused() && focused().dataset.group === catsBefore[0],
+        catNames().slice(0, 3).join(" | "),
+    )
+    press(10009)
+    await wait(60)
+    check(
+        "Back puts the categories back as they were",
+        catNames().join("|") === catsBefore.join("|") && !window.App.store.state.moving,
+        catNames().slice(0, 3).join(" | "),
+    )
+    window.App.tv.set("tvCats", 0, 0)
+    await wait(40)
+    await holdOk(900)
+    await wait(60)
+    press(40)
+    await wait(40)
+    press(13)
+    await wait(60)
+    const savedOrder = JSON.parse(window.localStorage.getItem("ts.catOrder") || "null") || []
+    check(
+        "OK places it, and the order is kept",
+        catNames()[1] === catsBefore[0] &&
+            savedOrder[1] === catsBefore[0] &&
+            !document.getElementById("moveHint"),
+        savedOrder.slice(0, 3).join(" | "),
+    )
+    press(13)
+    await wait(90)
+    check(
+        "a short OK on a category still opens it",
+        window.App.store.state.catName === catsBefore[0],
+        window.App.store.state.catName,
+    )
+    window.App.store.state.catOrder = null
+    window.localStorage.removeItem("ts.catOrder")
+    window.App.store.openTvCategory(openCategory)
+    await wait(90)
+    window.App.tv.setOn(
+        "tvChannels",
+        document.querySelector(`#tvChannels .channel[data-url="${restingOn.dataset.url}"]`),
+    )
+    await wait(60)
 
     press(13)
     await wait(120)

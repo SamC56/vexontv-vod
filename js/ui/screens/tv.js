@@ -224,7 +224,13 @@ App.uiScreens = App.uiScreens || {}
                     }
                     ${rows.map((row) => {
                         return html`<button
-                            class=${`row tvcat${row.name === state.catName ? " selected" : ""}`}
+                            class=${`row tvcat${row.name === state.catName ? " selected" : ""}${
+                                state.moving &&
+                                state.moving.scope === "cats" &&
+                                state.moving.key === row.name
+                                    ? " moving"
+                                    : ""
+                            }`}
                             tabindex="-1"
                             data-group=${row.name}
                             onClick=${function () {

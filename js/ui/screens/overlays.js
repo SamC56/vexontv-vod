@@ -113,4 +113,14 @@ App.uiScreens = App.uiScreens || {}
             </div>
         </div>`
     }
+
+    // While a favourite or a category is picked up with a long OK.
+    App.uiScreens.moveHint = function MoveHint() {
+        const moving = store.state.moving
+        const grid = moving.scope === "movie" || moving.scope === "series"
+        return html`<p class="move-hint" id="moveHint">
+            <span class="ov-key">${grid ? "ARROWS" : "UP/DOWN"}</span>move
+            <span class="ov-key">OK</span>place <span class="ov-key">BACK</span>cancel
+        </p>`
+    }
 })()

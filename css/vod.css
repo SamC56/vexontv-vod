@@ -818,7 +818,9 @@
 
 /* A favourite picked up with a long OK: lifted, in the saved colour, until it is placed. */
 .row.channel.moving,
-.row.channel.moving.focused {
+.row.channel.moving.focused,
+.row.tvcat.moving,
+.row.tvcat.moving.focused {
     background: rgba(254, 188, 6, 0.12);
     box-shadow: inset 0 0 0 2px var(--saved);
 }

@@ -93,17 +93,29 @@ var App = App || {} // eslint-disable-line no-var -- shared namespace, no module
             },
         })
 
+        // Right opens the category under the focus, as OK does: the channels shown may be
+        // another category's, or none yet, and the focus had nowhere to land.
         zone("tvCats", "#tvCats .tvcat", {
             onEdge: function (dir) {
                 if (dir === "up") tv.set("tvSearch", 0, 0)
-                else if (dir === "right") tv.set("tvChannels", 0, 0)
+                else if (dir === "right") {
+                    const category = tv.focusedElement()
+                    if (category && category.dataset.group)
+                        store.openTvCategory(category.dataset.group)
+                }
+            },
+            onHold: function (element) {
+                if (element.dataset.group) store.startMove("cats", element.dataset.group)
             },
         })
 
         zone("tvChannels", "#tvChannels .channel", {
             onEdge: function (dir) {
-                if (dir === "left") tv.set("tvCats", 0, 0)
-                else if (dir === "right") tv.set("tvPreview", 0, 0)
+                if (dir === "left") {
+                    const open = document.querySelector("#tvCats .tvcat.selected")
+                    if (open) tv.setOn("tvCats", open)
+                    else tv.set("tvCats", 0, 0)
+                } else if (dir === "right") tv.set("tvPreview", 0, 0)
                 else if (dir === "up") tv.set("tvSearch", 0, 0)
             },
         })
@@ -497,7 +509,8 @@ var App = App || {} // eslint-disable-line no-var -- shared namespace, no module
 
     // While a favourite is picked up the arrows move it, OK drops it and Back cancels.
     function moveKey(code) {
-        const grid = store.state.moving.scope !== "live"
+        const scope = store.state.moving.scope
+        const grid = scope !== "live" && scope !== "cats"
         const step = grid ? gridColumns() : 1
         if (code === tv.KEY.BACK || code === 27) store.endMove(false)
         else if (code === tv.KEY.ENTER) store.endMove(true)

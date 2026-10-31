@@ -96,14 +96,6 @@ App.uiScreens = App.uiScreens || {}
                           }
                       </div>`
             }
-            ${
-                moving
-                    ? html`<p class="move-hint" id="moveHint">
-                          <span class="ov-key">${live ? "UP/DOWN" : "ARROWS"}</span>move
-                          <span class="ov-key">OK</span>place <span class="ov-key">BACK</span>cancel
-                      </p>`
-                    : null
-            }
         </section>`
     }
 })()

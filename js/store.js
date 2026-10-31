@@ -8,6 +8,7 @@ App.store = (function () {
         filter: "ts.filter",
         search: "ts.search.",
         seeded: "ts.seeded",
+        catOrder: "ts.catOrder",
     }
 
     const DEFAULT_LIST = {
@@ -70,6 +71,8 @@ App.store = (function () {
         previous: null,
         // A favourite being reordered: { scope: "live" | "movie" | "series", key, original }.
         moving: null,
+        // Live TV categories in the viewer's order, once one has been moved; null until then.
+        catOrder: null,
     }
 
     const PROGRESS_MS = 250
@@ -84,6 +87,20 @@ App.store = (function () {
 
     // Categories this viewer wants first: panels prefix them by country, "UK| GENERAL".
     const FIRST_GROUPS = /^\s*UK\s*[|:\-]/i
+
+    // The viewer's own order first, for the categories it names; any other (new from the
+    // panel) after them, UK first.
+    function byOrder(a, b) {
+        const order = state.catOrder
+        const at = order ? order.indexOf(a) : -1
+        const bt = order ? order.indexOf(b) : -1
+        if (at !== -1 || bt !== -1) {
+            if (at === -1) return 1
+            if (bt === -1) return -1
+            return at - bt
+        }
+        return byPreference(a, b)
+    }
 
     function byPreference(a, b) {
         return (
@@ -172,6 +189,7 @@ App.store = (function () {
         state.favorites = read(KEYS.favorites, []) || []
         state.recent = read(KEYS.recent, []) || []
         state.filter = read(KEYS.filter, "all") || "all"
+        state.catOrder = read(KEYS.catOrder, null)
         seedDefault()
         startStillWatching()
     }
@@ -924,17 +942,53 @@ App.store = (function () {
     // Holding OK on a favourite picks it up; the arrows move it, OK drops it, Back puts all
     // of them back where they were.
     function startMove(scope, key) {
-        if (scope === "live" && searchOf("favorites").trim()) {
+        const search = scope === "cats" ? "tv" : "favorites"
+        if ((scope === "live" || scope === "cats") && searchOf(search).trim()) {
             notify("Clear the search to reorder")
+            return
+        }
+        if (scope === "cats") {
+            const original = state.catOrder
+            // From here on every category has a place of its own, the current order.
+            state.catOrder = tvCategories().rows.map((row) => {
+                return row.name
+            })
+            if (original)
+                original.forEach((name) => {
+                    if (state.catOrder.indexOf(name) === -1) state.catOrder.push(name)
+                })
+            set({ moving: { scope, key, original } })
             return
         }
         const source = scope === "live" ? state.favorites : App.vod.state.favorites
         set({ moving: { scope, key, original: source.slice() } })
     }
 
+    // A category trades places with the one shown beside it (a source's own view hides some).
+    function moveCategory(name, delta) {
+        const shown = tvCategories().rows.map((row) => {
+            return row.name
+        })
+        const from = shown.indexOf(name)
+        const to = Math.max(0, Math.min(shown.length - 1, from + delta))
+        if (from === -1 || to === from) return
+        const order = state.catOrder.slice()
+        order.splice(order.indexOf(name), 1)
+        const target = order.indexOf(shown[to])
+        order.splice(delta > 0 ? target + 1 : target, 0, name)
+        state.catOrder = order
+        write(KEYS.catOrder, order)
+    }
+
     function moveBy(delta) {
         const moving = state.moving
         if (!moving) return
+        if (moving.scope === "cats") {
+            moveCategory(moving.key, delta)
+            focusMoving()
+            emit()
+            return
+        }
         if (moving.scope !== "live") {
             App.vod.moveFavorite(moving.key, delta)
             focusMoving()
@@ -960,7 +1014,10 @@ App.store = (function () {
     function focusMoving() {
         const moving = state.moving
         if (!moving) return
-        if (moving.scope === "live") {
+        if (moving.scope === "cats") {
+            const name = moving.key.replace(/["\\]/g, "\\$&")
+            focus("tvCats", 0, 0, `#tvCats .tvcat[data-group="${name}"]`)
+        } else if (moving.scope === "live") {
             const at = state.favorites.findIndex((saved) => {
                 return liveKey(saved) === moving.key
             })
@@ -975,7 +1032,10 @@ App.store = (function () {
         const moving = state.moving
         if (!moving) return
         if (!keep) {
-            if (moving.scope === "live") {
+            if (moving.scope === "cats") {
+                state.catOrder = moving.original
+                write(KEYS.catOrder, moving.original)
+            } else if (moving.scope === "live") {
                 state.favorites = moving.original
                 write(KEYS.favorites, state.favorites)
             } else App.vod.setFavorites(moving.original)
@@ -1468,7 +1528,7 @@ App.store = (function () {
         })
 
         const needle = searchOf("tv").trim().toLowerCase()
-        const names = Object.keys(counts).sort(byPreference)
+        const names = Object.keys(counts).sort(byOrder)
         const rows = names.map((name) => {
             return { name, count: counts[name], sources: Object.keys(lists[name]).length }
         })
